@@ -54488,5 +54488,1845 @@
     "branchId": "all",
     "read": false,
     "createdAt": "2026-03-31T06:29:50.157Z"
+  },
+  {
+    "id": "c194cb55-4c75-4789-b82d-61a32c2c6534",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "azam energy cane 250ml ina stock chini (2 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:47.897Z"
+  },
+  {
+    "id": "d5a7f77c-52e7-4dad-963e-4023a8c644be",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "AFYA 500Mls ina stock chini (19 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:47.912Z"
+  },
+  {
+    "id": "ebc8b576-b7ac-40c6-b96e-3ece31b48cde",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "azam tamtam 300ml ina stock chini (3 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:47.924Z"
+  },
+  {
+    "id": "6f6d7ad3-8d7d-48e5-a3a9-57553e398ef9",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Afya piniaple 400mls ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:47.937Z"
+  },
+  {
+    "id": "f76bd4a8-5b97-47e5-9f2c-df6b101dd47f",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Afya passion 300mls ina stock chini (24 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:47.950Z"
+  },
+  {
+    "id": "69dcb961-feac-4d0a-b5d6-f22693921f7f",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Afya pineaple 300mls ina stock chini (11 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:47.964Z"
+  },
+  {
+    "id": "af738f5d-8cf5-4de1-91ec-a994253ac168",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Afya lemon 300mls ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:47.978Z"
+  },
+  {
+    "id": "c02d76e6-1bab-410e-8801-91fd70defe8f",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Afya malt 300mls ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:47.989Z"
+  },
+  {
+    "id": "3fd4db75-663b-4c26-be1f-09ff7801038f",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Afya Jembe 300mls ina stock chini (27 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.002Z"
+  },
+  {
+    "id": "e9769796-d834-4ce6-beb8-5a0fc3686316",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "U-FRESH GLASS 180G  ina stock chini (50 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.016Z"
+  },
+  {
+    "id": "3095288e-0484-4ecc-b7a3-026152ac4ae0",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "U-FRESH GLASS 120G ina stock chini (83 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.030Z"
+  },
+  {
+    "id": "20ed85a6-4ce4-4f50-b0fe-22dd7320af06",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "U-FRESH CHUPA 200G ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.042Z"
+  },
+  {
+    "id": "30f5602a-8465-4314-901a-029caf589e84",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Sukari 50kg ina stock chini (0 kg). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.056Z"
+  },
+  {
+    "id": "712e83f2-e1e2-442e-95f5-9ecb7aaa0632",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Sukari 25kg ina stock chini (25 kg). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.068Z"
+  },
+  {
+    "id": "753a2190-e98b-4f41-aea7-bea5cd0605a0",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Sukari 1kg ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.083Z"
+  },
+  {
+    "id": "ad4c1745-3890-46ea-9c84-acdbd554bb6c",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Tambi santa lucia ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.097Z"
+  },
+  {
+    "id": "0f80853f-e695-4953-8154-424bf3fbe51f",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Tambi Olevoila ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.111Z"
+  },
+  {
+    "id": "d9934490-c2fa-4f99-b929-901c60baae2b",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Biskuti nice ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.122Z"
+  },
+  {
+    "id": "e9083625-29af-4dc0-a617-01d62c24e76a",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Whitedent 110g ctn ina stock chini (1 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.136Z"
+  },
+  {
+    "id": "4b99c2fe-26d9-48e5-b90e-e11752596560",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Whitedent 125g ctn ina stock chini (3 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.149Z"
+  },
+  {
+    "id": "91326c86-9bc3-4dfa-9394-228ea2a50cc9",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "TOMATO 515g CTN ina stock chini (2 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.162Z"
+  },
+  {
+    "id": "14a48f0a-929d-4c4e-8394-c6e4c97623f8",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "mo passion 400ml  ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.174Z"
+  },
+  {
+    "id": "0cfca811-c0b2-4f9a-bc92-bfb193d59c46",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "mo orange 400ml ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.185Z"
+  },
+  {
+    "id": "795c2e25-5bac-49c5-9f5b-a9b445c8d7b2",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "mo pineapple 400ml ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.198Z"
+  },
+  {
+    "id": "2b13f653-3cbc-4d81-b685-1afbf6e34bdf",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "GSM POP LEMON 300MLS ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.212Z"
+  },
+  {
+    "id": "5b49e88c-dc00-4988-9f9b-ce3910092acf",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "GSM POP COLA 300MLS ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.225Z"
+  },
+  {
+    "id": "53c72c01-b71a-4a36-bfee-f1796a8e7ace",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "GSM ORANGE 300MLS ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.237Z"
+  },
+  {
+    "id": "02bb65fc-8e25-4553-8d10-cf48463341e8",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "G-BOOST 300MLS ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.250Z"
+  },
+  {
+    "id": "0ed8589b-1b5d-4659-a50e-936657460e22",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare S80 ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.262Z"
+  },
+  {
+    "id": "55195a57-075e-49fd-a8f0-0ae87c5f0f37",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare M72 ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.275Z"
+  },
+  {
+    "id": "96d092ff-ac58-4404-a66e-3791b3b36d14",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "AZAM NAZI CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.287Z"
+  },
+  {
+    "id": "6804355e-09b0-4c96-9c66-565e57fb2a68",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare L64 ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.300Z"
+  },
+  {
+    "id": "bf3615c7-c5b5-4c8a-886c-fc365cff0641",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare S48 ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.312Z"
+  },
+  {
+    "id": "33f2a92f-093d-4fd0-96cd-5364c245a297",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare M42 ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.324Z"
+  },
+  {
+    "id": "607b3da0-c6b8-4e83-ba0c-a0e9ffc76989",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare L40 ina stock chini (6 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.337Z"
+  },
+  {
+    "id": "c7c58098-61bd-4edb-915b-c14e6d5ec883",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare pants L30 ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.350Z"
+  },
+  {
+    "id": "1512c565-47e8-4e8c-bee1-8b806ceb418d",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare chupi M32 ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.363Z"
+  },
+  {
+    "id": "75da1c1f-ee13-4075-b27f-9a17c35c08c7",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare diaper L10 ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.374Z"
+  },
+  {
+    "id": "ca132d3c-8836-40d8-9104-bfd9fa58b7d3",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare Diaper S14 ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.387Z"
+  },
+  {
+    "id": "d32bcfee-553a-4826-b5d4-e03bd0bb7202",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Movit Relaxer 250g ina stock chini (0 dozen). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.399Z"
+  },
+  {
+    "id": "46bf6794-ad8b-4e69-a1c3-62cc720f3d36",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Movit Relaxer 150g ina stock chini (0 dozen). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.412Z"
+  },
+  {
+    "id": "1453a626-8bf4-4ac1-a0c2-a35ee14085a0",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Movit Relaxer 150g ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.423Z"
+  },
+  {
+    "id": "2f69bfeb-35ff-4364-b49c-970ef4f93dfb",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Vigor Doctor Herbal  ina stock chini (0 dozen). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.436Z"
+  },
+  {
+    "id": "7938fde8-f70a-42a8-bc65-f792778ef293",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Avocado 70g ina stock chini (0 dozen). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.449Z"
+  },
+  {
+    "id": "a146419e-619d-47d7-80bb-8899981a1281",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Asantee soap ina stock chini (0 dozen). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.461Z"
+  },
+  {
+    "id": "0cc5c842-5416-427f-bffc-6ec4b613c1c4",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Omo 500g ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.473Z"
+  },
+  {
+    "id": "4e88e796-3be3-4e21-ae61-d7642616d48d",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Royco ina stock chini (0 dozen). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.485Z"
+  },
+  {
+    "id": "8180aff3-d2d4-488f-99ec-f491f93a2b4a",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Royco ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.498Z"
+  },
+  {
+    "id": "e9c3f579-593a-4069-882c-0faffbb82a53",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Sotojo ina stock chini (0 dozen). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.511Z"
+  },
+  {
+    "id": "3af13e16-76f2-4d92-8f0f-f4eac173ed5f",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Blue Band 250g ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.522Z"
+  },
+  {
+    "id": "b39b61cc-5c03-40ef-8343-1cd41b487555",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Blue Band 500g ina stock chini (0 dozen). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.535Z"
+  },
+  {
+    "id": "13eaaffb-c189-4cd1-96bd-0b82e56dc040",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Jamaa Soap Miche ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.547Z"
+  },
+  {
+    "id": "5ce5c6c2-9298-4a31-9307-6ae5b1b3c93c",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Steei wool sokoni ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.561Z"
+  },
+  {
+    "id": "9dc0230d-e2e2-4a17-9d4a-47db11d6074d",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Steel wool kitambaa pc ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.572Z"
+  },
+  {
+    "id": "2678ed2d-2571-4bcc-bcb7-78e6fdb75638",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Amira saf-instant 11g ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.584Z"
+  },
+  {
+    "id": "154428e2-9926-4f5f-b570-3046960ef6ae",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Mirinda Orange 600mls ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.596Z"
+  },
+  {
+    "id": "0026dda9-5b08-4fe6-aadc-812632f41e1c",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Cocacola 600mls ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.610Z"
+  },
+  {
+    "id": "2e7da6c4-0435-4607-8f03-20a2b6dbd3d8",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Fanta Orange 600mls ina stock chini (4 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.621Z"
+  },
+  {
+    "id": "1781a526-23b7-4a94-8f30-082310100800",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "SEVEN UP 600MLS ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.634Z"
+  },
+  {
+    "id": "998cef55-7508-4c07-9d4a-ef48a86c1af2",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "BLUE LINE SEMBE 5KG ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.646Z"
+  },
+  {
+    "id": "b77be188-9a8e-4682-981c-e8f22a49d0db",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "BLUE LINE SEMBE 10KG ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.659Z"
+  },
+  {
+    "id": "31bf27a0-2bac-4f1b-b4b6-831195214633",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "BLUE LINE DONA 25KG ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.671Z"
+  },
+  {
+    "id": "de565078-bdc7-4d95-847f-10d707786ac8",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "KORIE 1LT ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.683Z"
+  },
+  {
+    "id": "26ea4304-1143-4110-88c8-2e290c953707",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "DUMU 20LT ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.696Z"
+  },
+  {
+    "id": "a3c59abb-eb47-4dff-86d5-960fe736d89b",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Biskuti Best ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.707Z"
+  },
+  {
+    "id": "81a2c037-af19-4b0c-a7da-1588be7fcfb4",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "chama shaya  ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.720Z"
+  },
+  {
+    "id": "f626f88e-5f33-48a7-a707-548b5d239a21",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Chama funtime ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.731Z"
+  },
+  {
+    "id": "36ca42ee-ed52-406d-b2c1-2c19fb1f5a7a",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Baby Cheeck ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.744Z"
+  },
+  {
+    "id": "b69281fc-0f07-41a1-b4c4-fa325166664f",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Biskuti nice modo ndg ctn ina stock chini (5 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.755Z"
+  },
+  {
+    "id": "c37cd1c0-3d21-4be9-a260-8afa139013b3",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Biskuti karanga ctn ina stock chini (5 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.767Z"
+  },
+  {
+    "id": "eecac38b-278a-4b79-b347-3f898d89e2f6",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "chama chaya ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.781Z"
+  },
+  {
+    "id": "47308cea-4d57-42aa-887a-1c40b152c36f",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Simba maandazi ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.794Z"
+  },
+  {
+    "id": "89144d1f-bc40-45c5-9249-edb7362755c1",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Tiger betry kubwa ctn ina stock chini (2 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.805Z"
+  },
+  {
+    "id": "0688be83-2e1b-4a69-a523-9809b83ea889",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "TIGER BETRY NDG CTN ina stock chini (3 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.817Z"
+  },
+  {
+    "id": "203ad72c-6340-4fe1-8e1e-441b12c151be",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "SINGIDA 1LT CTN ina stock chini (1 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.830Z"
+  },
+  {
+    "id": "01834d57-3c1c-46c7-b1aa-9a1429064366",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Simba red ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.842Z"
+  },
+  {
+    "id": "4d1b9b32-03cf-4911-b4b1-f22f9783d0a6",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Prestage 10kg ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.854Z"
+  },
+  {
+    "id": "6b98d709-1910-4023-b86f-b452c4a9df1c",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Nice one 3kg ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.867Z"
+  },
+  {
+    "id": "9a1f8751-8c60-4fa2-9da0-35c381887ab3",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "CHAI 3G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.879Z"
+  },
+  {
+    "id": "8f81e50c-061a-44e7-99d4-84529c5c13c9",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "KING LIMAU  3KG ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.893Z"
+  },
+  {
+    "id": "d41b094a-a254-44fa-b8b3-12912345a74c",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "NICE ONE 450G ina stock chini (4 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.904Z"
+  },
+  {
+    "id": "44ff1ecd-ba45-4576-8691-3fb821c78576",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "CHEMICOLA CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.916Z"
+  },
+  {
+    "id": "ae0356ac-02f5-4e81-a514-03a286a65672",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "VITS Glucose ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.929Z"
+  },
+  {
+    "id": "2ed313fe-5643-4402-8293-6d5f225ee768",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Softcare wipes ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.941Z"
+  },
+  {
+    "id": "59526d70-f0ca-4ae8-9cc3-0f5ec8a0c183",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Halisi minara 150gm pc ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.953Z"
+  },
+  {
+    "id": "c957409e-37bf-41d5-8e00-4996cb6cd110",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Halisi minara 70g ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.966Z"
+  },
+  {
+    "id": "f374b7f1-2fb1-44f0-8ab8-3922074d1613",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Sayona Tunda 300mls ina stock chini (2 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.979Z"
+  },
+  {
+    "id": "75f62b7f-2c67-4340-ab16-a42f8b3559f0",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Twist lemon ina stock chini (4 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:48.990Z"
+  },
+  {
+    "id": "54fe7c43-ce0d-44dc-84f5-69446094353b",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Twist Tangawizi ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.004Z"
+  },
+  {
+    "id": "3f82a0df-1098-4e15-9b86-631ce1db850e",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "AFYA APPLE PUNCH 300MLS ina stock chini (15 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.016Z"
+  },
+  {
+    "id": "8fa1c408-95bf-4d05-9b52-d58155af1f40",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Afya tangawizi ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.029Z"
+  },
+  {
+    "id": "c5d35385-20d9-40cf-9184-9b393c0869dd",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "jamaaa ctn ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.040Z"
+  },
+  {
+    "id": "22d74ed1-fd7c-4244-99d7-c70ea7593c04",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "tomato paste ps ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.054Z"
+  },
+  {
+    "id": "211df96c-beae-4a4a-9176-93db07161a49",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "tomato paste ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.066Z"
+  },
+  {
+    "id": "dd09d3f4-5dd6-438f-b625-107b1f4b10cf",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Marhaba 400g ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.079Z"
+  },
+  {
+    "id": "5257b8c5-57a8-446d-a49d-872b20747403",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "KING LIMAU 15KG ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.090Z"
+  },
+  {
+    "id": "3006b273-c82b-4037-be28-71a91245132b",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Nice one 500g ina stock chini (1 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.103Z"
+  },
+  {
+    "id": "a68715f2-b081-49f2-9757-2af0a1a543ac",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Neet 180g ina stock chini (2 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.116Z"
+  },
+  {
+    "id": "b20ae43d-be92-410e-b4d0-07389236a140",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "KISS KID PANT 8/9 CTN ina stock chini (1 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.129Z"
+  },
+  {
+    "id": "5d9fc50b-013f-49ae-b472-7edec1c862c7",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "mo simba ngano ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.142Z"
+  },
+  {
+    "id": "0b28a021-10b8-4b93-9d4f-7d756fdaf160",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "MO-taifa 400g ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.154Z"
+  },
+  {
+    "id": "6682ea58-f57c-413a-9f44-bf973027bd70",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "MAHINDI YA KANDE 25KG ina stock chini (3 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.166Z"
+  },
+  {
+    "id": "1d3701da-0ca5-4e47-a6c6-2413e945c57a",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Fumo olive CTN ina stock chini (5 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.178Z"
+  },
+  {
+    "id": "7026f2f4-c0b9-42dc-999d-ef0ca183ebc6",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "CANYE UDI AUTER ina stock chini (0 pack). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.190Z"
+  },
+  {
+    "id": "09cbf721-c3d8-4086-9c06-1ab569993918",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "MINARA OG ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.203Z"
+  },
+  {
+    "id": "5aade1c9-0cbf-47ce-a1a1-f70727e2323c",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "PIP CHOCULATE BOX TEMBOS CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.215Z"
+  },
+  {
+    "id": "db1694fe-e4a8-4957-a9a6-7af4a40508aa",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "KANGAROO KIWI CTN ina stock chini (3 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.230Z"
+  },
+  {
+    "id": "6db439e4-6dd4-4c91-9c14-02ea487ec421",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "PIP CHOCULATE TIKTOK CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.243Z"
+  },
+  {
+    "id": "75cea5c5-25ee-4707-8470-2cec34ed42a8",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "RIMU DOBO CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.255Z"
+  },
+  {
+    "id": "7f99475b-f6a7-4583-8355-332e9ed1ddf7",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "PIP MILK  YA 100 CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.267Z"
+  },
+  {
+    "id": "a6f6c256-6962-4c4b-a027-316f4b06d7d7",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "BIG BOM CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.280Z"
+  },
+  {
+    "id": "fe1aab28-567f-4f4f-b55f-f2a7ffe3f910",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "FAMILY CARE 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.292Z"
+  },
+  {
+    "id": "48ffc6f8-2194-484e-b525-c3f3c241cf23",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "FAMILY CARE 100G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.304Z"
+  },
+  {
+    "id": "306dbd80-877e-4427-adef-248ebadeee57",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "VESTLINE HERBAL 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.316Z"
+  },
+  {
+    "id": "3d73341f-13a4-4fd0-959a-6cc1b4a22949",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "HABIB 50GCTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.329Z"
+  },
+  {
+    "id": "ecea551e-213a-4202-822d-b026602ce5fb",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "VESTILINE GARLIC 100GCTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.343Z"
+  },
+  {
+    "id": "9c72c177-d5b4-4c36-b4b0-0602fcc0d861",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "VESTILINE COCO 100G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.355Z"
+  },
+  {
+    "id": "1006ecf6-3505-4efd-8c2d-2a28ae8b29dd",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "B/CARE 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.368Z"
+  },
+  {
+    "id": "37518d95-32f8-48c6-97aa-80fea7d7bd75",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "VESTILINE COCO 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.381Z"
+  },
+  {
+    "id": "7c03bd4c-7a96-43b4-ab42-5850235ba9e9",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "PODA 100G  CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.393Z"
+  },
+  {
+    "id": "65bbf895-b81e-4052-8db9-bd0c746b7a0c",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "PODA 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.404Z"
+  },
+  {
+    "id": "25e79214-179a-4898-9724-b36a03a96f36",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "ASHES 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.417Z"
+  },
+  {
+    "id": "8bedc0e9-57ee-46c4-9179-e739a69d8134",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "COCOABUTTER 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.429Z"
+  },
+  {
+    "id": "ac6d81ea-5d0f-4669-8151-db48155bf16f",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "BOSS 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.441Z"
+  },
+  {
+    "id": "3e54c804-b093-4f29-8204-8ddb9b4871d1",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "AFROCARE 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.455Z"
+  },
+  {
+    "id": "4e516615-35a8-4fb4-b10f-119403316103",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "SCALLA 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.467Z"
+  },
+  {
+    "id": "a7d1c2b4-538f-4f44-8185-c0e3108bc06a",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "BODY LUX 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.479Z"
+  },
+  {
+    "id": "13431d48-0252-4035-b670-21992ced5cc8",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "VESTILINE HERBAL 100GCTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.491Z"
+  },
+  {
+    "id": "3973cf64-6c89-432f-97ab-fd517c97f52a",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "HABIB 100GCTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.503Z"
+  },
+  {
+    "id": "608fb801-a2b8-4e4f-ad45-7491e4365bdc",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "UBUYU PC ina stock chini (9 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.515Z"
+  },
+  {
+    "id": "7972b7f3-4aab-4efc-9097-44e76b0833f3",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "ASHES 100G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.527Z"
+  },
+  {
+    "id": "f2903bee-4e25-45b3-a903-ea9d305dbf6b",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "SCALLA 100G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.538Z"
+  },
+  {
+    "id": "41f23d02-5e72-4099-87c7-bd66e9225ae9",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "BODY LUX 50G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.551Z"
+  },
+  {
+    "id": "09a04ea7-7ad3-4402-9856-480e7e9708b9",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "BODY LUX 100G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.565Z"
+  },
+  {
+    "id": "7e8f94f0-0a5b-457c-ad48-3f86076d4940",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "ASHES 25G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.577Z"
+  },
+  {
+    "id": "b4e4720c-3c17-4456-aed0-27d768e7d629",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "AFROCARE 25G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.589Z"
+  },
+  {
+    "id": "8158616c-8ce4-4691-aa5b-669489823d7e",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "SCALLA25G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.601Z"
+  },
+  {
+    "id": "20cb4008-1f6b-4203-b06a-2237f5eb84ed",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "FAMILY CARE 25G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.614Z"
+  },
+  {
+    "id": "11a01903-e5b0-443f-adbf-b80b7692ddf6",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "HABIB 25G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.627Z"
+  },
+  {
+    "id": "1a513841-a48e-44c1-90c2-f5130878ea13",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "VESTLINE 25G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.638Z"
+  },
+  {
+    "id": "068721ed-6858-4202-87b5-a7a41fe7fcc5",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "BOSS 25G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.650Z"
+  },
+  {
+    "id": "e4224a83-adcd-44b6-b248-04c3b4e733a1",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "BODY LUX 25G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.662Z"
+  },
+  {
+    "id": "f9c47604-b5e4-47ea-bed5-bd55f4002a4b",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "VESTILINE COCO 25G CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.677Z"
+  },
+  {
+    "id": "59f0be37-6318-432f-9c59-133f9f14a26f",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "rungu wembe ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.688Z"
+  },
+  {
+    "id": "526a8b5a-2091-4379-a48e-33b7636df303",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "hit wembe pc ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.700Z"
+  },
+  {
+    "id": "e731949d-3df0-4abc-81d0-0d67d25aabda",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "cocoabuter 200g ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.713Z"
+  },
+  {
+    "id": "84e27607-433c-46a6-ae65-eb4e994afb74",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "family care 200g ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.725Z"
+  },
+  {
+    "id": "aaf39e0a-df77-487d-b5b1-16847e7bf633",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "pip kifua tropical ctn ina stock chini (2 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.736Z"
+  },
+  {
+    "id": "98ee7441-815c-4c7b-9306-876fefbe2f38",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "shenke vidonge ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.748Z"
+  },
+  {
+    "id": "5779812a-61b2-4489-8d4d-618fe3b803b8",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "peni blue auta ina stock chini (2 pack). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.761Z"
+  },
+  {
+    "id": "9e4f5925-abe6-4ee4-b163-c647245d03c1",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "pip min cup choculate ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.773Z"
+  },
+  {
+    "id": "0445d558-efbb-4497-bd54-7d3782bbb41b",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "bigboss ctn ina stock chini (5 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.787Z"
+  },
+  {
+    "id": "ea5b9601-5aea-424e-8393-24cec40a88ec",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "karata ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.799Z"
+  },
+  {
+    "id": "4963dc69-cec3-4705-8d32-e90d19560f44",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "shampoo pt auta ina stock chini (0 pack). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.811Z"
+  },
+  {
+    "id": "41fc543f-59ea-4760-9802-9d694fe623c3",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "toss 5090g ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.823Z"
+  },
+  {
+    "id": "cb228136-059d-4ea9-8a4b-4a09c28440ec",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "freestyle KUBWA ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.835Z"
+  },
+  {
+    "id": "9a7f228e-e3f6-4c74-8658-fbe38307985e",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "pip chungwa ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.848Z"
+  },
+  {
+    "id": "977cc7e9-5b43-4bbb-bf3b-dd69688bd96a",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "SINGIDA 3LT CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.860Z"
+  },
+  {
+    "id": "ab6800f6-0170-4a7c-93da-e90aff653086",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "GOMBA CTN ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.871Z"
+  },
+  {
+    "id": "26fb77f0-d1e2-4e89-8e70-6c04012cf5f1",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "JOY POP 50 Ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.883Z"
+  },
+  {
+    "id": "64fe19b0-3c57-4332-8c53-3703efc9e5d9",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "doff ya blue /NJANO/PINK 500g ctn ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.898Z"
+  },
+  {
+    "id": "3328918b-7468-4b4d-99de-9782c81fc026",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "DR.S SOAP CTN ina stock chini (13 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.910Z"
+  },
+  {
+    "id": "186f93b4-33e7-49b8-8115-8ee88fc0f324",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "HIT 850MLS ina stock chini (3 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.922Z"
+  },
+  {
+    "id": "7360ea1c-25cd-4f30-b0a0-8e36b580ab35",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "FREESTYLE NDOGO ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.934Z"
+  },
+  {
+    "id": "7d4861f4-ffcb-415e-b12d-8b64c62b3720",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "SOFT CARE M12X12 CTN ina stock chini (4 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.947Z"
+  },
+  {
+    "id": "ecb9b551-a3e1-4fba-ad37-b79c0b5bdfe5",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "KISS KID PANTS 40/42 PC ina stock chini (5 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.959Z"
+  },
+  {
+    "id": "006cb7be-65bf-4834-98fe-39e03c819983",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "AMIRA PAN CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.971Z"
+  },
+  {
+    "id": "648fdb4d-749d-4364-b9ff-96ae48e99ece",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "sunsan 1lt ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.982Z"
+  },
+  {
+    "id": "360ddd9e-9c78-4e1b-b113-9962691d5e2d",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "MY GIRL [8] PS ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:49.995Z"
+  },
+  {
+    "id": "469d9df7-3c58-4781-a936-3885153cd675",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "KISSKID DIAPER 40/42 PC ina stock chini (1 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.010Z"
+  },
+  {
+    "id": "6d72bb43-4071-498c-ab98-bf7905f4e628",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "NICE ONE 160G ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.021Z"
+  },
+  {
+    "id": "118f1fb5-e22e-4110-9c9b-511d059aef14",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "AZANIA NDOO 20LT ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.034Z"
+  },
+  {
+    "id": "47a0a3ff-17bf-4315-95eb-10eae73f3acd",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "NDALLA DZ ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.047Z"
+  },
+  {
+    "id": "028b34f3-8209-49ee-a423-17f269de477b",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "IVORY CTN ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.060Z"
+  },
+  {
+    "id": "755e45d2-164d-4b45-a386-72a348e5561b",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "PEPSI 600MLS ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.071Z"
+  },
+  {
+    "id": "e12639aa-69af-4059-a115-03722b2fbb83",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "PEPSI MAX ina stock chini (0 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.083Z"
+  },
+  {
+    "id": "33abc7fc-2d92-4aed-b994-3bb0e629e664",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "SOFT CARE PADY 10 PS ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.096Z"
+  },
+  {
+    "id": "7baf961d-0654-4efb-8c96-3408bd38aa2c",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "MO SOAP CTN ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.108Z"
+  },
+  {
+    "id": "d28992a6-2d17-4fc7-b329-23360cc39232",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "MABUYUZII ina stock chini (1 carton). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.121Z"
+  },
+  {
+    "id": "e357d04d-3380-454f-9711-874d89177aca",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "LAVENDA 160G ina stock chini (6 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.133Z"
+  },
+  {
+    "id": "a2eae2a2-22d2-4fb0-8317-e8a5c6f79d98",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "TAMBI YA ASILI 30kg ina stock chini (0 kg). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.146Z"
+  },
+  {
+    "id": "893dfbdc-07e9-4820-b346-3f207a6a63a5",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "EMBE CHUNGA 300MLS ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.158Z"
+  },
+  {
+    "id": "a152fcc3-ccbd-4139-a653-b65c92346331",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Barakael lucas ina stock chini (0 pcs). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.170Z"
+  },
+  {
+    "id": "322c5b65-620d-49cb-b481-d277f86ace33",
+    "type": "low_stock",
+    "title": "Low Stock Alert",
+    "message": "Barakael lucas ina stock chini (0 kg). Tafadhali agiza zaidi.",
+    "targetRole": "storekeeper",
+    "branchId": "all",
+    "read": false,
+    "createdAt": "2026-03-31T07:29:50.181Z"
   }
 ]
