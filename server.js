@@ -4,6 +4,7 @@
  * Port: 40000
  */
 
+require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
@@ -48,11 +49,11 @@ app.use(session({
         ttl: 86400, // 24 hours
         reapInterval: 3600 // Clean up expired sessions every hour
     }),
-    secret: 'duka-jumla-secret-key-2024',
+    secret: process.env.SESSION_SECRET || 'haslim-dev-secret-change-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: false,
+        secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         sameSite: 'lax'
@@ -175,50 +176,47 @@ function initializeDatabase() {
     });
 }
 
-// Database helper functions
-function readDB(file) {
-    try {
-        const data = fs.readFileSync(file, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error(`Error reading ${file}:`, error);
-        // If file is corrupted, try to recover by checking if file exists and has content
+// ==================== IN-MEMORY CACHE ====================
+const dbCache = new Map();
+
+function preloadCache() {
+    Object.values(dbFiles).forEach(file => {
         if (fs.existsSync(file)) {
-            const stats = fs.statSync(file);
-            if (stats.size > 0) {
-                console.error(`⚠️  WARNING: ${file} appears to be corrupted (${stats.size} bytes). Data may be lost.`);
+            try {
+                dbCache.set(file, JSON.parse(fs.readFileSync(file, 'utf8')));
+            } catch (e) {
+                dbCache.set(file, []);
             }
         }
+    });
+    console.log('✅ Database loaded into memory cache.');
+}
+
+// Database helper functions
+function readDB(file) {
+    if (dbCache.has(file)) return dbCache.get(file);
+    try {
+        const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+        dbCache.set(file, data);
+        return data;
+    } catch (error) {
+        console.error(`Error reading ${file}:`, error);
         return [];
     }
 }
 
 function writeDB(file, data) {
+    dbCache.set(file, data); // Update in-memory cache immediately
     try {
-        // Use atomic write: write to temp file first, then rename
-        // This prevents corruption if write fails mid-way (e.g., disk full)
         const tempFile = file + '.tmp';
-        const jsonData = JSON.stringify(data, null, 2);
-        
-        // Write to temp file
-        fs.writeFileSync(tempFile, jsonData, 'utf8');
-        
-        // Atomically rename temp file to actual file
+        fs.writeFileSync(tempFile, JSON.stringify(data), 'utf8'); // No pretty-print for speed
         fs.renameSync(tempFile, file);
-        
         return true;
     } catch (error) {
-        // Clean up temp file if it exists
         const tempFile = file + '.tmp';
         if (fs.existsSync(tempFile)) {
-            try {
-                fs.unlinkSync(tempFile);
-            } catch (unlinkError) {
-                // Ignore cleanup errors
-            }
+            try { fs.unlinkSync(tempFile); } catch (e) {}
         }
-        
-        // Check for disk space errors
         if (error.code === 'ENOSPC') {
             console.error(`❌ DISK FULL: Cannot write to ${file}. Please free up disk space!`);
         } else {
@@ -240,6 +238,8 @@ function logActivity(userId, action, details, ipAddress) {
         timestamp: new Date().toISOString()
     };
     logs.push(entry);
+    // Trim log to last 2000 entries to prevent unbounded growth
+    if (logs.length > 2000) logs.splice(0, logs.length - 2000);
     writeDB(dbFiles.activityLogs, logs);
     
     // Also print to terminal for live monitoring
@@ -326,8 +326,13 @@ function hasRole(...roles) {
 
 // Initialize database
 initializeDatabase();
+preloadCache(); // Load all data into memory for fast reads
 
 // ==================== ROUTES ====================
+
+// Serve Bootstrap and Bootstrap Icons locally (no CDN dependency)
+app.use('/vendor/bootstrap', express.static(path.join(__dirname, 'node_modules/bootstrap/dist')));
+app.use('/vendor/bootstrap-icons', express.static(path.join(__dirname, 'node_modules/bootstrap-icons/font')));
 
 // Serve main pages
 app.get('/', (req, res) => {
@@ -505,7 +510,7 @@ app.delete('/api/users/:id', isAuthenticated, hasRole('admin'), (req, res) => {
         return res.json({ success: false, message: 'Nenosiri la admin linahitajika' });
     }
     
-    const users = readDB(dbFiles.users);
+    let users = readDB(dbFiles.users);
     
     // Verify admin password
     const adminUser = users.find(u => u.id === req.session.user.id && u.role === 'admin');
@@ -900,7 +905,7 @@ app.delete('/api/suppliers/:id', isAuthenticated, hasRole('admin'), (req, res) =
     }
     
     const users = readDB(dbFiles.users);
-    const suppliers = readDB(dbFiles.suppliers);
+    let suppliers = readDB(dbFiles.suppliers);
     
     // Verify admin password
     const adminUser = users.find(u => u.id === req.session.user.id && u.role === 'admin');
@@ -924,7 +929,7 @@ app.delete('/api/suppliers/:id', isAuthenticated, hasRole('admin'), (req, res) =
 
 // API: Purchases
 app.get('/api/purchases', isAuthenticated, (req, res) => {
-    const { supplierId, startDate, endDate } = req.query;
+    const { supplierId, startDate, endDate, page, limit } = req.query;
     let purchases = readDB(dbFiles.purchases);
     const suppliers = readDB(dbFiles.suppliers);
     const products = readDB(dbFiles.products);
@@ -959,7 +964,19 @@ app.get('/api/purchases', isAuthenticated, (req, res) => {
             items: enrichedItems
         };
     });
-    
+
+    // Sort newest first
+    enrichedPurchases.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Pagination
+    const pageNum = parseInt(page) || 0;
+    if (pageNum > 0) {
+        const limitNum = Math.min(parseInt(limit) || 50, 200);
+        const total = enrichedPurchases.length;
+        const paginated = enrichedPurchases.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+        return res.json({ success: true, data: paginated, total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) });
+    }
+
     res.json({ success: true, data: enrichedPurchases });
 });
 
@@ -1276,7 +1293,7 @@ app.get('/api/customers/:id/statement', isAuthenticated, (req, res) => {
 
 // API: Sales
 app.get('/api/sales', isAuthenticated, (req, res) => {
-    const { startDate, endDate, cashierId, branchId } = req.query;
+    const { startDate, endDate, cashierId, branchId, page, limit } = req.query;
     let sales = readDB(dbFiles.sales);
     const users = readDB(dbFiles.users);
     const customers = readDB(dbFiles.customers);
@@ -1329,6 +1346,15 @@ app.get('/api/sales', isAuthenticated, (req, res) => {
         const dateB = new Date(b.completedAt || b.verifiedAt || b.createdAt);
         return dateB - dateA;
     });
+
+    // Pagination (only applied when ?page is provided; omit for full export/filter use)
+    const pageNum = parseInt(page) || 0;
+    if (pageNum > 0) {
+        const limitNum = Math.min(parseInt(limit) || 50, 200);
+        const total = enrichedSales.length;
+        const paginated = enrichedSales.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+        return res.json({ success: true, data: paginated, total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) });
+    }
     
     res.json({ success: true, data: enrichedSales });
 });
@@ -2106,7 +2132,12 @@ app.get('/api/activity-logs', isAuthenticated, hasRole('admin'), (req, res) => {
     // Sort by date, newest first
     enriched.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
-    res.json({ success: true, data: enriched.slice(0, 500) });
+    // Pagination for activity logs (default page 1, limit 100)
+    const pageNum = parseInt(req.query.page) || 1;
+    const limitNum = Math.min(parseInt(req.query.limit) || 100, 500);
+    const total = enriched.length;
+    const paginated = enriched.slice((pageNum - 1) * limitNum, pageNum * limitNum);
+    res.json({ success: true, data: paginated, total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) });
 });
 
 // API: Settings

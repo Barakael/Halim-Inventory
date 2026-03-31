@@ -24,6 +24,44 @@ let allCategories = [];
 let allStock = [];
 let allExpenses = [];
 
+// Pagination state
+let salesCurrentPage = 1;
+let salesTotalPages = 1;
+let purchasesCurrentPage = 1;
+let purchasesTotalPages = 1;
+const PAGE_LIMIT = 50;
+
+// Pagination callback registry — avoids embedding function source in onclick attributes
+const _paginationCallbacks = {};
+
+function renderPagination(containerId, currentPg, totalPgs, onPageChange) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (totalPgs <= 1) { container.innerHTML = ''; return; }
+    // Store callback by container id so onclick can retrieve it cleanly
+    _paginationCallbacks[containerId] = onPageChange;
+    const prevDisabled = currentPg <= 1 ? 'disabled' : '';
+    const nextDisabled = currentPg >= totalPgs ? 'disabled' : '';
+    container.innerHTML = `
+        <nav aria-label="Pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item ${prevDisabled}">
+                    <button class="page-link" onclick="_paginationCallbacks['${containerId}'](${currentPg - 1})" ${prevDisabled}>
+                        <i class="bi bi-chevron-left"></i> Nyuma
+                    </button>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Ukurasa ${currentPg} / ${totalPgs}</span>
+                </li>
+                <li class="page-item ${nextDisabled}">
+                    <button class="page-link" onclick="_paginationCallbacks['${containerId}'](${currentPg + 1})" ${nextDisabled}>
+                        Mbele <i class="bi bi-chevron-right"></i>
+                    </button>
+                </li>
+            </ul>
+        </nav>`;
+}
+
 // Minimal Bootstrap Modal fallback so system works even if
 // Bootstrap JS CDN is not available (e.g. fully offline use).
 if (typeof window !== 'undefined' && typeof window.bootstrap === 'undefined') {
@@ -1550,23 +1588,23 @@ async function deleteCustomer(id) {
 // =========================
 // SALES
 // =========================
-async function loadSales() {
+async function loadSales(page = 1) {
+    salesCurrentPage = page;
     const startDate = document.getElementById('salesStartDate')?.value;
     const endDate = document.getElementById('salesEndDate')?.value;
     
-    let url = '/api/sales';
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ page, limit: PAGE_LIMIT });
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
-    if (params.toString()) url += '?' + params.toString();
     
-    const result = await api(url);
+    const result = await api('/api/sales?' + params.toString());
     if (!result.success) return;
     
-    const sales = result.data || [];
-    allSales = [...sales]; // Store original data for search
+    allSales = result.data || [];
+    salesTotalPages = result.pages || 1;
     
     renderSalesTable();
+    renderPagination('salesPagination', salesCurrentPage, salesTotalPages, loadSales);
 }
 
 function filterSalesTable() {
@@ -2925,29 +2963,27 @@ async function completeSale() {
 // =========================
 let purchaseItems = [];
 
-async function loadPurchases() {
+async function loadPurchases(page = 1) {
+    purchasesCurrentPage = page;
     const startDate = document.getElementById('purchasesStartDate')?.value;
     const endDate = document.getElementById('purchasesEndDate')?.value;
     
-    let url = '/api/purchases';
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ page, limit: PAGE_LIMIT });
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
-    if (params.toString()) {
-        url += '?' + params.toString();
-    }
     
-    const result = await api(url);
+    const result = await api('/api/purchases?' + params.toString());
     if (!result.success) return;
     
     // Load suppliers and products for purchase modal dropdowns
     await loadSuppliers();
     await loadProducts();
     
-    const purchases = result.data || [];
-    allPurchases = [...purchases]; // Store original data for search
+    allPurchases = result.data || [];
+    purchasesTotalPages = result.pages || 1;
     
     renderPurchasesTable();
+    renderPagination('purchasesPagination', purchasesCurrentPage, purchasesTotalPages, loadPurchases);
 }
 
 function filterPurchasesTable() {
