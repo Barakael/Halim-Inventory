@@ -1,0 +1,15 @@
+[
+  {
+    "id": "2d8bb9dc-f06f-4f16-898a-38978579cadd",
+    "username": "admin",
+    "password": "$2a$10$k28i9oTjIwzlKc7ZxQko8.OTUGlEsaZezzbrri3Fft3Ldl244o1ba",
+    "fullName": "System Administrator",
+    "email": "admin@haslimgroup.co.tz",
+    "phone": "+255712345678",
+    "role": "admin",
+    "branchId": "main",
+    "status": "active",
+    "createdAt": "2025-12-21T15:00:03.931Z",
+    "lastLogin": "2026-01-03T14:15:14.536Z"
+  }
+]

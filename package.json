@@ -1,0 +1,37 @@
+{
+  "name": "haslim-group-inventory-system",
+  "version": "1.0.0",
+  "description": "HASLIM GROUP LIMITED - Inventory Management System for Wholesale Food & Beverage Store",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build:linux": "pkg server.js --targets node18-linux-x64 --output haslim-inventory",
+    "build:all": "pkg server.js --targets node18-linux-x64,node18-win-x64 --output haslim-inventory"
+  },
+  "keywords": [
+    "inventory",
+    "wholesale",
+    "retail",
+    "pos",
+    "stock-management"
+  ],
+  "author": "RafikiAI",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "bwip-js": "^4.1.1",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "moment": "^2.29.4",
+    "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.14.0",
+    "qrcode": "^1.5.3",
+    "session-file-store": "^1.5.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11",
+    "pkg": "^5.8.1"
+  }
+}

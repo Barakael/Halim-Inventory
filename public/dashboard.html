@@ -1,0 +1,2426 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HASLIM GROUP - Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay"></div>
+    
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo"><i class="bi bi-shop"></i></div>
+            <h1>HASLIM GROUP</h1>
+            <small style="opacity: 0.7; font-size: 0.7rem;">LIMITED</small>
+        </div>
+        
+        <div class="sidebar-menu">
+            <div class="menu-category">MENU KUU</div>
+            <a class="menu-item" href="/dashboard" data-page="dashboard">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+            <a class="menu-item" href="/pos" data-page="pos" data-role="admin,cashier,reception">
+                <i class="bi bi-cart3"></i>
+                <span>Point of Sale</span>
+            </a>
+            <a class="menu-item" href="/ongoing-orders" data-page="ongoing-orders" style="display: none;">
+                <i class="bi bi-list-ul"></i>
+                <span>Agizo za Endelea</span>
+            </a>
+            <a class="menu-item" href="/pending-orders" data-page="pending-orders" data-role="admin,cashier" style="display: none;">
+                <i class="bi bi-hourglass-split"></i>
+                <span>Agizo za Kuthibitisha</span>
+            </a>
+            <a class="menu-item" href="/store-orders" data-page="store-orders" data-role="admin,store_viewer" style="display: none;">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Agizo za Stoo</span>
+            </a>
+            
+            <div class="menu-category">BIDHAA</div>
+            <a class="menu-item" href="/products" data-page="products" data-role="admin,storekeeper">
+                <i class="bi bi-box-seam"></i>
+                <span>Bidhaa</span>
+            </a>
+            <a class="menu-item" href="/categories" data-page="categories" data-role="admin,storekeeper">
+                <i class="bi bi-tags"></i>
+                <span>Kategoria</span>
+            </a>
+            <a class="menu-item" href="/stock" data-page="stock" data-role="admin,storekeeper">
+                <i class="bi bi-boxes"></i>
+                <span>Stoo</span>
+            </a>
+            
+            <div class="menu-category">MAUZO</div>
+            <a class="menu-item" href="/sales" data-page="sales">
+                <i class="bi bi-receipt"></i>
+                <span>Mauzo</span>
+            </a>
+            <a class="menu-item" href="/customers" data-page="customers">
+                <i class="bi bi-people"></i>
+                <span>Wateja</span>
+            </a>
+            <a class="menu-item" href="/credits" data-page="credits" data-role="admin,cashier,storekeeper">
+                <i class="bi bi-credit-card"></i>
+                <span>Madeni</span>
+            </a>
+            
+            <div class="menu-category">MANUNUZI</div>
+            <a class="menu-item" href="/purchases" data-page="purchases" data-role="admin,storekeeper">
+                <i class="bi bi-truck"></i>
+                <span>Manunuzi</span>
+            </a>
+            <a class="menu-item" href="/suppliers" data-page="suppliers" data-role="admin,storekeeper">
+                <i class="bi bi-building"></i>
+                <span>Wasambazaji</span>
+            </a>
+            
+            <div class="menu-category">FEDHA</div>
+            <a class="menu-item" href="/expenses" data-page="expenses" data-role="admin">
+                <i class="bi bi-wallet2"></i>
+                <span>Matumizi</span>
+            </a>
+            <a class="menu-item" href="/reports" data-page="reports" data-role="admin">
+                <i class="bi bi-graph-up"></i>
+                <span>Ripoti</span>
+            </a>
+            
+            <div class="menu-category">MIPANGILIO</div>
+            <a class="menu-item" href="/branches" data-page="branches" data-role="admin">
+                <i class="bi bi-diagram-3"></i>
+                <span>Matawi</span>
+            </a>
+            <a class="menu-item" href="/users" data-page="users" data-role="admin">
+                <i class="bi bi-person-gear"></i>
+                <span>Watumiaji</span>
+            </a>
+            <a class="menu-item" href="/logs" data-page="logs" data-role="admin">
+                <i class="bi bi-journal-text"></i>
+                <span>Activity Logs</span>
+            </a>
+            <a class="menu-item" href="/settings" data-page="settings" data-role="admin">
+                <i class="bi bi-gear"></i>
+                <span>Mipangilio</span>
+            </a>
+            <a class="menu-item" href="/docs" data-page="docs" data-role="admin">
+                <i class="bi bi-book"></i>
+                <span>Mwongozo</span>
+            </a>
+            <a class="menu-item" href="/my-guide" data-page="my-guide" style="display: none;">
+                <i class="bi bi-book"></i>
+                <span>Mwongozo</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <button class="toggle-sidebar">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h2 class="page-title">Dashboard</h2>
+            </div>
+            
+            <div class="header-right">
+                <button class="notification-btn" id="notificationBtn">
+                    <i class="bi bi-bell"></i>
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                </button>
+                
+                <div class="dropdown user-dropdown">
+                    <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <div class="user-avatar">A</div>
+                        <div class="user-info">
+                            <div class="user-name">Admin</div>
+                            <div class="user-role">Msimamizi</div>
+                        </div>
+                        <i class="bi bi-chevron-down ms-2"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/settings"><i class="bi bi-gear me-2"></i>Mipangilio</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" id="btnLogout"><i class="bi bi-box-arrow-right me-2"></i>Toka</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Notification Panel -->
+        <div class="notification-panel" id="notificationPanel">
+            <div class="notification-panel-header">
+                <h6 class="mb-0">Arifa</h6>
+                <button class="btn btn-sm btn-link" onclick="loadNotifications()">Refresh</button>
+            </div>
+            <div class="notification-list" id="notificationList">
+                <p class="text-muted text-center p-4">Hakuna arifa</p>
+            </div>
+        </div>
+        
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Dashboard Page -->
+            <section class="page-section" id="page-dashboard">
+                <div class="row g-4 mb-4">
+                    <div class="col-6 col-sm-6 col-xl-3" id="todayRevenueCard">
+                        <div class="stat-card">
+                            <div class="icon blue"><i class="bi bi-cash-stack"></i></div>
+                            <div class="stat-content">
+                                <div class="value" id="todayRevenue">0 TZS</div>
+                                <div class="label">Mapato ya Leo</div>
+                                <div class="trend up"><span id="todayTransactions">0</span> trans</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-6 col-xl-3" id="weekRevenueCard">
+                        <div class="stat-card">
+                            <div class="icon green"><i class="bi bi-graph-up-arrow"></i></div>
+                            <div class="stat-content">
+                                <div class="value" id="weekRevenue">0 TZS</div>
+                                <div class="label">Mapato ya Wiki</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-6 col-xl-3" id="monthRevenueCard">
+                        <div class="stat-card">
+                            <div class="icon blue"><i class="bi bi-calendar-month"></i></div>
+                            <div class="stat-content">
+                                <div class="value" id="monthRevenue">0 TZS</div>
+                                <div class="label">Mapato Mwezi</div>
+                                <div class="trend up">Faida: <span id="monthProfit">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-6 col-xl-3">
+                        <div class="stat-card">
+                            <div class="icon red"><i class="bi bi-exclamation-triangle"></i></div>
+                            <div class="stat-content">
+                                <div class="value" id="lowStockCount">0</div>
+                                <div class="label">Low Stock</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-4 mb-4">
+                    <div class="col-12 col-xl-4" id="debtsCard">
+                        <div class="stat-card">
+                            <div class="icon yellow"><i class="bi bi-people"></i></div>
+                            <div class="stat-content">
+                                <div class="value" id="totalDebts">0 TZS</div>
+                                <div class="label">Jumla ya Madeni</div>
+                                <div class="trend"><span id="debtorsCount">0</span> wanadaiwa</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-xl-8" id="topProductsCard">
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <h5><i class="bi bi-trophy me-2"></i>Bidhaa Zinazouzwa Zaidi</h5>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr id="topProductsHeader">
+                                            <th>#</th>
+                                            <th>Bidhaa</th>
+                                            <th>Idadi</th>
+                                            <th class="revenue-column">Mapato</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="topProductsList"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-4">
+                    <div class="col-12 col-lg-6">
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <h5><i class="bi bi-exclamation-triangle text-warning me-2"></i>Low Stock Alerts</h5>
+                            </div>
+                            <div class="data-card-body p-3" id="lowStockList"></div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <h5><i class="bi bi-clock-history text-danger me-2"></i>Expiry Alerts</h5>
+                            </div>
+                            <div class="data-card-body p-3" id="expiryList"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- POS Page -->
+            <section class="page-section" id="page-pos">
+                <div class="pos-container">
+                    <div class="pos-products">
+                        <div class="data-card-header">
+                            <div class="search-box flex-grow-1">
+                                <i class="bi bi-search"></i>
+                                <input type="text" class="form-control" placeholder="Tafuta bidhaa..." id="posSearchProduct">
+                            </div>
+                        </div>
+                        <div class="product-grid" id="posProductGrid"></div>
+                    </div>
+                    
+                    <div class="pos-cart">
+                        <div class="cart-header">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0"><i class="bi bi-cart3 me-2"></i>Kikapu <span class="badge bg-primary" id="cartCount">0</span></h5>
+                                <button class="btn btn-sm btn-danger" onclick="clearCart()"><i class="bi bi-trash"></i></button>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <select class="form-select form-select-sm" id="posSaleType" onchange="renderCart()">
+                                        <option value="retail">Rejareja</option>
+                                        <option value="wholesale">Jumla</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <input type="hidden" id="posCustomer" value="">
+                                    <div class="position-relative">
+                                        <input type="text" 
+                                               class="form-control form-control-sm" 
+                                               id="posCustomerSearch" 
+                                               placeholder="Tafuta mteja..." 
+                                               autocomplete="off"
+                                               oninput="filterPOSCustomers(this.value)"
+                                               onfocus="showPOSCustomerList()"
+                                               onblur="setTimeout(() => hidePOSCustomerList(), 300)">
+                                        <div id="posCustomerList" class="dropdown-menu w-100" style="display: none; max-height: 300px; overflow-y: auto; position: absolute; z-index: 1050; margin-top: 2px;">
+                                            <!-- Customer list will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="cart-items" id="cartItems">
+                            <p class="text-muted text-center p-4">Hakuna bidhaa kwenye kikapu</p>
+                        </div>
+                        
+                        <div class="cart-footer">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small">Discount:</span>
+                                <input type="number" class="form-control form-control-sm" style="width: 90px; height: 28px; font-size: 0.85rem;" id="posDiscount" value="0" onchange="renderCart()">
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold">JUMLA:</span>
+                                <span class="cart-total" id="cartTotal">0 TZS</span>
+                            </div>
+                            <div class="d-flex gap-2 mb-2">
+                                <select class="form-select form-select-sm" id="posPaymentMethod">
+                                    <option value="cash">Cash</option>
+                                    <option value="mpesa">M-Pesa</option>
+                                    <option value="airtel">Airtel Money</option>
+                                    <option value="tigo">Tigo Pesa</option>
+                                    <option value="bank">Bank Transfer</option>
+                                </select>
+                            </div>
+                            <div class="form-check mb-2" id="posCreditCheckContainer">
+                                <input class="form-check-input" type="checkbox" id="posIsCredit">
+                                <label class="form-check-label small" for="posIsCredit">Mauzo ya Mkopo</label>
+                            </div>
+                            <div class="form-check mb-2" id="posCreditRequestContainer" style="display: none;">
+                                <input class="form-check-input" type="checkbox" id="posCreditRequest">
+                                <label class="form-check-label small" for="posCreditRequest">Ombi la Mkopo (mteja anataka mkopo)</label>
+                            </div>
+                            <button class="btn btn-primary w-100 py-2" onclick="completeSale()">
+                                <i class="bi bi-check-circle me-2"></i>Maliza Mauzo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Products Page -->
+            <section class="page-section" id="page-products">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-box-seam me-2"></i>Orodha ya Bidhaa</h5>
+                        <button class="btn btn-primary" onclick="showAddProductModal()">
+                            <i class="bi bi-plus-lg me-2"></i>Ongeza Bidhaa
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="productsSearchInput" placeholder="Tafuta bidhaa kwa jina, SKU, au kategoria..." oninput="filterProductsTable()">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Jina</th>
+                                    <th>Kategoria</th>
+                                    <th>Bei Jumla</th>
+                                    <th>Bei Rejareja</th>
+                                    <th>Kipimo</th>
+                                    <th>Stock</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Categories Page -->
+            <section class="page-section" id="page-categories">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-tags me-2"></i>Kategoria</h5>
+                        <button class="btn btn-primary" onclick="showAddCategoryModal()">
+                            <i class="bi bi-plus-lg me-2"></i>Ongeza Kategoria
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="categoriesSearchInput" placeholder="Tafuta kategoria kwa jina au maelezo..." oninput="filterCategoriesTable()">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Jina</th>
+                                    <th>Maelezo</th>
+                                    <th>Hali</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoriesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Stock Page -->
+            <section class="page-section" id="page-stock">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-boxes me-2"></i>Usimamizi wa Stoo</h5>
+                        <button class="btn btn-primary" onclick="showStockInModal()">
+                            <i class="bi bi-plus-lg me-2"></i>Stock In
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="stockSearchInput" placeholder="Tafuta stoo kwa jina la bidhaa..." oninput="filterStockTable()">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Bidhaa</th>
+                                    <th>Kiasi</th>
+                                    <th>Batches</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stockTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Sales Page -->
+            <section class="page-section" id="page-sales">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-receipt me-2"></i>Historia ya Mauzo</h5>
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <input type="date" class="form-control form-control-sm" id="salesStartDate">
+                            <span>-</span>
+                            <input type="date" class="form-control form-control-sm" id="salesEndDate">
+                            <button class="btn btn-sm btn-primary" onclick="loadSales()">Filter</button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="salesSearchInput" placeholder="Tafuta kwa risiti, mteja, au tarehe..." oninput="filterSalesTable()">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Risiti</th>
+                                    <th>Tarehe</th>
+                                    <th>Mteja</th>
+                                    <th>Bidhaa</th>
+                                    <th>Jumla</th>
+                                    <th>Malipo</th>
+                                    <th>Hali</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Customers Page -->
+            <section class="page-section" id="page-customers">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-people me-2"></i>Wateja</h5>
+                        <button class="btn btn-primary" onclick="showAddCustomerModal()">
+                            <i class="bi bi-plus-lg me-2"></i>Ongeza Mteja
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="customersSearchInput" placeholder="Tafuta mteja kwa jina, biashara, au simu..." oninput="filterCustomersTable()">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Jina</th>
+                                    <th>Biashara</th>
+                                    <th>Aina</th>
+                                    <th>Simu</th>
+                                    <th>Deni</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Credits Page -->
+            <section class="page-section" id="page-credits">
+                <div id="creditsLoanAlert" class="alert alert-warning d-none mb-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <span id="creditsLoanAlertText"></span>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-credit-card me-2"></i>Madeni ya Wateja</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Risiti</th>
+                                    <th>Mteja</th>
+                                    <th>Jumla</th>
+                                    <th>Alipolipa</th>
+                                    <th>Baki</th>
+                                    <th>Due Date</th>
+                                    <th>Hali</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="creditsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Suppliers Page -->
+            <section class="page-section" id="page-suppliers">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-building me-2"></i>Wasambazaji</h5>
+                        <button class="btn btn-primary" onclick="showAddSupplierModal()">
+                            <i class="bi bi-plus-lg me-2"></i>Ongeza Msambazaji
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="suppliersSearchInput" placeholder="Tafuta msambazaji kwa jina, simu, au email..." oninput="filterSuppliersTable()">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Jina</th>
+                                    <th>Mwasiliani</th>
+                                    <th>Simu</th>
+                                    <th>Email</th>
+                                    <th>Deni</th>
+                                    <th>Hali</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="suppliersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Purchases Page -->
+            <section class="page-section" id="page-purchases">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-truck me-2"></i>Manunuzi</h5>
+                        <button class="btn btn-primary" onclick="showPurchaseModal()">
+                            <i class="bi bi-plus-lg me-2"></i>Purchase Order
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-3">
+                                <label class="form-label small">Tarehe ya Kuanza</label>
+                                <input type="date" class="form-control form-control-sm" id="purchasesStartDate">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Tarehe ya Mwisho</label>
+                                <input type="date" class="form-control form-control-sm" id="purchasesEndDate">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-sm btn-primary w-100" onclick="loadPurchases()">
+                                    <i class="bi bi-funnel me-1"></i>Filter
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">Tafuta</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="purchasesSearchInput" placeholder="Tafuta kwa invoice, msambazaji..." oninput="filterPurchasesTable()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Tarehe</th>
+                                    <th>Msambazaji</th>
+                                    <th>Jumla</th>
+                                    <th>Aina ya Malipo</th>
+                                    <th>Njia ya Malipo</th>
+                                    <th>Hali</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="purchasesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Pending Orders Page (Cashier) -->
+            <section class="page-section" id="page-pending-orders">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-hourglass-split me-2"></i>Agizo za Kuthibitisha</h5>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group input-group-sm" style="max-width: 400px;">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="pendingOrdersSearchInput" placeholder="Tafuta kwa namba ya risiti, mteja..." oninput="filterPendingOrdersTable()">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Tarehe</th>
+                                    <th>Namba ya Risiti</th>
+                                    <th>Mteja</th>
+                                    <th>Aina</th>
+                                    <th>Jumla</th>
+                                    <th>Receptionist</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingOrdersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Ongoing Orders Page (All roles except store_viewer) -->
+            <section class="page-section" id="page-ongoing-orders">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-list-ul me-2"></i>Agizo za Endelea</h5>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group input-group-sm" style="max-width: 400px;">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="ongoingOrdersSearchInput" placeholder="Tafuta kwa namba ya risiti, mteja..." oninput="filterOngoingOrdersTable()">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Tarehe</th>
+                                    <th>Namba ya Risiti</th>
+                                    <th>Mteja</th>
+                                    <th>Aina</th>
+                                    <th>Hali</th>
+                                    <th>Jumla</th>
+                                    <th>Reception</th>
+                                    <th>Cashier</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ongoingOrdersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Store Orders Page (Store Viewer) -->
+            <section class="page-section" id="page-store-orders">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-box-arrow-right me-2"></i>Agizo za Stoo</h5>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group input-group-sm" style="max-width: 400px;">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="storeOrdersSearchInput" placeholder="Tafuta kwa namba ya risiti, mteja..." oninput="filterStoreOrdersTable()">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Tarehe</th>
+                                    <th>Namba ya Risiti</th>
+                                    <th>Mteja</th>
+                                    <th>Aina</th>
+                                    <th>Jumla</th>
+                                    <th>Cashier</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="storeOrdersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Expenses Page -->
+            <section class="page-section" id="page-expenses">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-wallet2 me-2"></i>Matumizi</h5>
+                        <button class="btn btn-primary" onclick="showAddExpenseModal()">
+                            <i class="bi bi-plus-lg me-2"></i>Ongeza Matumizi
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-3">
+                                <label class="form-label small">Tarehe ya Kuanza</label>
+                                <input type="date" class="form-control form-control-sm" id="expensesStartDate">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Tarehe ya Mwisho</label>
+                                <input type="date" class="form-control form-control-sm" id="expensesEndDate">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-sm btn-primary w-100" onclick="loadExpenses()">
+                                    <i class="bi bi-funnel me-1"></i>Filter
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small">Tafuta</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="expensesSearchInput" placeholder="Tafuta kwa kategoria, maelezo..." oninput="filterExpensesTable()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Tarehe</th>
+                                    <th>Kategoria</th>
+                                    <th>Maelezo</th>
+                                    <th>Kiasi</th>
+                                    <th>Malipo</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expensesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Reports Page -->
+            <section class="page-section" id="page-reports">
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <h5><i class="bi bi-graph-up me-2"></i>Ripoti</h5>
+                                <div class="d-flex gap-2 align-items-center flex-wrap">
+                                    <input type="date" class="form-control form-control-sm" id="reportStartDate">
+                                    <span>-</span>
+                                    <input type="date" class="form-control form-control-sm" id="reportEndDate">
+                                    <select class="form-select form-select-sm" id="reportSupplierFilter" style="width: auto;">
+                                        <option value="">Msambazaji Wote</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-primary" onclick="loadSalesReport()">Generate</button>
+                                </div>
+                            </div>
+                            <div class="data-card-body p-4">
+                                <div class="row g-4 mb-4">
+                                    <div class="col-md-4">
+                                        <div class="stat-card">
+                                            <div class="label">Jumla ya Mapato</div>
+                                            <div class="value" id="reportTotalRevenue">0 TZS</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="stat-card">
+                                            <div class="label">Transactions</div>
+                                            <div class="value" id="reportTotalTransactions">0</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="stat-card">
+                                            <div class="label">Average per Transaction</div>
+                                            <div class="value" id="reportAvgTransaction">0 TZS</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <ul class="nav nav-tabs mb-4">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" href="#" onclick="event.preventDefault(); loadSalesReport(); return false;" id="salesReportTab">Mauzo</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#" onclick="event.preventDefault(); loadPurchaseReport(); return false;" id="purchaseReportTab">Manunuzi</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#" onclick="event.preventDefault(); loadProfitLossReport(); return false;" id="profitLossReportTab">Faida/Hasara</a>
+                                    </li>
+                                </ul>
+                                
+                                <div id="purchaseReport" style="display: none;"></div>
+                                <div id="profitLossReport" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Branches Page -->
+            <section class="page-section" id="page-branches">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-diagram-3 me-2"></i>Matawi</h5>
+                        <button class="btn btn-primary" onclick="showAddBranchModal()">
+                            <i class="bi bi-plus-lg me-2"></i>Ongeza Tawi
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Jina</th>
+                                    <th>Anwani</th>
+                                    <th>Simu</th>
+                                    <th>Email</th>
+                                    <th>Hali</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="branchesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Users Page -->
+            <section class="page-section" id="page-users">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-person-gear me-2"></i>Watumiaji</h5>
+                        <button class="btn btn-primary" onclick="showAddUserModal()">
+                            <i class="bi bi-plus-lg me-2"></i>Ongeza Mtumiaji
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="usersSearchInput" placeholder="Tafuta mtumiaji kwa username, jina, au email..." oninput="filterUsersTable()">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Jina Kamili</th>
+                                    <th>Email</th>
+                                    <th>Simu</th>
+                                    <th>Role</th>
+                                    <th>Hali</th>
+                                    <th>Last Login</th>
+                                    <th>Vitendo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Activity Logs Page -->
+            <section class="page-section" id="page-logs">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-journal-text me-2"></i>Activity Logs</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Muda</th>
+                                    <th>Mtumiaji</th>
+                                    <th>Kitendo</th>
+                                    <th>Maelezo</th>
+                                    <th>IP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Role-Specific Documentation Page -->
+            <section class="page-section" id="page-my-guide">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-journal-text me-2"></i>Mwongozo</h5>
+                    </div>
+                    <div class="data-card-body p-4" id="roleGuideContent">
+                        <div class="text-center text-muted">
+                            <i class="bi bi-hourglass-split" style="font-size: 3rem;"></i>
+                            <p class="mt-3">Inapakia mwongozo...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Documentation Page -->
+            <section class="page-section" id="page-docs">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-book me-2"></i>Mwongozo wa Kutumia Mfumo (User Guide)</h5>
+                    </div>
+                    <div class="data-card-body p-4">
+                        <div class="row">
+                            <div class="col-lg-3 mb-4">
+                                <div class="nav flex-column nav-pills" id="docs-tab" role="tablist">
+                                    <button class="nav-link active text-start" data-bs-toggle="pill" data-bs-target="#docs-intro">
+                                        <i class="bi bi-house me-2"></i>Utangulizi
+                                    </button>
+                                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#docs-users">
+                                        <i class="bi bi-people me-2"></i>Watumiaji & Roles
+                                    </button>
+                                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#docs-products">
+                                        <i class="bi bi-box-seam me-2"></i>Bidhaa & Kategoria
+                                    </button>
+                                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#docs-stock">
+                                        <i class="bi bi-boxes me-2"></i>Usimamizi wa Stoo
+                                    </button>
+                                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#docs-pos">
+                                        <i class="bi bi-cart3 me-2"></i>Point of Sale
+                                    </button>
+                                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#docs-sales">
+                                        <i class="bi bi-receipt me-2"></i>Mauzo & Madeni
+                                    </button>
+                                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#docs-purchases">
+                                        <i class="bi bi-truck me-2"></i>Manunuzi
+                                    </button>
+                                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#docs-reports">
+                                        <i class="bi bi-graph-up me-2"></i>Ripoti
+                                    </button>
+                                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#docs-settings">
+                                        <i class="bi bi-gear me-2"></i>Mipangilio
+                                    </button>
+                                    <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#docs-api">
+                                        <i class="bi bi-code-slash me-2"></i>API Reference
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-lg-9">
+                                <div class="tab-content" id="docs-tabContent">
+                                    <!-- Introduction -->
+                                    <div class="tab-pane fade show active" id="docs-intro">
+                                        <h4 class="text-primary mb-4"><i class="bi bi-shop me-2"></i>HASLIM GROUP LIMITED - Inventory Management System</h4>
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            <strong>Karibu!</strong> Huu ni mfumo kamili wa kusimamia duka la jumla la vyakula na vinywaji.
+                                        </div>
+                                        
+                                        <h5 class="mt-4">📋 Features Kuu:</h5>
+                                        <div class="row g-3 mt-2">
+                                            <div class="col-md-6">
+                                                <div class="border rounded p-3">
+                                                    <h6><i class="bi bi-people text-primary me-2"></i>User Management</h6>
+                                                    <p class="small text-muted mb-0">Ongeza wafanyakazi, wape roles, fuatilia login/logout</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="border rounded p-3">
+                                                    <h6><i class="bi bi-box-seam text-primary me-2"></i>Product Management</h6>
+                                                    <p class="small text-muted mb-0">Sajili bidhaa, bei ya jumla/rejareja, expiry dates</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="border rounded p-3">
+                                                    <h6><i class="bi bi-cart3 text-primary me-2"></i>Point of Sale</h6>
+                                                    <p class="small text-muted mb-0">Uza bidhaa, chapisha risiti, malipo mbalimbali</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="border rounded p-3">
+                                                    <h6><i class="bi bi-graph-up text-primary me-2"></i>Reports & Analytics</h6>
+                                                    <p class="small text-muted mb-0">Ripoti za mauzo, faida, madeni, na zaidi</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <h5 class="mt-4">🔐 Login ya Kwanza:</h5>
+                                        <table class="table table-bordered">
+                                            <tr><th>Username:</th><td><code>admin</code></td></tr>
+                                            <tr><th>Password:</th><td><code>admin123</code></td></tr>
+                                        </table>
+                                        <div class="alert alert-warning">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>
+                                            <strong>Muhimu!</strong> Badilisha password ya admin mara tu unapoanza kutumia mfumo!
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Users & Roles -->
+                                    <div class="tab-pane fade" id="docs-users">
+                                        <h4 class="text-primary mb-4"><i class="bi bi-people me-2"></i>Watumiaji & Roles</h4>
+                                        
+                                        <h5>🔑 Roles Zilizopo:</h5>
+                                        <table class="table table-bordered">
+                                            <thead class="table-light">
+                                                <tr><th>Role</th><th>Maelezo</th><th>Haki</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><span class="badge bg-danger">Admin</span></td>
+                                                    <td>Msimamizi Mkuu</td>
+                                                    <td>Anaweza kufanya kila kitu - kuongeza watumiaji, bidhaa, ripoti, mipangilio</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="badge bg-primary">Cashier</span></td>
+                                                    <td>Karani wa Mauzo</td>
+                                                    <td>
+                                                        <strong>Point of Sale:</strong> Kufanya mauzo kamili, kukamilisha malipo<br>
+                                                        <strong>Agizo za Kuthibitisha:</strong> Kuthibitisha agizo za Reception, kuweka njia ya malipo<br>
+                                                        <strong>Ombi la Mkopo:</strong> Anaona agizo zilizo na ombi la mkopo, anaweza kukubali au kukataa<br>
+                                                        <strong>Mauzo:</strong> Kuona historia ya mauzo, risiti, kutazama wateja
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="badge bg-success">Storekeeper</span></td>
+                                                    <td>Mhifadhi Stoo</td>
+                                                    <td>Bidhaa, stoo, manunuzi, wasambazaji, kategoria</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="badge bg-info">Reception</span></td>
+                                                    <td>Reception</td>
+                                                    <td>
+                                                        <strong>Point of Sale:</strong> Kujaza agizo tu, kuwasilisha kwa Cashier<br>
+                                                        <strong>Ombi la Mkopo:</strong> Anaweza kuweka agizo kama ombi la mkopo (mteja anataka mkopo)<br>
+                                                        <strong>Haiwezi:</strong> Kufanya mauzo ya mkopo moja kwa moja, kukamilisha mauzo, kutoa stock<br>
+                                                        <strong>Agizo:</strong> Status yake itakuwa "pending_verification" mpaka Cashier athibitishe
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="badge bg-warning">Store Viewer</span></td>
+                                                    <td>Mwangaliaji Stoo</td>
+                                                    <td>
+                                                        <strong>Agizo za Stoo:</strong> Kuona agizo zote zilizothibitishwa na Cashier<br>
+                                                        <strong>Kazi:</strong> Kupanga bidhaa, kumtoa mteja, kukamilisha agizo<br>
+                                                        <strong>Haiwezi:</strong> Kuona agizo zisizothibitishwa, kufanya mauzo
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        
+                                        <h5 class="mt-4">📝 Kuongeza Mtumiaji Mpya:</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Watumiaji</strong> → <strong>Ongeza Mtumiaji</strong></li>
+                                            <li>Jaza username (jina la kuingia)</li>
+                                            <li>Weka password salama</li>
+                                            <li>Jaza jina kamili, email, simu</li>
+                                            <li>Chagua <strong>Role</strong> (Admin/Cashier/Storekeeper/Reception/Store Viewer)</li>
+                                            <li>Chagua <strong>Tawi</strong> (Branch)</li>
+                                            <li>Bonyeza <strong>Hifadhi</strong></li>
+                                        </ol>
+                                        
+                                        <h5 class="mt-4">⚙️ Kubadilisha Mtumiaji:</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Watumiaji</strong></li>
+                                            <li>Bonyeza <i class="bi bi-pencil text-primary"></i> kwenye mtumiaji</li>
+                                            <li>Badilisha taarifa unazotaka</li>
+                                            <li>Weka password mpya (au acha wazi kubaki ile ile)</li>
+                                            <li>Bonyeza <strong>Hifadhi</strong></li>
+                                        </ol>
+                                    </div>
+                                    
+                                    <!-- Products & Categories -->
+                                    <div class="tab-pane fade" id="docs-products">
+                                        <h4 class="text-primary mb-4"><i class="bi bi-box-seam me-2"></i>Bidhaa & Kategoria</h4>
+                                        
+                                        <h5>📦 Kuongeza Bidhaa Mpya:</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Bidhaa</strong> → <strong>Ongeza Bidhaa</strong></li>
+                                            <li>Jaza maelezo yafuatayo:
+                                                <ul>
+                                                    <li><strong>Jina la Bidhaa</strong> - Mfano: "Pepsi Cola 500ml"</li>
+                                                    <li><strong>Kategoria</strong> - Chagua kutoka orodha</li>
+                                                    <li><strong>SKU</strong> - Nambari ya kipekee (auto-generated kama umeacha)</li>
+                                                    <li><strong>Barcode</strong> - Nambari ya barcode</li>
+                                                    <li><strong>Bei ya Jumla</strong> - Bei kwa wateja wa jumla</li>
+                                                    <li><strong>Bei ya Rejareja</strong> - Bei kwa wateja wa rejareja</li>
+                                                    <li><strong>Kipimo</strong> - pcs, kg, carton, crate, etc.</li>
+                                                    <li><strong>Minimum Stock</strong> - Kiwango cha chini kabla ya alert</li>
+                                                </ul>
+                                            </li>
+                                            <li>Bonyeza <strong>Hifadhi</strong></li>
+                                        </ol>
+                                        
+                                        <h5 class="mt-4">🏷️ Kategoria:</h5>
+                                        <p>Kategoria husaidia kupanga bidhaa. Mifano:</p>
+                                        <ul>
+                                            <li>Vinywaji (Beverages) - Soda, juisi, maji</li>
+                                            <li>Nafaka (Grains) - Mchele, unga, mahindi</li>
+                                            <li>Mafuta (Oils) - Mafuta ya kupikia</li>
+                                            <li>Sukari (Sugar)</li>
+                                            <li>Maziwa (Dairy)</li>
+                                        </ul>
+                                        
+                                        <div class="alert alert-info mt-3">
+                                            <i class="bi bi-lightbulb me-2"></i>
+                                            <strong>Tip:</strong> Bei ya Jumla inapaswa kuwa chini kuliko Bei ya Rejareja ili kupata faida!
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Stock Management -->
+                                    <div class="tab-pane fade" id="docs-stock">
+                                        <h4 class="text-primary mb-4"><i class="bi bi-boxes me-2"></i>Usimamizi wa Stoo</h4>
+                                        
+                                        <h5>📥 Stock In (Kupokea Mzigo):</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Stoo</strong> → <strong>Stock In</strong></li>
+                                            <li>Chagua bidhaa</li>
+                                            <li>Weka kiasi (quantity)</li>
+                                            <li>Weka batch number (mfano: BATCH-001)</li>
+                                            <li>Weka expiry date (tarehe ya kuisha)</li>
+                                            <li>Weka cost price (bei ya kununua)</li>
+                                            <li>Bonyeza <strong>Hifadhi</strong></li>
+                                        </ol>
+                                        
+                                        <h5 class="mt-4">📤 Stock Out:</h5>
+                                        <p>Stock inapungua automatically bidhaa zinapouzwa kupitia POS.</p>
+                                        
+                                        <h5 class="mt-4">🔄 Stock Adjustment:</h5>
+                                        <p>Kama stock halisi tofauti na mfumo (hasara, inventory count):</p>
+                                        <ol>
+                                            <li>Bonyeza <i class="bi bi-arrow-repeat text-warning"></i> kwenye bidhaa</li>
+                                            <li>Weka kiasi halisi kilichopo</li>
+                                            <li>Weka sababu ya adjustment</li>
+                                            <li>Bonyeza <strong>Hifadhi</strong></li>
+                                        </ol>
+                                        
+                                        <h5 class="mt-4">⚠️ Alerts:</h5>
+                                        <ul>
+                                            <li><span class="badge bg-warning text-dark">Low Stock</span> - Bidhaa zilizo chini ya minimum</li>
+                                            <li><span class="badge bg-danger">Expiry</span> - Bidhaa zinazokaribia kuisha (30 siku)</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- Point of Sale -->
+                                    <div class="tab-pane fade" id="docs-pos">
+                                        <h4 class="text-primary mb-4"><i class="bi bi-cart3 me-2"></i>Point of Sale (POS)</h4>
+                                        
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            <strong>Utaratibu wa Agizo (Order Workflow):</strong><br>
+                                            1. <strong>Reception</strong> → Atafanya agizo na kuwasilisha kwa Cashier<br>
+                                            2. <strong>Cashier</strong> → Atathibitisha agizo, aweke njia ya malipo, na kukamilisha malipo<br>
+                                            3. <strong>Store Viewer</strong> → Ataona agizo zilizothibitishwa, atatoa bidhaa kwa mteja, na kukamilisha agizo
+                                        </div>
+                                        
+                                        <h5>🛒 Kufanya Mauzo (kwa Admin/Cashier):</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Point of Sale</strong></li>
+                                            <li>Bonyeza bidhaa kuiongeza kwenye kikapu</li>
+                                            <li>Tumia <strong>+</strong> / <strong>-</strong> au andika idadi moja kwa moja kubadilisha idadi</li>
+                                            <li>Chagua aina ya mauzo:
+                                                <ul>
+                                                    <li><strong>Rejareja</strong> - Bei ya juu</li>
+                                                    <li><strong>Jumla</strong> - Bei ya chini</li>
+                                                </ul>
+                                            </li>
+                                            <li>Chagua mteja (au acha "Walk-in Customer")</li>
+                                            <li>Weka discount kama ipo</li>
+                                            <li>Chagua njia ya malipo (Cash, M-Pesa, Bank, etc.)</li>
+                                            <li>Kama ni mkopo, weka ✓ kwenye "Mauzo ya Mkopo"</li>
+                                            <li>Bonyeza <strong>Maliza Mauzo</strong></li>
+                                            <li>Stock hupunguzwa mara moja na mauzo yanakamilika</li>
+                                        </ol>
+                                        
+                                        <h5 class="mt-4">👤 Kufanya Agizo (kwa Reception):</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Point of Sale</strong></li>
+                                            <li>Bonyeza bidhaa kuiongeza kwenye kikapu</li>
+                                            <li>Tumia <strong>+</strong> / <strong>-</strong> au andika idadi moja kwa moja</li>
+                                            <li>Chagua aina ya mauzo (Rejareja au Jumla)</li>
+                                            <li>Chagua mteja (au acha "Walk-in Customer")</li>
+                                            <li>Weka discount kama ipo</li>
+                                            <li><strong>Ombi la Mkopo:</strong> Kama mteja anataka mkopo:
+                                                <ul>
+                                                    <li>Weka ✓ kwenye <strong>"Ombi la Mkopo (mteja anataka mkopo)"</strong></li>
+                                                    <li><strong>Lazima uchague mteja</strong> - hauwezi kuweka ombi la mkopo bila mteja</li>
+                                                    <li>Cashier ataona agizo kama "Ombi la Mkopo" na atathibitisha au kukataa</li>
+                                                </ul>
+                                            </li>
+                                            <li>Bonyeza <strong>Wasilisha Agizo</strong> (badala ya "Maliza Mauzo")</li>
+                                            <li>Agizo litakuwa na status "pending_verification"</li>
+                                            <li>Stock <strong>HAITAPUNGUKA</strong> mpaka Cashier athibitishe</li>
+                                            <li>Cashier atathibitisha, aweke njia ya malipo, na kukamilisha malipo</li>
+                                        </ol>
+                                        
+                                        <h5 class="mt-4">✅ Kuthibitisha Agizo (kwa Cashier):</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Agizo za Kuthibitisha</strong></li>
+                                            <li>Unaona orodha ya agizo zote zilizowasilishwa na Reception</li>
+                                            <li>Tumia search kutafuta agizo maalum</li>
+                                            <li>Angalia badges: Agizo zilizo na <span class="badge bg-warning">Ombi la Mkopo</span> zinaonyesha kuwa mteja anataka mkopo</li>
+                                            <li>Bonyeza <strong>Angalia</strong> <i class="bi bi-eye"></i> kuona maelezo kamili ya agizo</li>
+                                            <li>Bonyeza <strong>Thibitisha</strong> <i class="bi bi-check-circle"></i> kuthibitisha agizo</li>
+                                            <li><strong>Kwa Agizo za Ombi la Mkopo:</strong>
+                                                <ul>
+                                                    <li>Utauona alert box yenye ujumbe: "Ombi la Mkopo: Reception amewasilisha agizo hili kama ombi la mkopo. Mteja anataka mkopo."</li>
+                                                    <li>Checkbox ya "Mauzo ya Mkopo" itakuwa tayari imewekwa ✓</li>
+                                                    <li>Unaweza kukubali (acha ✓) au kukataa (ondoa ✓) kulingana na sera yako</li>
+                                                </ul>
+                                            </li>
+                                            <li>Chagua njia ya malipo (Cash, M-Pesa, Bank, Card)</li>
+                                            <li>Kama ni mkopo, weka ✓ kwenye "Mauzo ya Mkopo"</li>
+                                            <li>Bonyeza <strong>Thibitisha na Kamilisha</strong></li>
+                                            <li>Stock itapunguzwa na agizo litakuwa "verified"</li>
+                                            <li>Agizo litaonekana kwa Store Viewer kwa ajili ya utoaji</li>
+                                        </ol>
+                                        
+                                        <h5 class="mt-4">📦 Kukamilisha Agizo (kwa Store Viewer):</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Agizo za Stoo</strong></li>
+                                            <li>Unaona orodha ya agizo zote zilizothibitishwa na Cashier</li>
+                                            <li>Tumia search kutafuta agizo maalum</li>
+                                            <li>Bonyeza <strong>Angalia</strong> <i class="bi bi-eye"></i> kuona maelezo kamili</li>
+                                            <li>Panga bidhaa kulingana na agizo</li>
+                                            <li>Mpa mteja bidhaa zake</li>
+                                            <li>Bonyeza <strong>Kamilisha</strong> <i class="bi bi-check-circle"></i></li>
+                                            <li>Thibitisha kuwa mteja amepokea bidhaa zote</li>
+                                            <li>Agizo litakuwa "completed" na mteja anaweza kuondoka</li>
+                                        </ol>
+                                        
+                                        <h5 class="mt-4">🔍 Kutafuta Bidhaa:</h5>
+                                        <p>Andika jina, SKU, au barcode kwenye search box. Bidhaa zitaonyeshwa kwa wakati huo huo.</p>
+                                        
+                                        <h5 class="mt-4">🧾 Risiti:</h5>
+                                        <p>Baada ya mauzo yaliyokamilika (kwa Admin/Cashier), mfumo utauliza kama unataka kuchapisha risiti. Risiti ina:</p>
+                                        <ul>
+                                            <li>Jina la kampuni</li>
+                                            <li>Nambari ya risiti</li>
+                                            <li>Tarehe na muda</li>
+                                            <li>Orodha ya bidhaa</li>
+                                            <li>Jumla na discount</li>
+                                            <li>Njia ya malipo</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- Sales & Credits -->
+                                    <div class="tab-pane fade" id="docs-sales">
+                                        <h4 class="text-primary mb-4"><i class="bi bi-receipt me-2"></i>Mauzo & Madeni</h4>
+                                        
+                                        <h5>📊 Historia ya Mauzo:</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Mauzo</strong></li>
+                                            <li>Tumia filter ya tarehe kutazama kipindi maalum</li>
+                                            <li>Tumia search kutafuta mauzo maalum</li>
+                                            <li>Bonyeza <i class="bi bi-eye text-info"></i> kuona maelezo ya mauzo</li>
+                                            <li>Bonyeza <i class="bi bi-printer text-secondary"></i> kuchapisha risiti</li>
+                                        </ol>
+                                        
+                                        <h5 class="mt-4">🔄 Hali za Agizo (Order Status):</h5>
+                                        <table class="table table-bordered">
+                                            <thead class="table-light">
+                                                <tr><th>Hali</th><th>Maelezo</th><th>Mwenye Wajibu</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><span class="badge bg-warning">pending_verification</span></td>
+                                                    <td>Agizo limewasilishwa na Reception, bado haijathibitishwa</td>
+                                                    <td>Reception → Cashier</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="badge bg-info">verified</span></td>
+                                                    <td>Agizo limethibitishwa na Cashier, malipo yamekamilika, stock imepungua</td>
+                                                    <td>Cashier → Store Viewer</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><span class="badge bg-success">completed</span></td>
+                                                    <td>Agizo limekamilika, mteja amepokea bidhaa zote</td>
+                                                    <td>Store Viewer</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        
+                                        <h5 class="mt-4">💳 Madeni (Credit Sales):</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Madeni</strong></li>
+                                            <li>Unaona orodha ya wateja wanaodaiwa</li>
+                                            <li>Kupokea malipo: Bonyeza <i class="bi bi-cash text-success"></i></li>
+                                            <li>Weka kiasi kinachopokelewa</li>
+                                            <li>Chagua njia ya malipo</li>
+                                            <li>Bonyeza <strong>Pokea Malipo</strong></li>
+                                        </ol>
+                                        
+                                        <h5 class="mt-4">👤 Customer Statement:</h5>
+                                        <p>Kutazama historia kamili ya mteja:</p>
+                                        <ol>
+                                            <li>Nenda <strong>Wateja</strong></li>
+                                            <li>Bonyeza <i class="bi bi-file-text text-info"></i> kwenye mteja</li>
+                                            <li>Utaona: mauzo yote, malipo, na deni baki</li>
+                                        </ol>
+                                    </div>
+                                    
+                                    <!-- Purchases -->
+                                    <div class="tab-pane fade" id="docs-purchases">
+                                        <h4 class="text-primary mb-4"><i class="bi bi-truck me-2"></i>Manunuzi (Purchases)</h4>
+                                        
+                                        <h5>📦 Kutengeneza Purchase Order:</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Manunuzi</strong> → <strong>Purchase Order</strong></li>
+                                            <li>Chagua msambazaji (supplier)</li>
+                                            <li>Weka invoice number</li>
+                                            <li>Ongeza bidhaa moja kwa moja:
+                                                <ul>
+                                                    <li>Chagua bidhaa</li>
+                                                    <li>Weka quantity</li>
+                                                    <li>Weka cost price</li>
+                                                    <li>Weka batch number</li>
+                                                    <li>Weka expiry date</li>
+                                                    <li>Bonyeza <strong>+</strong></li>
+                                                </ul>
+                                            </li>
+                                            <li>Rudia kwa bidhaa zote</li>
+                                            <li>Bonyeza <strong>Hifadhi Purchase</strong></li>
+                                        </ol>
+                                        
+                                        <div class="alert alert-success">
+                                            <i class="bi bi-check-circle me-2"></i>
+                                            Baada ya kuhifadhi, stock itaongezwa automatically!
+                                        </div>
+                                        
+                                        <h5 class="mt-4">🏢 Wasambazaji:</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Wasambazaji</strong></li>
+                                            <li>Ongeza msambazaji na maelezo yake</li>
+                                            <li>Kila purchase inahusishwa na msambazaji</li>
+                                        </ol>
+                                    </div>
+                                    
+                                    <!-- Reports -->
+                                    <div class="tab-pane fade" id="docs-reports">
+                                        <h4 class="text-primary mb-4"><i class="bi bi-graph-up me-2"></i>Ripoti (Reports)</h4>
+                                        
+                                        <h5>📈 Aina za Ripoti:</h5>
+                                        <table class="table table-bordered">
+                                            <thead class="table-light">
+                                                <tr><th>Ripoti</th><th>Maelezo</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><strong>Sales Report</strong></td>
+                                                    <td>Mauzo ya kila siku, wiki, mwezi. Jumla ya mapato na transactions.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Profit & Loss</strong></td>
+                                                    <td>Mapato, gharama za bidhaa, matumizi, faida halisi.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Stock Report</strong></td>
+                                                    <td>Bidhaa zilizo stoo, value ya stoo, bidhaa low stock.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Debtors Report</strong></td>
+                                                    <td>Wateja wanaodaiwa, kiasi cha madeni, overdue.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        
+                                        <h5 class="mt-4">📅 Filters:</h5>
+                                        <ul>
+                                            <li>Chagua tarehe ya kuanzia na kuishia</li>
+                                            <li>Bonyeza <strong>Generate</strong> kutengeneza ripoti</li>
+                                        </ul>
+                                        
+                                        <h5 class="mt-4">📊 Dashboard:</h5>
+                                        <p>Dashboard inaonyesha:</p>
+                                        <ul>
+                                            <li>Mapato ya leo, wiki, mwezi</li>
+                                            <li>Faida ya mwezi</li>
+                                            <li>Bidhaa low stock</li>
+                                            <li>Jumla ya madeni</li>
+                                            <li>Bidhaa zinazouzwa zaidi</li>
+                                            <li>Expiry alerts</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <!-- Settings -->
+                                    <div class="tab-pane fade" id="docs-settings">
+                                        <h4 class="text-primary mb-4"><i class="bi bi-gear me-2"></i>Mipangilio (Settings)</h4>
+                                        
+                                        <h5>🏢 Company Settings:</h5>
+                                        <ul>
+                                            <li><strong>Jina la Kampuni</strong> - Linaonekana kwenye risiti</li>
+                                            <li><strong>Simu & Email</strong> - Mawasiliano</li>
+                                            <li><strong>Anwani</strong> - Mahali pa biashara</li>
+                                            <li><strong>Receipt Footer</strong> - Ujumbe chini ya risiti</li>
+                                        </ul>
+                                        
+                                        <h5 class="mt-4">⚙️ System Settings:</h5>
+                                        <ul>
+                                            <li><strong>Low Stock Threshold</strong> - Kiwango cha chini cha stock kabla ya alert (default: 10)</li>
+                                            <li><strong>Expiry Alert Days</strong> - Siku ngapi kabla ya expiry kutoa alert (default: 30)</li>
+                                            <li><strong>Tax Rate</strong> - Kiwango cha kodi (%)</li>
+                                        </ul>
+                                        
+                                        <h5 class="mt-4">💾 Backup:</h5>
+                                        <ol>
+                                            <li>Nenda <strong>Mipangilio</strong></li>
+                                            <li>Bonyeza <strong>Tengeneza Backup</strong></li>
+                                            <li>Backup inatengenezwa automatically</li>
+                                        </ol>
+                                        <div class="alert alert-warning">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>
+                                            <strong>Muhimu!</strong> Fanya backup mara kwa mara ili kulinda data yako!
+                                        </div>
+                                        
+                                        <h5 class="mt-4">🏢 Matawi (Branches):</h5>
+                                        <p>Kama una matawi mengi:</p>
+                                        <ol>
+                                            <li>Nenda <strong>Matawi</strong></li>
+                                            <li>Ongeza tawi jipya na maelezo yake</li>
+                                            <li>Weka wafanyakazi kwenye matawi yao</li>
+                                            <li>Stock inafuatiliwa kwa kila tawi</li>
+                                        </ol>
+                                    </div>
+                                    
+                                    <!-- API Reference -->
+                                    <div class="tab-pane fade" id="docs-api">
+                                        <h4 class="text-primary mb-4"><i class="bi bi-code-slash me-2"></i>API Reference</h4>
+                                        
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            API hii inaweza kutumika kuunganisha na systems nyingine.
+                                        </div>
+                                        
+                                        <h5>🔐 Authentication:</h5>
+                                        <pre class="bg-dark text-light p-3 rounded"><code>POST /api/auth/login
+Content-Type: application/json
+
+{
+    "username": "admin",
+    "password": "admin123"
+}</code></pre>
+                                        
+                                        <h5 class="mt-4">📦 Products:</h5>
+                                        <pre class="bg-dark text-light p-3 rounded"><code>GET    /api/products         # List all products
+POST   /api/products         # Create product
+PUT    /api/products/:id     # Update product
+DELETE /api/products/:id     # Delete product</code></pre>
+                                        
+                                        <h5 class="mt-4">📊 Sales:</h5>
+                                        <pre class="bg-dark text-light p-3 rounded"><code>GET    /api/sales            # List sales
+POST   /api/sales            # Create sale
+GET    /api/sales/:id/receipt # Get receipt PDF</code></pre>
+                                        
+                                        <h5 class="mt-4">📈 Reports:</h5>
+                                        <pre class="bg-dark text-light p-3 rounded"><code>GET /api/reports/sales?startDate=2024-01-01&endDate=2024-12-31
+GET /api/reports/profit-loss?startDate=2024-01-01&endDate=2024-12-31
+GET /api/reports/stock
+GET /api/reports/creditors-debtors</code></pre>
+                                        
+                                        <h5 class="mt-4">📊 Dashboard Stats:</h5>
+                                        <pre class="bg-dark text-light p-3 rounded"><code>GET /api/dashboard/stats</code></pre>
+                                        
+                                        <h5 class="mt-4">🔄 Other Endpoints:</h5>
+                                        <pre class="bg-dark text-light p-3 rounded"><code># Categories
+GET/POST/PUT/DELETE /api/categories
+
+# Stock
+GET  /api/stock
+POST /api/stock/in
+POST /api/stock/out
+POST /api/stock/adjust
+POST /api/stock/transfer
+
+# Customers
+GET/POST/PUT/DELETE /api/customers
+GET /api/customers/:id/statement
+
+# Suppliers
+GET/POST/PUT/DELETE /api/suppliers
+
+# Purchases
+GET/POST /api/purchases
+
+# Expenses
+GET/POST/PUT/DELETE /api/expenses
+
+# Credit Sales
+GET /api/credit-sales
+POST /api/credit-sales/:id/pay
+
+# Users (Admin only)
+GET/POST/PUT/DELETE /api/users
+
+# Branches
+GET/POST/PUT /api/branches
+
+# Settings
+GET/PUT /api/settings
+
+# Backup
+POST /api/backup
+GET  /api/backups
+POST /api/backup/restore/:name
+
+# Notifications
+GET /api/notifications
+PUT /api/notifications/:id/read
+
+# Activity Logs
+GET /api/activity-logs
+
+# Barcode
+GET /api/barcode/:code?type=barcode
+GET /api/barcode/:code?type=qr</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Settings Page -->
+            <section class="page-section" id="page-settings">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-8">
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <h5><i class="bi bi-gear me-2"></i>Mipangilio ya Mfumo</h5>
+                            </div>
+                            <div class="data-card-body p-4">
+                                <form id="settingsForm" onsubmit="event.preventDefault(); saveSettings();">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Jina la Kampuni</label>
+                                            <input type="text" class="form-control" id="settingCompanyName">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Simu</label>
+                                            <input type="text" class="form-control" id="settingCompanyPhone">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="settingCompanyEmail">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Currency</label>
+                                            <input type="text" class="form-control" id="settingCurrency" value="TZS">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Anwani</label>
+                                            <textarea class="form-control" id="settingCompanyAddress" rows="2"></textarea>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Low Stock Threshold</label>
+                                            <input type="number" class="form-control" id="settingLowStock" value="10">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Expiry Alert Days</label>
+                                            <input type="number" class="form-control" id="settingExpiryDays" value="30">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Onyo la Mkopo (Siku Kabla ya Tarehe ya Malipo)</label>
+                                            <input type="number" class="form-control" id="settingLoanLimitDays" value="7" title="Onyesha onyo siku ngapi kabla ya tarehe ya malipo ya mkopo">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Tax Rate (%)</label>
+                                            <input type="number" class="form-control" id="settingTaxRate" value="18">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Receipt Footer</label>
+                                            <textarea class="form-control" id="settingReceiptFooter" rows="2"></textarea>
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-check-lg me-2"></i>Hifadhi
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <h5><i class="bi bi-database me-2"></i>Backup</h5>
+                            </div>
+                            <div class="data-card-body p-4">
+                                <p class="text-muted mb-3">Tengeneza backup ya data yote ya mfumo.</p>
+                                <button class="btn btn-success w-100" onclick="createBackup()">
+                                    <i class="bi bi-cloud-download me-2"></i>Tengeneza Backup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <!-- Modals will be included separately -->
+    
+    <!-- Product Modal -->
+    <div class="modal fade" id="productModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productModalLabel">Ongeza Bidhaa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="productForm">
+                        <input type="hidden" id="productId">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Jina la Bidhaa *</label>
+                                <input type="text" class="form-control" id="productName" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Kategoria *</label>
+                                <select class="form-select" id="productCategory" name="categoryId" required></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">SKU</label>
+                                <input type="text" class="form-control" id="productSku" name="sku">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Barcode</label>
+                                <input type="text" class="form-control" id="productBarcode" name="barcode">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Bei ya Jumla (TZS) *</label>
+                                <input type="number" class="form-control" id="productWholesalePrice" name="wholesalePrice" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Bei ya Rejareja (TZS) *</label>
+                                <input type="number" class="form-control" id="productRetailPrice" name="retailPrice" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Kipimo</label>
+                                <select class="form-select" id="productUnit" name="unit">
+                                    <option value="pcs">Pieces (pcs)</option>
+                                    <option value="kg">Kilograms (kg)</option>
+                                    <option value="g">Grams (g)</option>
+                                    <option value="l">Liters (L)</option>
+                                    <option value="ml">Milliliters (ml)</option>
+                                    <option value="carton">Cartons</option>
+                                    <option value="crate">Crates</option>
+                                    <option value="dozen">Dozen</option>
+                                    <option value="pack">Packs</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Minimum Stock</label>
+                                <input type="number" class="form-control" id="productMinStock" name="minStock" value="10">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Msambazaji</label>
+                                <select class="form-select" id="productSupplier" name="supplierId"></select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Maelezo</label>
+                                <textarea class="form-control" id="productDescription" name="description" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="saveProduct()">Hifadhi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Category Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="categoryModalLabel">Ongeza Kategoria</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="categoryForm">
+                        <input type="hidden" id="categoryId">
+                        <div class="mb-3">
+                            <label class="form-label">Jina *</label>
+                            <input type="text" class="form-control" id="categoryName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Maelezo</label>
+                            <textarea class="form-control" id="categoryDescription" name="description" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hali</label>
+                            <select class="form-select" id="categoryStatus" name="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCategory()">Hifadhi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Supplier Modal -->
+    <div class="modal fade" id="supplierModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="supplierModalLabel">Ongeza Msambazaji</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="supplierForm">
+                        <input type="hidden" id="supplierId">
+                        <div class="mb-3">
+                            <label class="form-label">Jina la Kampuni *</label>
+                            <input type="text" class="form-control" id="supplierName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mwasiliani</label>
+                            <input type="text" class="form-control" id="supplierContact" name="contactPerson">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Simu</label>
+                            <input type="text" class="form-control" id="supplierPhone" name="phone">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="supplierEmail" name="email">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Anwani</label>
+                            <textarea class="form-control" id="supplierAddress" name="address" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">TIN/Tax ID</label>
+                            <input type="text" class="form-control" id="supplierTaxId" name="taxId">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hali</label>
+                            <select class="form-select" id="supplierStatus" name="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSupplier()">Hifadhi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Supplier Payment Modal -->
+    <div class="modal fade" id="supplierPaymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Lipia Deni la Msambazaji</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="supplierPaymentForm">
+                        <input type="hidden" id="supplierPaymentSupplierId">
+                        <div class="mb-3">
+                            <label class="form-label">Msambazaji</label>
+                            <input type="text" class="form-control" id="supplierPaymentSupplierName" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Deni la Sasa</label>
+                            <input type="text" class="form-control" id="supplierPaymentCurrentDebt" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kiasi cha Malipo *</label>
+                            <input type="number" class="form-control" id="supplierPaymentAmount" required min="1" step="0.01">
+                            <small class="text-muted">Ingiza kiasi unacholipa</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Njia ya Malipo *</label>
+                            <select class="form-select" id="supplierPaymentMethod" required onchange="handleSupplierPaymentMethodChange()">
+                                <option value="cash">Cash</option>
+                                <option value="bank">Bank Transfer</option>
+                                <option value="mpesa">M-Pesa</option>
+                                <option value="airtel">Airtel Money</option>
+                                <option value="tigo">Tigo Pesa</option>
+                                <option value="halopesa">Halo Pesa</option>
+                                <option value="other">Nyingine</option>
+                            </select>
+                            <input type="text" 
+                                   class="form-control mt-2" 
+                                   id="supplierPaymentMethodOther" 
+                                   placeholder="Andika njia ya malipo..." 
+                                   style="display: none;">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Reference Number</label>
+                            <input type="text" class="form-control" id="supplierPaymentReference" placeholder="Namba ya kumbukumbu">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Maelezo</label>
+                            <textarea class="form-control" id="supplierPaymentNotes" rows="2" placeholder="Maelezo ya ziada..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-success" onclick="saveSupplierPayment()">Ingiza Malipo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Customer Modal -->
+    <div class="modal fade" id="customerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customerModalLabel">Ongeza Mteja</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="customerForm">
+                        <input type="hidden" id="customerId">
+                        <div class="mb-3">
+                            <label class="form-label">Jina *</label>
+                            <input type="text" class="form-control" id="customerName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Jina la Biashara</label>
+                            <input type="text" class="form-control" id="customerBusiness" name="businessName">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Aina</label>
+                            <select class="form-select" id="customerType" name="type">
+                                <option value="retail">Rejareja</option>
+                                <option value="wholesale">Jumla</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Simu</label>
+                            <input type="text" class="form-control" id="customerPhone" name="phone">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="customerEmail" name="email">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Anwani</label>
+                            <textarea class="form-control" id="customerAddress" name="address" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Credit Limit (TZS)</label>
+                            <input type="number" class="form-control" id="customerCreditLimit" name="creditLimit" value="0">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCustomer()">Hifadhi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Expense Modal -->
+    <div class="modal fade" id="expenseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="expenseModalLabel">Ongeza Matumizi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="expenseForm">
+                        <input type="hidden" id="expenseId">
+                        <div class="mb-3">
+                            <label class="form-label">Kategoria *</label>
+                            <select class="form-select" id="expenseCategory" name="category" required>
+                                <option value="rent">Kodi</option>
+                                <option value="utilities">Umeme/Maji</option>
+                                <option value="salaries">Mishahara</option>
+                                <option value="transport">Usafiri</option>
+                                <option value="supplies">Vifaa</option>
+                                <option value="other">Mengine</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Maelezo *</label>
+                            <input type="text" class="form-control" id="expenseDescription" name="description" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kiasi (TZS) *</label>
+                            <input type="number" class="form-control" id="expenseAmount" name="amount" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tarehe</label>
+                            <input type="date" class="form-control" id="expenseDate" name="date">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Njia ya Malipo</label>
+                            <select class="form-select" id="expensePaymentMethod" name="paymentMethod">
+                                <option value="cash">Cash</option>
+                                <option value="mpesa">M-Pesa</option>
+                                <option value="bank">Bank</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="saveExpense()">Hifadhi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Ongeza Mtumiaji</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <input type="hidden" id="userId">
+                        <div class="mb-3">
+                            <label class="form-label">Username *</label>
+                            <input type="text" class="form-control" id="userUsername" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password *</label>
+                            <input type="password" class="form-control" id="userPassword" name="password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Jina Kamili *</label>
+                            <input type="text" class="form-control" id="userFullName" name="fullName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="userEmail" name="email">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Simu</label>
+                            <input type="text" class="form-control" id="userPhone" name="phone">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role *</label>
+                            <select class="form-select" id="userRole" name="role" required>
+                                <option value="admin">Msimamizi (Admin)</option>
+                                <option value="cashier">Karani (Cashier)</option>
+                                <option value="storekeeper">Mhifadhi Stoo (Storekeeper)</option>
+                                <option value="reception">Reception</option>
+                                <option value="store_viewer">Mwangaliaji Stoo (Store Viewer)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tawi</label>
+                            <select class="form-select" id="userBranch" name="branchId"></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hali</label>
+                            <select class="form-select" id="userStatus" name="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUser()">Hifadhi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Branch Modal -->
+    <div class="modal fade" id="branchModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="branchModalLabel">Ongeza Tawi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="branchForm">
+                        <input type="hidden" id="branchId">
+                        <div class="mb-3">
+                            <label class="form-label">Jina *</label>
+                            <input type="text" class="form-control" id="branchName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Anwani</label>
+                            <textarea class="form-control" id="branchAddress" name="address" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Simu</label>
+                            <input type="text" class="form-control" id="branchPhone" name="phone">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="branchEmail" name="email">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="saveBranch()">Hifadhi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stock In Modal -->
+    <div class="modal fade" id="stockInModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Stock In</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="stockInForm">
+                        <div class="mb-3">
+                            <label class="form-label">Bidhaa *</label>
+                            <input type="hidden" id="stockProductId" name="productId" required>
+                            <div class="position-relative">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="stockProductSearch" 
+                                       placeholder="Tafuta bidhaa kwa jina au SKU..." 
+                                       autocomplete="off"
+                                       oninput="filterStockInProducts(this.value)"
+                                       onfocus="showStockInProductList()"
+                                       onblur="setTimeout(() => hideStockInProductList(), 200)">
+                                <div id="stockInProductList" class="dropdown-menu w-100" style="display: none; max-height: 300px; overflow-y: auto; position: absolute; z-index: 1050; margin-top: 2px;">
+                                    <!-- Product list will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            <small class="text-muted">Anza kuandika jina la bidhaa ili kutafuta</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kiasi *</label>
+                            <input type="number" class="form-control" id="stockQuantity" name="quantity" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Batch Number</label>
+                            <input type="text" class="form-control" id="stockBatchNumber" name="batchNumber">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Expiry Date</label>
+                            <input type="date" class="form-control" id="stockExpiryDate" name="expiryDate">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cost Price (TZS)</label>
+                            <input type="number" class="form-control" id="stockCostPrice" name="costPrice">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="saveStockIn()">Hifadhi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Pokea Malipo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="paymentCreditId">
+                    <div class="mb-3">
+                        <label class="form-label">Kiasi (TZS) *</label>
+                        <input type="number" class="form-control" id="paymentAmount" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Njia ya Malipo</label>
+                        <select class="form-select" id="paymentMethod">
+                            <option value="cash">Cash</option>
+                            <option value="mpesa">M-Pesa</option>
+                            <option value="airtel">Airtel Money</option>
+                            <option value="tigo">Tigo Pesa</option>
+                            <option value="bank">Bank Transfer</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reference</label>
+                        <input type="text" class="form-control" id="paymentReference">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-success" onclick="savePayment()">Pokea Malipo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Purchase Modal -->
+    <div class="modal fade" id="purchaseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Purchase Order Mpya</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Msambazaji *</label>
+                            <select class="form-select" id="purchaseSupplier" required></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Invoice Number</label>
+                            <input type="text" class="form-control" id="purchaseInvoice" placeholder="PO-xxxxx">
+                        </div>
+                    </div>
+                    
+                    <h6>Ongeza Bidhaa</h6>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-3">
+                            <input type="hidden" id="purchaseProduct" value="">
+                            <div class="position-relative">
+                                <input type="text" 
+                                       class="form-control form-control-sm" 
+                                       id="purchaseProductSearch" 
+                                       placeholder="Tafuta bidhaa..." 
+                                       autocomplete="off"
+                                       oninput="filterPurchaseProducts(this.value)"
+                                       onfocus="showPurchaseProductList()"
+                                       onblur="setTimeout(() => hidePurchaseProductList(), 300)">
+                                <div id="purchaseProductList" class="dropdown-menu w-100" style="display: none; max-height: 300px; overflow-y: auto; position: absolute; z-index: 1050; margin-top: 2px;">
+                                    <!-- Product list will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" class="form-control form-control-sm" id="purchaseQty" placeholder="Qty">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" class="form-control form-control-sm" id="purchaseCostPrice" placeholder="Cost">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="text" class="form-control form-control-sm" id="purchaseBatch" placeholder="Batch">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" class="form-control form-control-sm" id="purchaseExpiry">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-sm btn-success w-100" onclick="addPurchaseItem()">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Bidhaa</th>
+                                    <th>Qty</th>
+                                    <th>Cost</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="purchaseItemsList"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">JUMLA:</td>
+                                    <td class="fw-bold" id="purchaseTotal">0 TZS</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Aina ya Malipo *</label>
+                            <select class="form-select" id="purchasePaymentType" required onchange="updatePurchasePaymentMethodVisibility()">
+                                <option value="cash">Cash (Nimelipa)</option>
+                                <option value="credit">Mkopo (Nimechukua kwa mkopo)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="purchasePaymentMethodContainer">
+                            <label class="form-label">Njia ya Malipo *</label>
+                            <select class="form-select" id="purchasePaymentMethod" onchange="handlePaymentMethodChange()">
+                                <option value="cash">Cash (Pesa taslimu)</option>
+                                <option value="bank">Bank Transfer</option>
+                                <option value="mpesa">M-Pesa</option>
+                                <option value="airtel">Airtel Money</option>
+                                <option value="tigo">Tigo Pesa</option>
+                                <option value="halopesa">Halo Pesa</option>
+                                <option value="other">Nyingine</option>
+                            </select>
+                            <input type="text" 
+                                   class="form-control mt-2" 
+                                   id="purchasePaymentMethodOther" 
+                                   placeholder="Andika njia ya malipo..." 
+                                   style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Maelezo</label>
+                        <textarea class="form-control" id="purchaseNotes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="savePurchase()">Hifadhi Purchase</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Verify Order Modal (Cashier) -->
+    <div class="modal fade" id="verifyOrderModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thibitisha Agizo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="verifyOrderId">
+                    <div class="mb-3">
+                        <strong>Namba ya Risiti:</strong> <span id="verifyOrderReceipt"></span><br>
+                        <strong>Jumla:</strong> <span id="verifyOrderTotal"></span>
+                    </div>
+                    <div class="alert alert-info" id="verifyCreditRequestAlert" style="display: none;">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Ombi la Mkopo:</strong> Reception amewasilisha agizo hili kama ombi la mkopo. 
+                        Mteja anataka mkopo. Tafadhali thibitisha na uweke kama mkopo.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Njia ya Malipo *</label>
+                        <select class="form-select" id="verifyPaymentMethod">
+                            <option value="cash">Cash</option>
+                            <option value="mpesa">M-Pesa</option>
+                            <option value="bank">Bank</option>
+                            <option value="card">Card</option>
+                        </select>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="verifyIsCredit">
+                        <label class="form-check-label" for="verifyIsCredit">Mauzo ya Mkopo</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-success" onclick="confirmVerifyOrder()">
+                        <i class="bi bi-check-circle me-2"></i>Thibitisha na Kamilisha
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- View Pending Order Modal -->
+    <div class="modal fade" id="viewPendingOrderModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Maelezo ya Agizo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Namba ya Risiti:</strong> <span id="viewPendingOrderReceipt"></span><br>
+                            <strong>Tarehe:</strong> <span id="viewPendingOrderDate"></span><br>
+                            <strong>Mteja:</strong> <span id="viewPendingOrderCustomer"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Aina:</strong> <span id="viewPendingOrderType"></span><br>
+                            <strong>Jumla:</strong> <span id="viewPendingOrderTotalHeader"></span><br>
+                            <span class="badge bg-warning mt-2" id="viewPendingOrderCreditRequest" style="display: none;">Ombi la Mkopo</span>
+                        </div>
+                    </div>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Bidhaa</th>
+                                <th>Idadi</th>
+                                <th>Bei</th>
+                                <th>Jumla</th>
+                            </tr>
+                        </thead>
+                        <tbody id="viewPendingOrderItems"></tbody>
+                    </table>
+                    <div class="text-end">
+                        <strong>Jumla:</strong> <span id="viewPendingOrderSubtotal"></span><br>
+                        <strong>Punguzo:</strong> <span id="viewPendingOrderDiscount"></span><br>
+                        <strong>Jumla ya Mwisho:</strong> <span id="viewPendingOrderTotal"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- View Store Order Modal -->
+    <div class="modal fade" id="viewStoreOrderModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Maelezo ya Agizo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Namba ya Risiti:</strong> <span id="viewStoreOrderReceipt"></span><br>
+                            <strong>Tarehe:</strong> <span id="viewStoreOrderDate"></span><br>
+                            <strong>Mteja:</strong> <span id="viewStoreOrderCustomer"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Aina:</strong> <span id="viewStoreOrderType"></span><br>
+                            <strong>Njia ya Malipo:</strong> <span id="viewStoreOrderPaymentMethod"></span><br>
+                            <strong>Jumla:</strong> <span id="viewStoreOrderTotalHeader"></span>
+                        </div>
+                    </div>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Bidhaa</th>
+                                <th>Idadi</th>
+                                <th>Bei</th>
+                                <th>Jumla</th>
+                            </tr>
+                        </thead>
+                        <tbody id="viewStoreOrderItems"></tbody>
+                    </table>
+                    <div class="text-end">
+                        <strong>Jumla:</strong> <span id="viewStoreOrderSubtotal"></span><br>
+                        <strong>Punguzo:</strong> <span id="viewStoreOrderDiscount"></span><br>
+                        <strong>Jumla ya Mwisho:</strong> <span id="viewStoreOrderTotal"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Password Confirmation Modal -->
+    <div class="modal fade" id="passwordConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thibitisha Nenosiri la Admin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Kufuta kitu hiki kunahitaji nenosiri la admin kwa ajili ya usalama.</p>
+                    <div class="mb-3">
+                        <label class="form-label">Nenosiri la Admin *</label>
+                        <input type="password" class="form-control" id="passwordConfirmInput" placeholder="Ingiza nenosiri la admin" autocomplete="current-password">
+                        <div class="form-text">Hakikisha nenosiri lako ni sahihi kabla ya kuendelea.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDeleteAction()">Thibitisha na Futa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/app.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,76 @@
+[
+  {
+    "id": "7ddac890-ff23-40ae-bb1a-52643de79332",
+    "purchaseId": "e4d6be46-9f1b-45a9-a356-305744581c09",
+    "supplierId": "sup-001",
+    "type": "debt",
+    "amount": 16000,
+    "balance": 16000,
+    "paymentMethod": null,
+    "reference": "23",
+    "notes": "Deni kutoka purchase order: 23",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-11T10:42:40.213Z"
+  },
+  {
+    "id": "43e58d6c-e848-4626-92fc-d79fc73f952c",
+    "supplierId": "sup-001",
+    "type": "payment",
+    "amount": 10000,
+    "paymentMethod": "mpesa",
+    "reference": "7872",
+    "notes": "leo",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-11T11:08:06.484Z"
+  },
+  {
+    "id": "d08dfabb-570a-4ac8-b6ef-867429aa82d0",
+    "supplierId": "sup-001",
+    "type": "payment",
+    "amount": 6000,
+    "paymentMethod": "cash",
+    "reference": "3422",
+    "notes": "maliza deni hili",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-11T11:09:11.399Z"
+  },
+  {
+    "id": "b384c089-1407-465f-8704-012a447c6320",
+    "purchaseId": "5b3ba5a3-7b97-408b-83dd-03bae7e4a9fa",
+    "supplierId": "ecf346e2-1e5b-400d-9cf3-f7b11a1d98f1",
+    "type": "debt",
+    "amount": 10000,
+    "balance": 10000,
+    "paymentMethod": null,
+    "reference": "PO-1765538434257",
+    "notes": "Deni kutoka purchase order: PO-1765538434257",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-12T11:20:34.257Z"
+  },
+  {
+    "id": "8f4609da-eb3d-4fc1-a74c-6a8e5c185278",
+    "purchaseId": "cd177df8-5baa-4ab6-bc55-1b39ea18794c",
+    "supplierId": "2d732ddb-08ee-48c5-b4bb-351c595b5fe4",
+    "type": "debt",
+    "amount": 1000000,
+    "balance": 1000000,
+    "paymentMethod": null,
+    "reference": "PO-1765544960921",
+    "notes": "Deni kutoka purchase order: PO-1765544960921",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-12T13:09:20.921Z"
+  },
+  {
+    "id": "0f153a10-16db-4619-94b3-b05c652aacfc",
+    "purchaseId": "d0aa35ab-b7c5-4860-b924-53e74507caf9",
+    "supplierId": "4a3b92ac-588f-4e86-8d98-e2a5dfdc32d4",
+    "type": "debt",
+    "amount": 13800000,
+    "balance": 13800000,
+    "paymentMethod": null,
+    "reference": "600871",
+    "notes": "Deni kutoka purchase order: 600871",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T10:48:52.168Z"
+  }
+]

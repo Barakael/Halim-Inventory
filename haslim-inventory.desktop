@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=HASLIM Inventory
+Comment=Anzisha HASLIM GROUP Inventory Management System
+Exec=sh -c '"$(dirname "%k")/run-linux.sh"'
+Icon=public/favicon.svg
+Terminal=true
+Categories=Office;Utility;
+

@@ -1,0 +1,449 @@
+[
+  {
+    "id": "e4d6be46-9f1b-45a9-a356-305744581c09",
+    "supplierId": "sup-001",
+    "items": [
+      {
+        "productId": "0ae4ca69-e472-4e13-a5e3-12aafe3ef607",
+        "quantity": 8,
+        "costPrice": 2000,
+        "batchNumber": "3",
+        "expiryDate": "2025-12-11"
+      }
+    ],
+    "invoiceNumber": "23",
+    "totalAmount": 16000,
+    "paymentType": "credit",
+    "paymentMethod": "cash",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "huu mzigo umechukuliwa kwa mkopo",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-11T10:42:40.213Z"
+  },
+  {
+    "id": "6412f685-b3cf-4ece-839a-5066fff3024b",
+    "supplierId": "012474fd-a891-41b5-9cb8-107625496819",
+    "items": [
+      {
+        "productId": "643d3938-1bca-4c9c-8b6d-c8db63900274",
+        "quantity": 60,
+        "costPrice": 500000,
+        "batchNumber": "",
+        "expiryDate": "2026-12-11"
+      }
+    ],
+    "invoiceNumber": "453",
+    "totalAmount": 30000000,
+    "paymentType": "cash",
+    "paymentMethod": "cash",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "87189901-9cf2-4b37-8b36-eb5e45cb6e73",
+    "createdAt": "2025-12-11T17:13:57.485Z"
+  },
+  {
+    "id": "5b3ba5a3-7b97-408b-83dd-03bae7e4a9fa",
+    "supplierId": "ecf346e2-1e5b-400d-9cf3-f7b11a1d98f1",
+    "items": [
+      {
+        "productId": "prod-001",
+        "quantity": 100,
+        "costPrice": 100,
+        "batchNumber": "",
+        "expiryDate": ""
+      }
+    ],
+    "invoiceNumber": "PO-1765538434257",
+    "totalAmount": 10000,
+    "paymentType": "credit",
+    "paymentMethod": "cash",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-12T11:20:34.257Z"
+  },
+  {
+    "id": "feaabe30-1056-4b33-9fe9-3fddd5fddaed",
+    "supplierId": "ecf346e2-1e5b-400d-9cf3-f7b11a1d98f1",
+    "items": [
+      {
+        "productId": "prod-005",
+        "quantity": 6,
+        "costPrice": 400,
+        "batchNumber": "3",
+        "expiryDate": "2025-12-24"
+      },
+      {
+        "productId": "prod-001",
+        "quantity": 37,
+        "costPrice": 300,
+        "batchNumber": "3",
+        "expiryDate": "2025-12-26"
+      }
+    ],
+    "invoiceNumber": "232",
+    "totalAmount": 13500,
+    "paymentType": "cash",
+    "paymentMethod": "bank",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "ameleta joshua",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-12T12:50:53.664Z"
+  },
+  {
+    "id": "cd177df8-5baa-4ab6-bc55-1b39ea18794c",
+    "supplierId": "2d732ddb-08ee-48c5-b4bb-351c595b5fe4",
+    "items": [
+      {
+        "productId": "700c3c4a-4bac-4393-8cb2-0099bd382518",
+        "quantity": 500,
+        "costPrice": 2000,
+        "batchNumber": "",
+        "expiryDate": ""
+      }
+    ],
+    "invoiceNumber": "PO-1765544960921",
+    "totalAmount": 1000000,
+    "paymentType": "credit",
+    "paymentMethod": "cash",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-12T13:09:20.921Z"
+  },
+  {
+    "id": "c4ce59c7-e103-4466-96ae-805e21603708",
+    "supplierId": "e5a586ec-0e7e-4c67-ac52-772518252e30",
+    "items": [
+      {
+        "productId": "c00ec085-007b-4385-b6ca-f3fe4969261d",
+        "quantity": 50,
+        "costPrice": 20000,
+        "batchNumber": "2",
+        "expiryDate": "2027-01-13"
+      }
+    ],
+    "invoiceNumber": "555222",
+    "totalAmount": 1000000,
+    "paymentType": "cash",
+    "paymentMethod": "bank",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "mzigo kutoka karimu mchomvu,dereva nurudini ",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-12T13:33:51.616Z"
+  },
+  {
+    "id": "4e9137e8-6b9f-4fbe-819f-e5eaf7b9d660",
+    "supplierId": "9a0c41cc-a5fd-4d1e-b14f-deee5b0f70f8",
+    "items": [
+      {
+        "productId": "1e2b886d-5a05-4d17-a054-1cfb416ef53a",
+        "quantity": 120,
+        "costPrice": 20000,
+        "batchNumber": "4",
+        "expiryDate": "2027-01-12"
+      }
+    ],
+    "invoiceNumber": "6767",
+    "totalAmount": 2400000,
+    "paymentType": "cash",
+    "paymentMethod": "cash",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-12T15:24:10.963Z"
+  },
+  {
+    "id": "a3c7e36c-59e2-4af2-b0e9-7c9eec83c509",
+    "supplierId": "ae822e56-037f-4005-8cfc-cc463a4d0b47",
+    "items": [
+      {
+        "productId": "b91ecc0a-caed-47fa-b4b8-7c41a65d452d",
+        "quantity": 50,
+        "costPrice": 55000,
+        "batchNumber": "4",
+        "expiryDate": "2026-12-12"
+      }
+    ],
+    "invoiceNumber": "7867",
+    "totalAmount": 2750000,
+    "paymentType": "cash",
+    "paymentMethod": "cash",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "T453 DQL; dereva; RAMA MCHOMVU",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-12T15:39:36.488Z"
+  },
+  {
+    "id": "502c13f4-3aea-4eaf-b039-109a3a556b0e",
+    "supplierId": "e5a586ec-0e7e-4c67-ac52-772518252e30",
+    "items": [
+      {
+        "productId": "c1eb7a56-beb5-4d5e-baa9-96d31ebe1d3b",
+        "quantity": 200,
+        "costPrice": 20000,
+        "batchNumber": "5",
+        "expiryDate": "2026-01-31"
+      }
+    ],
+    "invoiceNumber": "3456",
+    "totalAmount": 4000000,
+    "paymentType": "cash",
+    "paymentMethod": "bank",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T08:55:05.540Z"
+  },
+  {
+    "id": "326cb9ec-19d1-46c2-94fb-5d6ae3dfe313",
+    "supplierId": "sup-002",
+    "items": [
+      {
+        "productId": "a7062c13-e74b-4c55-a917-d41d4914e21e",
+        "quantity": 200,
+        "costPrice": 8000,
+        "batchNumber": "5",
+        "expiryDate": "2025-12-29"
+      }
+    ],
+    "invoiceNumber": "3456",
+    "totalAmount": 1600000,
+    "paymentType": "cash",
+    "paymentMethod": "tigo",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T09:08:17.783Z"
+  },
+  {
+    "id": "d53d7b5d-6dd8-41c0-a381-7d91d74dfb52",
+    "supplierId": "9a0c41cc-a5fd-4d1e-b14f-deee5b0f70f8",
+    "items": [
+      {
+        "productId": "b8aa72f8-2b26-46f7-a786-2cf1327d31d1",
+        "quantity": 100,
+        "costPrice": 2000,
+        "batchNumber": "5",
+        "expiryDate": "2026-01-09"
+      }
+    ],
+    "invoiceNumber": "3456",
+    "totalAmount": 200000,
+    "paymentType": "cash",
+    "paymentMethod": "halopesa",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T09:24:40.897Z"
+  },
+  {
+    "id": "36796a4f-8754-4f0c-b16a-7a210e4ead56",
+    "supplierId": "2d732ddb-08ee-48c5-b4bb-351c595b5fe4",
+    "items": [
+      {
+        "productId": "0c49d3f5-6d93-4e59-81ae-28e2697e5793",
+        "quantity": 200,
+        "costPrice": 2500,
+        "batchNumber": "6",
+        "expiryDate": "2026-01-28"
+      }
+    ],
+    "invoiceNumber": "556",
+    "totalAmount": 500000,
+    "paymentType": "cash",
+    "paymentMethod": "tigo",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T09:34:10.049Z"
+  },
+  {
+    "id": "d0aa35ab-b7c5-4860-b924-53e74507caf9",
+    "supplierId": "4a3b92ac-588f-4e86-8d98-e2a5dfdc32d4",
+    "items": [
+      {
+        "productId": "08418cc2-8da2-4588-bb24-bf8f54c10f7d",
+        "quantity": 600,
+        "costPrice": 23000,
+        "batchNumber": "5",
+        "expiryDate": "2028-03-15"
+      }
+    ],
+    "invoiceNumber": "600871",
+    "totalAmount": 13800000,
+    "paymentType": "credit",
+    "paymentMethod": "cash",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T10:48:52.168Z"
+  },
+  {
+    "id": "e5d647fe-02b9-4121-88a6-99910ffa246e",
+    "supplierId": "a0ce72af-29a8-46a2-8f87-7152060bcb4e",
+    "items": [
+      {
+        "productId": "ae4a17ff-4ab7-4f67-b082-a14a8920f2d1",
+        "quantity": 500,
+        "costPrice": 4500,
+        "batchNumber": "7",
+        "expiryDate": ""
+      }
+    ],
+    "invoiceNumber": "5556",
+    "totalAmount": 2250000,
+    "paymentType": "cash",
+    "paymentMethod": "cash",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T11:09:46.927Z"
+  },
+  {
+    "id": "3b86b9c0-cc9b-4eda-bc27-3a85ca949818",
+    "supplierId": "sup-007",
+    "items": [
+      {
+        "productId": "7317da04-8719-473d-bcb0-9677279e56ac",
+        "quantity": 200,
+        "costPrice": 12000,
+        "batchNumber": "6",
+        "expiryDate": "2026-12-09"
+      }
+    ],
+    "invoiceNumber": "1234",
+    "totalAmount": 2400000,
+    "paymentType": "cash",
+    "paymentMethod": "airtel",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T11:21:52.688Z"
+  },
+  {
+    "id": "16c3e914-ce8e-4e40-88b1-f62f7080a977",
+    "supplierId": "sup-001",
+    "items": [
+      {
+        "productId": "6ed46c15-89c8-4b31-a11f-7e3d6dbb2d16",
+        "quantity": 300,
+        "costPrice": 800,
+        "batchNumber": "5",
+        "expiryDate": "2026-12-09"
+      }
+    ],
+    "invoiceNumber": "12344",
+    "totalAmount": 240000,
+    "paymentType": "cash",
+    "paymentMethod": "airtel",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T11:29:51.743Z"
+  },
+  {
+    "id": "05c6dcce-ed2c-4766-9901-b11fd08f9e8c",
+    "supplierId": "9a0c41cc-a5fd-4d1e-b14f-deee5b0f70f8",
+    "items": [
+      {
+        "productId": "15d82ebf-c2eb-4924-aeae-a1a66c8197a3",
+        "quantity": 30,
+        "costPrice": 145000,
+        "batchNumber": "5",
+        "expiryDate": "2026-12-15"
+      }
+    ],
+    "invoiceNumber": "7867",
+    "totalAmount": 4350000,
+    "paymentType": "cash",
+    "paymentMethod": "mpesa",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T11:37:15.161Z"
+  },
+  {
+    "id": "2755d2b1-c8d5-4c8d-acb9-cbc188169db9",
+    "supplierId": "sup-007",
+    "items": [
+      {
+        "productId": "768529af-1ee1-4618-8a03-c7e6767c537c",
+        "quantity": 200,
+        "costPrice": 7000,
+        "batchNumber": "5",
+        "expiryDate": "2026-11-28"
+      }
+    ],
+    "invoiceNumber": "4745",
+    "totalAmount": 1400000,
+    "paymentType": "cash",
+    "paymentMethod": "halopesa",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T11:46:09.943Z"
+  },
+  {
+    "id": "4611394e-727f-4a87-a668-4af7650e0f15",
+    "supplierId": "2d732ddb-08ee-48c5-b4bb-351c595b5fe4",
+    "items": [
+      {
+        "productId": "0c49d3f5-6d93-4e59-81ae-28e2697e5793",
+        "quantity": 200,
+        "costPrice": 12000,
+        "batchNumber": "6",
+        "expiryDate": "2026-12-09"
+      }
+    ],
+    "invoiceNumber": "1234",
+    "totalAmount": 2400000,
+    "paymentType": "cash",
+    "paymentMethod": "mpesa",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T11:57:28.828Z"
+  },
+  {
+    "id": "7bbf4fc3-bed0-4c84-87a3-40ca24bba097",
+    "supplierId": "ecf346e2-1e5b-400d-9cf3-f7b11a1d98f1",
+    "items": [
+      {
+        "productId": "172345cc-af3d-43a3-af56-cc15afc1b36f",
+        "quantity": 500,
+        "costPrice": 1100000,
+        "batchNumber": "4",
+        "expiryDate": "2025-12-16"
+      }
+    ],
+    "invoiceNumber": "PO-1765886763088",
+    "totalAmount": 550000000,
+    "paymentType": "cash",
+    "paymentMethod": "cash",
+    "branchId": "main",
+    "status": "completed",
+    "notes": "",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-16T12:06:03.088Z"
+  }
+]

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "afea6c5b-56d8-46a7-85c1-850b63e6c3cf",
+    "saleId": "c3774fdb-5497-4e16-aef3-7f48e07847d8",
+    "customerId": "b4e87b7e-eac6-4c04-9471-4c7024bec7b6",
+    "totalAmount": 7500000,
+    "paidAmount": 7500000,
+    "dueDate": "2026-02-20T06:38:12.344Z",
+    "status": "paid",
+    "createdAt": "2026-01-21T06:38:12.347Z"
+  },
+  {
+    "id": "25ed4e40-71e0-4cd1-8e02-adcc44cebaab",
+    "saleId": "7f7bbf36-83f0-4d98-b6c9-9560528cb2e1",
+    "customerId": "bd1a66bf-40d8-48ed-b6a9-61727b278b53",
+    "totalAmount": 164100,
+    "paidAmount": 164100,
+    "dueDate": "2026-02-20T14:22:41.196Z",
+    "status": "paid",
+    "createdAt": "2026-01-21T14:22:41.196Z"
+  },
+  {
+    "id": "a3517b81-bd68-46d4-b92f-beff85361704",
+    "saleId": "3b58b0b6-3b6a-4087-9ca2-943d977e1557",
+    "customerId": "08646606-be6c-49ee-a35f-11c8ce61ece5",
+    "totalAmount": 3750000,
+    "paidAmount": 3750000,
+    "dueDate": "2026-02-25T05:57:29.106Z",
+    "status": "paid",
+    "createdAt": "2026-01-26T05:57:29.107Z"
+  },
+  {
+    "id": "cc41803d-f82a-470f-b827-b0a4c52f4dc1",
+    "saleId": "f0c02ec1-9644-49c1-9a6d-00b578a71d1b",
+    "customerId": "55ac1895-6ee7-4c0d-bc30-333330cfce70",
+    "totalAmount": 1875000,
+    "paidAmount": 1875000,
+    "dueDate": "2026-02-25T05:58:31.953Z",
+    "status": "paid",
+    "createdAt": "2026-01-26T05:58:31.954Z"
+  },
+  {
+    "id": "a4dd5db2-f523-4eb3-9410-2f06d3f25ef0",
+    "saleId": "7dd1fd15-c20f-42e1-9f5c-03ed6180489f",
+    "customerId": "353d7500-6880-47b9-b6f7-103a0fa65db0",
+    "totalAmount": 3750000,
+    "paidAmount": 3750000,
+    "dueDate": "2026-02-25T05:59:46.521Z",
+    "status": "paid",
+    "createdAt": "2026-01-26T05:59:46.521Z"
+  },
+  {
+    "id": "0e85fc01-51e6-4380-8aab-120d413ecc94",
+    "saleId": "7f1ad4ea-4e49-4eee-8768-882789f4960f",
+    "customerId": "c7fa5201-0579-41e6-8260-e4da7d89ee34",
+    "totalAmount": 187500,
+    "paidAmount": 187500,
+    "dueDate": "2026-02-25T06:01:05.660Z",
+    "status": "paid",
+    "createdAt": "2026-01-26T06:01:05.660Z"
+  },
+  {
+    "id": "d4cf8201-9e23-4d3b-b83c-171bfeab0283",
+    "saleId": "adc043fa-b697-4f34-83a6-9f6bf41f406a",
+    "customerId": "9500fedf-8816-46bf-ac9b-d02ea7474c8d",
+    "totalAmount": 37500,
+    "paidAmount": 37500,
+    "dueDate": "2026-03-01T05:27:52.014Z",
+    "status": "paid",
+    "createdAt": "2026-01-30T05:27:52.016Z"
+  }
+]

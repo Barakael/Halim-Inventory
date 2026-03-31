@@ -1,0 +1,62 @@
+[
+  {
+    "id": "674c437c-d158-4cb3-8cec-e5f7bffa2b61",
+    "creditSaleId": "e98cd2c8-23d4-459c-b853-3cbed1a616db",
+    "customerId": "cust-005",
+    "amount": 32000,
+    "paymentMethod": "cash",
+    "reference": "",
+    "createdBy": "9e57b0c6-0b1f-4d12-834c-f1705c3c1e04",
+    "createdAt": "2025-12-10T09:42:42.345Z"
+  },
+  {
+    "id": "f4c9289f-9c79-4352-9e73-5193f6a45111",
+    "creditSaleId": "e98cd2c8-23d4-459c-b853-3cbed1a616db",
+    "customerId": "cust-005",
+    "amount": 30000,
+    "paymentMethod": "cash",
+    "reference": "",
+    "createdBy": "9e57b0c6-0b1f-4d12-834c-f1705c3c1e04",
+    "createdAt": "2025-12-10T09:43:20.178Z"
+  },
+  {
+    "id": "8570a23b-1020-4236-b30e-6071a1bde9cb",
+    "creditSaleId": "e98cd2c8-23d4-459c-b853-3cbed1a616db",
+    "customerId": "cust-005",
+    "amount": null,
+    "paymentMethod": "cash",
+    "reference": "",
+    "createdBy": "9e57b0c6-0b1f-4d12-834c-f1705c3c1e04",
+    "createdAt": "2025-12-10T09:56:33.692Z"
+  },
+  {
+    "id": "56a7868d-ea74-4a84-bf05-3a1a43b3264c",
+    "creditSaleId": "e98cd2c8-23d4-459c-b853-3cbed1a616db",
+    "customerId": "cust-005",
+    "amount": 65000,
+    "paymentMethod": "mpesa",
+    "reference": "amelipa leo",
+    "createdBy": "9e57b0c6-0b1f-4d12-834c-f1705c3c1e04",
+    "createdAt": "2025-12-11T15:09:14.336Z"
+  },
+  {
+    "id": "42cde3c8-0501-4fd1-9b4b-ddca3c386cea",
+    "creditSaleId": "bd4648c0-e703-4cd2-ad17-8a1379d60f63",
+    "customerId": "047eb280-28b2-4b56-af19-c105ac08374e",
+    "amount": 38000,
+    "paymentMethod": "mpesa",
+    "reference": "wakala",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T10:16:28.591Z"
+  },
+  {
+    "id": "195eb4fb-611e-4ea0-a9e7-be1b8cfcfe34",
+    "creditSaleId": "54eea90e-5c16-427e-976b-59eaf2d0e39b",
+    "customerId": "3b259c18-57fc-4798-bea9-d21b956c2c63",
+    "amount": 195000,
+    "paymentMethod": "cash",
+    "reference": "imep0kelewa kikamilifu na harun",
+    "createdBy": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "createdAt": "2025-12-15T10:19:32.261Z"
+  }
+]

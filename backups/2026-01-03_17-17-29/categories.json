@@ -1,0 +1,129 @@
+[
+  {
+    "id": "38ed8628-2443-4165-8112-88c2159541c3",
+    "name": "Vinywaji (Beverages)",
+    "description": "Soda, juisi, maji",
+    "status": "active"
+  },
+  {
+    "id": "d2b2d54b-d566-4277-baf8-88213d8edbd9",
+    "name": "Nafaka (Grains)",
+    "description": "Mchele, unga, mahindi",
+    "status": "active"
+  },
+  {
+    "id": "fce7bfdb-5eec-49ad-b68a-8c3fc4e25812",
+    "name": "Mafuta (Oils)",
+    "description": "Mafuta ya kupikia,mafuta ya kupaka",
+    "status": "active",
+    "updatedAt": "2025-12-21T15:48:43.570Z"
+  },
+  {
+    "id": "045f9519-5a64-477a-8a32-6631d33aa241",
+    "name": "Sukari (Sugar)",
+    "description": "Sukari na asali",
+    "status": "active"
+  },
+  {
+    "id": "3e3c7d08-d215-4938-bc16-7af7ffcb7888",
+    "name": "Chumvi na Viungo",
+    "description": "Chumvi, pilipili, viungo",
+    "status": "active"
+  },
+  {
+    "id": "90fc10d9-a50a-4645-b22d-a7f83af2b1c5",
+    "name": "Maziwa (Dairy)",
+    "description": "Maziwa na bidhaa zake",
+    "status": "active"
+  },
+  {
+    "id": "0a954536-2e28-48b1-8900-c4e8a4da5ba3",
+    "name": "Vyakula vya Makopo",
+    "description": "Samaki, nyama, mboga za makopo",
+    "status": "active"
+  },
+  {
+    "id": "10302841-1ce8-40c9-bdc6-51d3a5c00c73",
+    "name": "Biskuti na Snacks",
+    "description": "Biskuti, chips, karanga",
+    "status": "active"
+  },
+  {
+    "id": "58095c14-c89f-418f-8212-b145501155b4",
+    "name": "pampas",
+    "description": "pant na diaper",
+    "status": "active",
+    "createdAt": "2025-12-21T15:43:07.991Z",
+    "updatedAt": "2025-12-26T10:44:59.370Z"
+  },
+  {
+    "id": "6334592e-a67f-4692-9b33-7020980d6cd8",
+    "name": "Sabuni",
+    "description": "mfano,sabuni ya unga sabuni ya mche",
+    "status": "active",
+    "createdAt": "2025-12-21T15:46:42.559Z"
+  },
+  {
+    "id": "2f3dd04a-433f-4cd3-8cca-029c2a1f2d4f",
+    "name": "vifaa vya umeme",
+    "description": "balbu",
+    "status": "active",
+    "createdAt": "2025-12-21T16:05:51.614Z"
+  },
+  {
+    "id": "eb46d1cd-61df-4de8-8eeb-41a189ea8378",
+    "name": "Dawa ",
+    "description": "dawa za binadamu",
+    "status": "active",
+    "createdAt": "2025-12-21T16:07:29.154Z"
+  },
+  {
+    "id": "08b747e3-a93b-4eaa-b27f-140eb70baddc",
+    "name": "Dawa za wadudu",
+    "description": "Mfano mbu,",
+    "status": "active",
+    "createdAt": "2025-12-21T16:09:43.692Z"
+  },
+  {
+    "id": "2ed3a947-06e1-47f8-a452-879719fd73ca",
+    "name": "dawa za meno",
+    "description": "",
+    "status": "active",
+    "createdAt": "2025-12-21T19:52:52.660Z"
+  },
+  {
+    "id": "1bbed852-d4b6-4d0b-ac2c-25aacda377b6",
+    "name": "SIGARA",
+    "description": "mfano kali sport",
+    "status": "active",
+    "createdAt": "2025-12-21T20:50:17.595Z"
+  },
+  {
+    "id": "91d13200-a07f-4168-92a4-626460820d2b",
+    "name": "Super Soft",
+    "description": "kama tishu wipes",
+    "status": "active",
+    "createdAt": "2025-12-26T10:42:48.952Z"
+  },
+  {
+    "id": "392404a1-dfa7-41fd-b664-2eedcbffd2fa",
+    "name": "BRUSHES",
+    "description": "kama steei wire",
+    "status": "active",
+    "createdAt": "2025-12-26T11:47:43.478Z"
+  },
+  {
+    "id": "0901fd32-9c52-4474-b443-8118f0afd628",
+    "name": "BETRI",
+    "description": "",
+    "status": "active",
+    "createdAt": "2025-12-26T13:49:13.555Z"
+  },
+  {
+    "id": "eaeaad97-3f05-45f0-a77a-b951a4c74d67",
+    "name": "VIFAA VYA SHULE NA GAZETI",
+    "description": "",
+    "status": "active",
+    "createdAt": "2025-12-26T14:13:08.911Z"
+  }
+]

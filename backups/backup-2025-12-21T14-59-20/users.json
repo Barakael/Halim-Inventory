@@ -1,0 +1,70 @@
+[
+  {
+    "id": "53b54629-9823-4727-bca2-0d5e8a4fb1bb",
+    "username": "admin",
+    "password": "$2a$10$0cLX4l.Wy8z.HaD1lmv7KeLNb6C5bgI/Ntp1NwSNaPZBehWs.KP/.",
+    "fullName": "System Administrator",
+    "email": "admin@dukajumla.co.tz",
+    "phone": "+255712345678",
+    "role": "admin",
+    "branchId": "main",
+    "status": "active",
+    "createdAt": "2025-12-05T12:41:54.056Z",
+    "lastLogin": "2025-12-21T14:52:34.222Z"
+  },
+  {
+    "id": "9e57b0c6-0b1f-4d12-834c-f1705c3c1e04",
+    "username": "joshua",
+    "password": "$2a$10$A46u7BpIe9PEAsnZ7L3ZSeFc0yLROmqImH/Oekdq7xuM4TawpEFz6",
+    "fullName": "joshua gilbert",
+    "email": "Joshuaengineer1@gmail.com",
+    "phone": "+255750782577",
+    "role": "cashier",
+    "branchId": "main",
+    "status": "active",
+    "createdAt": "2025-12-10T08:52:56.090Z",
+    "lastLogin": "2025-12-11T15:31:11.810Z",
+    "updatedAt": "2025-12-11T13:16:13.943Z"
+  },
+  {
+    "id": "87189901-9cf2-4b37-8b36-eb5e45cb6e73",
+    "username": "rama",
+    "password": "$2a$10$VD.ITZVQFx5oyzWb/Ig1hurmV0vefNL/78T1UJYmE.JnsQRhw3N0u",
+    "fullName": "Rama Ibrahim",
+    "email": "rama@gmail.com",
+    "phone": "0760782577",
+    "role": "storekeeper",
+    "branchId": "main",
+    "status": "active",
+    "createdAt": "2025-12-10T10:02:22.523Z",
+    "lastLogin": "2025-12-11T16:37:50.368Z",
+    "updatedAt": "2025-12-11T13:16:04.229Z"
+  },
+  {
+    "id": "bbcf384b-d129-44e0-8fb5-3e90db6da081",
+    "username": "reception",
+    "password": "$2a$10$o5Oga1SOuRLJK0YsyGqkJO.JzcEDCZ/oxCQSfd3qB8nNgPCEpvA/.",
+    "fullName": "test recp",
+    "email": "",
+    "phone": "+255750782577",
+    "role": "reception",
+    "branchId": "main",
+    "status": "active",
+    "createdAt": "2025-12-11T12:30:39.198Z",
+    "lastLogin": "2025-12-11T17:21:19.081Z"
+  },
+  {
+    "id": "2322c032-0115-4b37-a11d-4a074423bf1d",
+    "username": "viewer",
+    "password": "$2a$10$yDHnbynzgHRpiNuTS5cE2ug2RyTe4UbjIn4fsPteH3Cs7lk2/ICPC",
+    "fullName": "viewr test",
+    "email": "",
+    "phone": "+255750782577",
+    "role": "store_viewer",
+    "branchId": "main",
+    "status": "active",
+    "createdAt": "2025-12-11T12:31:21.327Z",
+    "lastLogin": "2025-12-11T15:21:40.862Z",
+    "updatedAt": "2025-12-11T13:15:48.771Z"
+  }
+]
