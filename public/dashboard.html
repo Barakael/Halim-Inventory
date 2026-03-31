@@ -170,68 +170,103 @@
         <div class="content-area">
             <!-- Dashboard Page -->
             <section class="page-section" id="page-dashboard">
-                <div class="row g-4 mb-4">
-                    <div class="col-6 col-sm-6 col-xl-3" id="todayRevenueCard">
-                        <div class="stat-card">
-                            <div class="icon blue"><i class="bi bi-cash-stack"></i></div>
-                            <div class="stat-content">
-                                <div class="value" id="todayRevenue">0 TZS</div>
-                                <div class="label">Mapato ya Leo</div>
-                                <div class="trend up"><span id="todayTransactions">0</span> trans</div>
+
+                <!-- ── Row 1: KPI stat cards ─────────────────────────── -->
+                <div class="row g-3 mb-3">
+                    <div class="col-6 col-xl-3" id="todayRevenueCard">
+                        <div class="kpi-card kpi-blue">
+                            <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
+                            <div class="kpi-value" id="todayRevenue">0 TZS</div>
+                            <div class="kpi-label">Mapato ya Leo</div>
+                            <div class="kpi-sub"><span id="todayTransactions">0</span> transactions</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-xl-3" id="weekRevenueCard">
+                        <div class="kpi-card kpi-blue">
+                            <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                            <div class="kpi-value" id="weekRevenue">0 TZS</div>
+                            <div class="kpi-label">Mapato ya Wiki</div>
+                            <div class="kpi-sub">&nbsp;</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-xl-3" id="monthRevenueCard">
+                        <div class="kpi-card kpi-green">
+                            <div class="kpi-icon"><i class="bi bi-calendar-month"></i></div>
+                            <div class="kpi-value" id="monthRevenue">0 TZS</div>
+                            <div class="kpi-label">Mapato Mwezi</div>
+                            <div class="kpi-sub">Faida: <span id="monthProfit">0</span></div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-xl-3">
+                        <div class="kpi-card kpi-purple">
+                            <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                            <div class="kpi-value" id="lowStockCount">0</div>
+                            <div class="kpi-label">Low Stock Items</div>
+                            <div class="kpi-sub">&nbsp;</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Row 2: Debts + Alerts (visible above fold) ──────── -->
+                <div class="row g-3 mb-3">
+                    <!-- Debts KPI -->
+                    <div class="col-12 col-md-4" id="debtsCard">
+                        <div class="kpi-card kpi-blue h-100">
+                            <div class="kpi-icon"><i class="bi bi-people-fill"></i></div>
+                            <div class="kpi-value" id="totalDebts">0 TZS</div>
+                            <div class="kpi-label">Jumla ya Madeni</div>
+                            <div class="kpi-sub"><span id="debtorsCount">0</span> wanadaiwa</div>
+                        </div>
+                    </div>
+
+                    <!-- Low Stock Alerts -->
+                    <div class="col-12 col-md-4">
+                        <div class="data-card h-100">
+                            <div class="data-card-header header-warning">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>Low Stock
+                                </h5>
+                                <button class="btn btn-sm btn-warning" onclick="navigateTo('stock')" style="font-size:.75rem;padding:3px 10px;">
+                                    <i class="bi bi-arrow-right"></i> All
+                                </button>
+                            </div>
+                            <div class="alert-scroll-list" id="lowStockList">
+                                <p class="text-muted text-center py-3 mb-0">Loading…</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-6 col-sm-6 col-xl-3" id="weekRevenueCard">
-                        <div class="stat-card">
-                            <div class="icon green"><i class="bi bi-graph-up-arrow"></i></div>
-                            <div class="stat-content">
-                                <div class="value" id="weekRevenue">0 TZS</div>
-                                <div class="label">Mapato ya Wiki</div>
+
+                    <!-- Expiry Alerts -->
+                    <div class="col-12 col-md-4">
+                        <div class="data-card h-100">
+                            <div class="data-card-header header-danger">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-clock-history me-2"></i>Expiry
+                                </h5>
+                                <button class="btn btn-sm btn-danger" onclick="navigateTo('stock')" style="font-size:.75rem;padding:3px 10px;">
+                                    <i class="bi bi-arrow-right"></i> All
+                                </button>
                             </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-sm-6 col-xl-3" id="monthRevenueCard">
-                        <div class="stat-card">
-                            <div class="icon blue"><i class="bi bi-calendar-month"></i></div>
-                            <div class="stat-content">
-                                <div class="value" id="monthRevenue">0 TZS</div>
-                                <div class="label">Mapato Mwezi</div>
-                                <div class="trend up">Faida: <span id="monthProfit">0</span></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-sm-6 col-xl-3">
-                        <div class="stat-card">
-                            <div class="icon red"><i class="bi bi-exclamation-triangle"></i></div>
-                            <div class="stat-content">
-                                <div class="value" id="lowStockCount">0</div>
-                                <div class="label">Low Stock</div>
+                            <div class="alert-scroll-list" id="expiryList">
+                                <p class="text-muted text-center py-3 mb-0">Loading…</p>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="row g-4 mb-4">
-                    <div class="col-12 col-xl-4" id="debtsCard">
-                        <div class="stat-card">
-                            <div class="icon yellow"><i class="bi bi-people"></i></div>
-                            <div class="stat-content">
-                                <div class="value" id="totalDebts">0 TZS</div>
-                                <div class="label">Jumla ya Madeni</div>
-                                <div class="trend"><span id="debtorsCount">0</span> wanadaiwa</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-xl-8" id="topProductsCard">
+
+                <!-- ── Row 3: Top Products ──────────────────────────────── -->
+                <div class="row g-3">
+                    <div class="col-12" id="topProductsCard">
                         <div class="data-card">
                             <div class="data-card-header">
-                                <h5><i class="bi bi-trophy me-2"></i>Bidhaa Zinazouzwa Zaidi</h5>
+                                <h5 class="mb-0"><i class="bi bi-trophy me-2 text-warning"></i>Bidhaa Zinazouzwa Zaidi</h5>
+                                <span class="text-muted" style="font-size:.8rem;" id="topProductsMeta"></span>
                             </div>
                             <div class="table-responsive">
-                                <table class="table">
+                                <table class="table table-hover mb-0">
                                     <thead>
                                         <tr id="topProductsHeader">
-                                            <th>#</th>
+                                            <th width="48">#</th>
                                             <th>Bidhaa</th>
                                             <th>Idadi</th>
                                             <th class="revenue-column">Mapato</th>
@@ -240,28 +275,15 @@
                                     <tbody id="topProductsList"></tbody>
                                 </table>
                             </div>
+                            <div class="data-card-footer" id="topProductsFooter" style="display:none;">
+                                <button class="btn btn-sm btn-outline-primary" onclick="navigateTo('reports')">
+                                    <i class="bi bi-bar-chart me-1"></i>Tazama Ripoti Kamili
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="row g-4">
-                    <div class="col-12 col-lg-6">
-                        <div class="data-card">
-                            <div class="data-card-header">
-                                <h5><i class="bi bi-exclamation-triangle text-warning me-2"></i>Low Stock Alerts</h5>
-                            </div>
-                            <div class="data-card-body p-3" id="lowStockList"></div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6">
-                        <div class="data-card">
-                            <div class="data-card-header">
-                                <h5><i class="bi bi-clock-history text-danger me-2"></i>Expiry Alerts</h5>
-                            </div>
-                            <div class="data-card-body p-3" id="expiryList"></div>
-                        </div>
-                    </div>
-                </div>
+
             </section>
             
             <!-- POS Page -->
@@ -379,6 +401,7 @@
                             <tbody id="productsTableBody"></tbody>
                         </table>
                     </div>
+                    <div id="productsPagination" class="mt-2"></div>
                 </div>
             </section>
             
@@ -441,6 +464,7 @@
                             <tbody id="stockTableBody"></tbody>
                         </table>
                     </div>
+                    <div id="stockPagination" class="mt-2"></div>
                 </div>
             </section>
             
@@ -449,19 +473,37 @@
                 <div class="data-card">
                     <div class="data-card-header">
                         <h5><i class="bi bi-receipt me-2"></i>Historia ya Mauzo</h5>
-                        <div class="d-flex gap-2 align-items-center flex-wrap">
-                            <input type="date" class="form-control form-control-sm" id="salesStartDate">
-                            <span>-</span>
-                            <input type="date" class="form-control form-control-sm" id="salesEndDate">
-                            <button class="btn btn-sm btn-primary" onclick="loadSales()">Filter</button>
+                    </div>
+
+                    <!-- Filter bar -->
+                    <div class="px-3 pt-3 pb-2 border-bottom">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label class="form-label mb-1 small fw-semibold text-muted">Tarehe Kuanzia</label>
+                                <input type="date" class="form-control form-control-sm" id="salesStartDate">
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label class="form-label mb-1 small fw-semibold text-muted">Tarehe Hadi</label>
+                                <input type="date" class="form-control form-control-sm" id="salesEndDate">
+                            </div>
+                            <div class="col-12 col-sm-8 col-md-4">
+                                <label class="form-label mb-1 small fw-semibold text-muted">Tafuta</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="salesSearchInput" placeholder="Risiti, mteja..." oninput="filterSalesTable()">
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-4 col-md-2 d-flex gap-2">
+                                <button class="btn btn-sm btn-primary w-100" onclick="loadSales(1)">
+                                    <i class="bi bi-funnel me-1"></i>Filter
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('salesStartDate').value='';document.getElementById('salesEndDate').value='';document.getElementById('salesSearchInput').value='';loadSales(1);" title="Futa Filters">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" id="salesSearchInput" placeholder="Tafuta kwa risiti, mteja, au tarehe..." oninput="filterSalesTable()">
-                        </div>
-                    </div>
+
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
@@ -479,7 +521,7 @@
                             <tbody id="salesTableBody"></tbody>
                         </table>
                     </div>
-                    <div id="salesPagination" class="mt-2"></div>
+                    <div id="salesPagination" class="mt-2 px-3 pb-2"></div>
                 </div>
             </section>
             
@@ -589,30 +631,36 @@
                             <i class="bi bi-plus-lg me-2"></i>Purchase Order
                         </button>
                     </div>
-                    <div class="mb-3">
-                        <div class="row g-2 mb-2">
-                            <div class="col-md-3">
-                                <label class="form-label small">Tarehe ya Kuanza</label>
+
+                    <!-- Filter bar -->
+                    <div class="px-3 pt-3 pb-2 border-bottom">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label class="form-label mb-1 small fw-semibold text-muted">Tarehe Kuanzia</label>
                                 <input type="date" class="form-control form-control-sm" id="purchasesStartDate">
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label small">Tarehe ya Mwisho</label>
+                            <div class="col-12 col-sm-6 col-md-3">
+                                <label class="form-label mb-1 small fw-semibold text-muted">Tarehe Hadi</label>
                                 <input type="date" class="form-control form-control-sm" id="purchasesEndDate">
                             </div>
-                            <div class="col-md-2 d-flex align-items-end">
-                                <button class="btn btn-sm btn-primary w-100" onclick="loadPurchases()">
-                                    <i class="bi bi-funnel me-1"></i>Filter
-                                </button>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small">Tafuta</label>
+                            <div class="col-12 col-sm-8 col-md-4">
+                                <label class="form-label mb-1 small fw-semibold text-muted">Tafuta</label>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                    <input type="text" class="form-control" id="purchasesSearchInput" placeholder="Tafuta kwa invoice, msambazaji..." oninput="filterPurchasesTable()">
+                                    <input type="text" class="form-control" id="purchasesSearchInput" placeholder="Invoice, msambazaji..." oninput="filterPurchasesTable()">
                                 </div>
+                            </div>
+                            <div class="col-12 col-sm-4 col-md-2 d-flex gap-2">
+                                <button class="btn btn-sm btn-primary w-100" onclick="loadPurchases(1)">
+                                    <i class="bi bi-funnel me-1"></i>Filter
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('purchasesStartDate').value='';document.getElementById('purchasesEndDate').value='';document.getElementById('purchasesSearchInput').value='';loadPurchases(1);" title="Futa Filters">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
+
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
@@ -630,7 +678,7 @@
                             <tbody id="purchasesTableBody"></tbody>
                         </table>
                     </div>
-                    <div id="purchasesPagination" class="mt-2"></div>
+                    <div id="purchasesPagination" class="mt-2 px-3 pb-2"></div>
                 </div>
             </section>
             
@@ -2422,6 +2470,7 @@ GET /api/barcode/:code?type=qr</code></pre>
         </div>
     </div>
     
+    <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>

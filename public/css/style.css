@@ -296,6 +296,120 @@ body {
     text-overflow: ellipsis;
 }
 
+/* ── KPI Gradient Cards (dashboard row 1) ─────────────────── */
+.kpi-card {
+    border-radius: 16px;
+    padding: 22px 20px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(0,0,0,.18);
+    transition: transform .2s, box-shadow .2s;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,.22);
+}
+
+/* decorative circle in top-right */
+.kpi-card::after {
+    content: '';
+    position: absolute;
+    top: -28px;
+    right: -28px;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.1);
+    pointer-events: none;
+}
+
+.kpi-card .kpi-icon {
+    font-size: 1.9rem;
+    margin-bottom: 8px;
+    opacity: .9;
+    line-height: 1;
+}
+
+.kpi-card .kpi-value {
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kpi-card .kpi-label {
+    font-size: .82rem;
+    opacity: .82;
+    margin-top: 2px;
+    font-weight: 500;
+    letter-spacing: .3px;
+}
+
+.kpi-card .kpi-sub {
+    font-size: .78rem;
+    opacity: .72;
+    margin-top: 8px;
+}
+
+.kpi-blue   { background: linear-gradient(135deg, #1565c0 0%, #1e88e5 100%); }
+.kpi-green  { background: linear-gradient(135deg, #1b5e20 0%, #43a047 100%); }
+.kpi-purple { background: linear-gradient(135deg, #4a148c 0%, #8e24aa 100%); }
+.kpi-orange { background: linear-gradient(135deg, #e65100 0%, #fb8c00 100%); }
+.kpi-teal   { background: linear-gradient(135deg, #004d40 0%, #26a69a 100%); }
+
+/* ── Alert scroll list (max 3 items visible, scroll if more) ─ */
+.alert-scroll-list {
+    max-height: 218px;
+    overflow-y: auto;
+    padding: 10px 12px !important;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.alert-scroll-list::-webkit-scrollbar { width: 4px; }
+.alert-scroll-list::-webkit-scrollbar-track { background: transparent; }
+.alert-scroll-list::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+}
+
+/* Alert card header colour variants */
+.data-card-header.header-warning {
+    background: linear-gradient(90deg, #fff3cd 0%, #fff9e6 100%);
+    border-bottom-color: #ffc107;
+}
+.data-card-header.header-warning h5 { color: #856404; }
+
+.data-card-header.header-danger {
+    background: linear-gradient(90deg, #f8d7da 0%, #fdf0f1 100%);
+    border-bottom-color: #dc3545;
+}
+.data-card-header.header-danger h5 { color: #842029; }
+
+/* Compact alert items inside scroll list */
+.alert-scroll-list .alert-item {
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    border-radius: 8px;
+}
+
+.alert-scroll-list .alert-item:last-child { margin-bottom: 0; }
+
+/* Top-products table max 3 rows + "view all" footer */
+.data-card-footer {
+    padding: 10px 20px;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    background: var(--light-gray);
+}
+
 /* Data Tables */
 .data-card {
     background: var(--white);
@@ -398,6 +512,27 @@ body {
 }
 
 /* Modals */
+
+/* Blurred backdrop behind every modal */
+.modal-backdrop {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.45);
+}
+
+.modal-backdrop.show {
+    opacity: 1;
+}
+
+/* Instant modal open — no transition delay */
+.modal.fade .modal-dialog {
+    transition: none;
+}
+
+.modal-backdrop.fade {
+    transition: none;
+}
+
 .modal-content {
     border-radius: 15px;
     border: none;
@@ -667,6 +802,23 @@ body {
         align-items: center;
         gap: 15px;
     }
+
+    .kpi-card {
+        padding: 16px 14px;
+    }
+
+    .kpi-card .kpi-value {
+        font-size: 1.2rem;
+    }
+
+    .kpi-card .kpi-label {
+        font-size: .75rem;
+    }
+
+    .kpi-card .kpi-sub {
+        font-size: .7rem;
+        margin-top: 4px;
+    }
     
     .stat-card .icon {
         width: 45px;
@@ -773,7 +925,28 @@ body {
     .content-area {
         padding: 8px;
     }
-    
+
+    .kpi-card {
+        padding: 12px 10px;
+    }
+
+    .kpi-card .kpi-icon {
+        font-size: 1.4rem;
+        margin-bottom: 4px;
+    }
+
+    .kpi-card .kpi-value {
+        font-size: 0.95rem;
+    }
+
+    .kpi-card .kpi-label {
+        font-size: 0.65rem;
+    }
+
+    .kpi-card .kpi-sub {
+        display: none;
+    }
+
     .stat-card {
         padding: 10px;
         gap: 10px;

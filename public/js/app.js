@@ -29,7 +29,11 @@ let salesCurrentPage = 1;
 let salesTotalPages = 1;
 let purchasesCurrentPage = 1;
 let purchasesTotalPages = 1;
-const PAGE_LIMIT = 50;
+let productsCurrentPage = 1;
+let stockCurrentPage = 1;
+const PAGE_LIMIT = 10;
+const PRODUCTS_PAGE_LIMIT = 10;
+const STOCK_PAGE_LIMIT = 10;
 
 // Pagination callback registry — avoids embedding function source in onclick attributes
 const _paginationCallbacks = {};
@@ -239,11 +243,11 @@ function applyRolePermissions() {
             category.style.display = 'none';
         });
         
-        // Only show store-orders and my-guide
-        const storeOrdersMenuItem = document.querySelector('a[data-page="store-orders"]');
+        // Only show my-guide (Agizo za Stoo hidden until feature is ready)
+        // const storeOrdersMenuItem = document.querySelector('a[data-page="store-orders"]');
         const myGuideMenuItem = document.querySelector('a[data-page="my-guide"]');
         
-        if (storeOrdersMenuItem) storeOrdersMenuItem.style.display = 'block';
+        // if (storeOrdersMenuItem) storeOrdersMenuItem.style.display = 'block'; // TODO: re-enable when Agizo feature is ready
         if (myGuideMenuItem) myGuideMenuItem.style.display = 'block';
         
         return; // Exit early for store_viewer
@@ -263,35 +267,19 @@ function applyRolePermissions() {
         if (adminDocsMenuItem) adminDocsMenuItem.style.display = 'none';
     }
     
-    // Show pending orders menu for cashier/admin
+    // TODO: Agizo pages (pending-orders, ongoing-orders, store-orders) hidden until feature is ready
+    // Re-enable by uncommenting the display = 'block' lines below.
     const pendingOrdersMenuItem = document.querySelector('a[data-page="pending-orders"]');
-    if (pendingOrdersMenuItem) {
-        if (role === 'cashier' || role === 'admin') {
-            pendingOrdersMenuItem.style.display = 'block';
-        } else {
-            pendingOrdersMenuItem.style.display = 'none';
-        }
-    }
-    
-    // Show ongoing orders menu for all roles except store_viewer
+    if (pendingOrdersMenuItem) pendingOrdersMenuItem.style.display = 'none';
+    // if (pendingOrdersMenuItem && (role === 'cashier' || role === 'admin')) pendingOrdersMenuItem.style.display = 'block';
+
     const ongoingOrdersMenuItem = document.querySelector('a[data-page="ongoing-orders"]');
-    if (ongoingOrdersMenuItem) {
-        if (role !== 'store_viewer') {
-            ongoingOrdersMenuItem.style.display = 'block';
-        } else {
-            ongoingOrdersMenuItem.style.display = 'none';
-        }
-    }
-    
-    // Show store orders menu for store_viewer/admin (handled above for store_viewer)
+    if (ongoingOrdersMenuItem) ongoingOrdersMenuItem.style.display = 'none';
+    // if (ongoingOrdersMenuItem && role !== 'store_viewer') ongoingOrdersMenuItem.style.display = 'block';
+
     const storeOrdersMenuItem = document.querySelector('a[data-page="store-orders"]');
-    if (storeOrdersMenuItem && role !== 'store_viewer') {
-        if (role === 'admin') {
-            storeOrdersMenuItem.style.display = 'block';
-        } else {
-            storeOrdersMenuItem.style.display = 'none';
-        }
-    }
+    if (storeOrdersMenuItem) storeOrdersMenuItem.style.display = 'none';
+    // if (storeOrdersMenuItem && (role === 'admin')) storeOrdersMenuItem.style.display = 'block';
     
     // Hide credits menu for reception
     const creditsMenuItem = document.querySelector('a[data-page="credits"]');
@@ -604,45 +592,57 @@ async function loadDashboard() {
         document.getElementById('lowStockCount').textContent = data.products.lowStock;
     }
     
-    // Low stock alerts
+    // Low stock alerts — all items rendered; CSS max-height shows ~3, scrollable if more
     const lowStockList = document.getElementById('lowStockList');
     if (lowStockList) {
-        lowStockList.innerHTML = data.lowStockProducts.map(p => `
-            <div class="alert-item low-stock">
-                <div>
-                    <strong>${p.name}</strong>
-                    <div class="text-muted small">Stock: ${p.currentStock} ${p.unit || 'pcs'}</div>
-                </div>
-                <span class="badge bg-warning text-dark">Low Stock</span>
-            </div>
-        `).join('') || '<p class="text-muted text-center">Hakuna bidhaa zenye stock chini</p>';
+        const lsItems = data.lowStockProducts || [];
+        lowStockList.innerHTML = lsItems.length
+            ? lsItems.map(p => `
+                <div class="alert-item low-stock">
+                    <div>
+                        <strong>${p.name}</strong>
+                        <div class="text-muted small">Stock: ${p.currentStock} ${p.unit || 'pcs'}</div>
+                    </div>
+                    <span class="badge bg-warning text-dark">${p.currentStock}</span>
+                </div>`).join('')
+            : '<p class="text-muted text-center py-3 mb-0">Hakuna bidhaa zenye stock chini</p>';
     }
-    
-    // Expiring products
+
+    // Expiring products — same scroll approach
     const expiryList = document.getElementById('expiryList');
     if (expiryList) {
-        expiryList.innerHTML = data.expiringProducts.map(p => `
-            <div class="alert-item expiry">
-                <div>
-                    <strong>${p.productName}</strong>
-                    <div class="text-muted small">Batch: ${p.batchNumber} | Expires: ${formatDate(p.expiryDate)}</div>
-                </div>
-                <span class="badge bg-danger">${p.daysToExpiry} siku</span>
-            </div>
-        `).join('') || '<p class="text-muted text-center">Hakuna bidhaa zinazokaribia kuisha</p>';
+        const expItems = data.expiringProducts || [];
+        expiryList.innerHTML = expItems.length
+            ? expItems.map(p => `
+                <div class="alert-item expiry">
+                    <div>
+                        <strong>${p.productName}</strong>
+                        <div class="text-muted small">${p.batchNumber} | ${formatDate(p.expiryDate)}</div>
+                    </div>
+                    <span class="badge bg-danger">${p.daysToExpiry}d</span>
+                </div>`).join('')
+            : '<p class="text-muted text-center py-3 mb-0">Hakuna bidhaa zinazokaribia kuisha</p>';
     }
-    
-    // Top products - hide for Reception, show for others
+
+    // Top products — show first 3 rows; reveal footer if there are more
     const topProductsList = document.getElementById('topProductsList');
+    const topProductsFooter = document.getElementById('topProductsFooter');
+    const topProductsMeta = document.getElementById('topProductsMeta');
     if (topProductsList && !isReception) {
-        topProductsList.innerHTML = data.topProducts.map((p, i) => `
-            <tr>
-                <td><span class="badge bg-primary">${i + 1}</span></td>
-                <td>${p.productName}</td>
-                <td>${p.totalQuantity}</td>
-                <td>${formatCurrency(p.totalRevenue)}</td>
-            </tr>
-        `).join('') || '<tr><td colspan="4" class="text-center text-muted">Hakuna data</td></tr>';
+        const all = data.topProducts || [];
+        const visible = all.slice(0, 3);
+        const medalColors = ['text-warning', 'text-secondary', 'text-danger'];
+        topProductsList.innerHTML = visible.length
+            ? visible.map((p, i) => `
+                <tr>
+                    <td><i class="bi bi-trophy-fill ${medalColors[i] || 'text-muted'}"></i> ${i + 1}</td>
+                    <td><strong>${p.productName}</strong></td>
+                    <td>${p.totalQuantity}</td>
+                    <td>${formatCurrency(p.totalRevenue)}</td>
+                </tr>`).join('')
+            : '<tr><td colspan="4" class="text-center text-muted py-3">Hakuna data</td></tr>';
+        if (topProductsMeta) topProductsMeta.textContent = all.length > 3 ? `Top 3 kati ya ${all.length}` : '';
+        if (topProductsFooter) topProductsFooter.style.display = all.length > 3 ? '' : 'none';
     }
     
     // Sales chart - hide for Reception
@@ -688,19 +688,26 @@ function filterProductsTable() {
         });
     }
     
-    renderProductsTable();
+    productsCurrentPage = 1;
+    renderProductsTable(1);
 }
 
-function renderProductsTable() {
+function renderProductsTable(page = productsCurrentPage) {
     const tbody = document.getElementById('productsTableBody');
     if (!tbody) return;
-    
-    if (products.length === 0) {
+
+    productsCurrentPage = page;
+    const totalPages = Math.max(1, Math.ceil(products.length / PRODUCTS_PAGE_LIMIT));
+    const start = (page - 1) * PRODUCTS_PAGE_LIMIT;
+    const pageItems = products.slice(start, start + PRODUCTS_PAGE_LIMIT);
+
+    if (pageItems.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Hakuna matokeo yaliyopatikana</td></tr>';
+        renderPagination('productsPagination', 1, 1, renderProductsTable);
         return;
     }
-    
-    tbody.innerHTML = products.map(p => `
+
+    tbody.innerHTML = pageItems.map(p => `
         <tr>
             <td>${p.sku}</td>
             <td>${p.name}</td>
@@ -723,6 +730,8 @@ function renderProductsTable() {
             </td>
         </tr>
     `).join('');
+
+    renderPagination('productsPagination', page, totalPages, renderProductsTable);
 }
 
 async function saveProduct() {
@@ -966,47 +975,51 @@ function filterStockTable() {
     const searchTerm = searchInput.value.toLowerCase().trim();
     
     if (searchTerm === '') {
-        renderStockTableWithData(allStock);
+        stockCurrentPage = 1;
+        renderStockTableWithData(allStock, 1);
     } else {
         const filtered = allStock.filter(s => {
             const searchText = `${s.productName || ''}`.toLowerCase();
             return searchText.includes(searchTerm);
         });
-        renderStockTableWithData(filtered);
+        stockCurrentPage = 1;
+        renderStockTableWithData(filtered, 1);
     }
 }
 
 function renderStockTable() {
-    renderStockTableWithData(allStock);
+    renderStockTableWithData(allStock, stockCurrentPage);
 }
 
-function renderStockTableWithData(stockData) {
+function renderStockTableWithData(stockData, page = stockCurrentPage) {
     const tbody = document.getElementById('stockTableBody');
     if (!tbody) return;
-    
-    if (!stockData || stockData.length === 0) {
+
+    stockCurrentPage = page;
+    const totalPages = Math.max(1, Math.ceil((stockData || []).length / STOCK_PAGE_LIMIT));
+    const start = (page - 1) * STOCK_PAGE_LIMIT;
+    const pageItems = (stockData || []).slice(start, start + STOCK_PAGE_LIMIT);
+
+    if (pageItems.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Hakuna matokeo yaliyopatikana</td></tr>';
+        renderPagination('stockPagination', 1, 1, (p) => renderStockTableWithData(stockData, p));
         return;
     }
-    
-    tbody.innerHTML = stockData.map(s => `
+
+    tbody.innerHTML = pageItems.map(s => `
         <tr>
             <td>${s.productName}</td>
             <td>${s.quantity} ${s.unit}</td>
             <td>${s.batches.length}</td>
             <td>
-                <button class="btn btn-sm btn-info btn-icon me-1" onclick="viewStockDetails('${s.productId}')" title="Ona">
-                    <i class="bi bi-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-success btn-icon me-1" onclick="showStockInModal('${s.productId}')" title="Stock In">
+                <button class="btn btn-sm btn-success btn-icon" onclick="showStockInModal('${s.productId}')" title="Stock In">
                     <i class="bi bi-plus"></i>
-                </button>
-                <button class="btn btn-sm btn-warning btn-icon" onclick="showStockAdjustModal('${s.productId}')" title="Sahihisha">
-                    <i class="bi bi-arrow-repeat"></i>
                 </button>
             </td>
         </tr>
     `).join('');
+
+    renderPagination('stockPagination', page, totalPages, (p) => renderStockTableWithData(stockData, p));
 }
 
 async function saveStockIn() {
