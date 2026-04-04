@@ -1492,7 +1492,7 @@ app.post('/api/sales', isAuthenticated, hasRole('admin', 'cashier', 'reception')
     res.json({ success: true, message: successMessage, data: newSale });
 });
 
-// API: Generate Receipt (HTML for 80mm POS thermal printer)
+// API: Generate Receipt (HTML for 58mm POS thermal printer)
 app.get('/api/sales/:id/receipt', isAuthenticated, (req, res) => {
     const { id } = req.params;
     const sales = readDB(dbFiles.sales);
@@ -1515,20 +1515,22 @@ app.get('/api/sales/:id/receipt', isAuthenticated, (req, res) => {
         bank: 'Bank Transfer'
     }[sale.paymentMethod] || (sale.paymentMethod || '').toUpperCase();
 
+    // TRA-style: each item on 2 lines (name, then qty x price = total)
     const itemsHtml = sale.items.map(item => `
-        <tr>
-            <td class="item-name">${item.productName}</td>
-            <td class="item-qty">${item.quantity}</td>
-            <td class="item-price">${fmt(item.price)}</td>
-            <td class="item-total">${fmt(item.total)}</td>
-        </tr>`).join('');
+  <div class="item-block">
+    <div class="item-name">${item.productName}</div>
+    <div class="item-detail">
+      <span>${item.quantity} x ${fmt(item.price)}</span>
+      <span>${fmt(item.total)}</span>
+    </div>
+  </div>`).join('');
 
-    const discountRow = (sale.discount > 0)
-        ? `<tr class="summary-row"><td colspan="3">Punguzo</td><td>-${fmt(sale.discount)}</td></tr>`
+    const discountHtml = (sale.discount > 0)
+        ? `<div class="sum-row"><span>Punguzo</span><span>-${fmt(sale.discount)}</span></div>`
         : '';
 
-    const creditRow = sale.isCredit
-        ? `<tr class="summary-row credit-row"><td colspan="3">Mkopo Baki</td><td>${fmt(sale.totalAmount - (sale.paidAmount || 0))}</td></tr>`
+    const creditHtml = sale.isCredit
+        ? `<div class="sum-row credit-row"><span>Mkopo Baki</span><span>${fmt(sale.totalAmount - (sale.paidAmount || 0))}</span></div>`
         : '';
 
     const html = `<!DOCTYPE html>
@@ -1542,129 +1544,137 @@ app.get('/api/sales/:id/receipt', isAuthenticated, (req, res) => {
 
   body {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
+    font-size: 14px;
     background: #fff;
     color: #000;
-    width: 80mm;
+    width: 58mm;
     margin: 0 auto;
-    padding: 4mm 3mm 8mm 3mm;
+    padding: 3mm 2mm 10mm 2mm;
   }
 
+  /* HEADER */
   .header { text-align: center; margin-bottom: 6px; }
-  .header .company-name {
-    font-size: 16px;
+  .company-name {
+    font-size: 17px;
     font-weight: bold;
-    letter-spacing: 1px;
     text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1.2;
   }
-  .header .company-sub {
-    font-size: 10px;
-    color: #333;
-    margin-top: 1px;
-  }
+  .company-sub { font-size: 12px; margin-top: 3px; }
 
-  .divider {
-    border: none;
-    border-top: 1px dashed #000;
-    margin: 6px 0;
-  }
-  .divider-solid {
-    border: none;
-    border-top: 1px solid #000;
-    margin: 6px 0;
-  }
+  /* DIVIDERS */
+  .div-solid { border: none; border-top: 2px solid #000; margin: 6px 0; }
+  .div-dash  { border: none; border-top: 1px dashed #000; margin: 5px 0; }
 
+  /* TITLE */
   .receipt-title {
     text-align: center;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 4px;
+    padding: 3px 0;
+  }
+
+  /* INFO ROWS */
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
     font-size: 13px;
-    font-weight: bold;
-    letter-spacing: 2px;
-    margin: 4px 0;
+    padding: 2px 0;
+    gap: 4px;
   }
+  .info-row .lbl { color: #555; white-space: nowrap; }
+  .info-row .val { font-weight: bold; text-align: right; word-break: break-word; }
 
-  .info-table { width: 100%; font-size: 11px; border-collapse: collapse; }
-  .info-table td { padding: 1px 0; vertical-align: top; }
-  .info-table td:first-child { width: 40%; color: #444; }
-  .info-table td:last-child { font-weight: bold; text-align: right; }
-
-  .items-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 11px;
-    margin: 4px 0;
-  }
-  .items-table thead tr {
-    border-bottom: 1px solid #000;
-    border-top: 1px solid #000;
-  }
-  .items-table thead th {
-    padding: 3px 1px;
-    font-weight: bold;
-    font-size: 10px;
-    text-transform: uppercase;
-  }
-  .items-table th.item-name, .items-table td.item-name {
-    width: 42%; text-align: left;
-  }
-  .items-table th.item-qty, .items-table td.item-qty {
-    width: 10%; text-align: center;
-  }
-  .items-table th.item-price, .items-table td.item-price {
-    width: 24%; text-align: right;
-  }
-  .items-table th.item-total, .items-table td.item-total {
-    width: 24%; text-align: right;
-  }
-  .items-table tbody tr { border-bottom: 1px dotted #ccc; }
-  .items-table tbody td { padding: 3px 1px; vertical-align: top; }
-  .item-name { word-break: break-word; }
-
-  .summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 11px;
-    margin-top: 4px;
-  }
-  .summary-table td { padding: 2px 1px; }
-  .summary-row td:first-child { width: 70%; text-align: left; color: #444; }
-  .summary-row td:last-child { text-align: right; }
-  .total-row td { font-size: 13px; font-weight: bold; border-top: 1px solid #000; padding-top: 4px; }
-  .total-row td:first-child { text-align: left; }
-  .total-row td:last-child { text-align: right; }
-  .credit-row td { color: #c00; }
-
-  .payment-section {
-    margin-top: 6px;
-    text-align: center;
-    font-size: 11px;
-  }
-  .payment-method {
-    display: inline-block;
-    border: 1px solid #000;
-    padding: 2px 10px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    margin-top: 2px;
-  }
-
-  .footer {
-    text-align: center;
-    font-size: 10px;
-    margin-top: 8px;
-    color: #444;
-    line-height: 1.4;
-  }
-  .footer .thank-you {
+  /* ITEMS */
+  .section-label {
     font-size: 12px;
     font-weight: bold;
-    color: #000;
-    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 2px 0;
+  }
+  .item-block { margin: 5px 0; }
+  .item-name {
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+  .item-detail {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding-left: 6px;
+    margin-top: 1px;
+    color: #333;
   }
 
+  /* SUMMARY ROWS */
+  .sum-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 2px 0;
+    color: #444;
+  }
+  .credit-row { color: #c00; font-weight: bold; }
+
+  /* TOTAL BOX */
+  .total-box {
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+    padding: 6px 0 5px;
+    margin: 6px 0;
+    text-align: center;
+  }
+  .total-label {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .total-amount {
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 3px;
+    line-height: 1.1;
+  }
+
+  /* PAYMENT */
+  .payment-section { text-align: center; font-size: 13px; margin: 6px 0; }
+  .payment-badge {
+    display: inline-block;
+    border: 2px solid #000;
+    padding: 3px 14px;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+  .credit-warning {
+    font-size: 13px;
+    font-weight: bold;
+    color: #c00;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  /* FOOTER */
+  .footer { text-align: center; margin-top: 8px; }
+  .thank-you {
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 3px;
+  }
+  .footer-sub { font-size: 12px; color: #444; line-height: 1.5; }
+
   @media print {
-    body { width: 80mm; margin: 0; padding: 2mm 2mm 6mm; }
+    body { width: 58mm; margin: 0; padding: 2mm 2mm 8mm; }
     .no-print { display: none !important; }
-    @page { size: 80mm auto; margin: 0; }
+    @page { size: 58mm auto; margin: 0; }
   }
 </style>
 </head>
@@ -1675,94 +1685,68 @@ app.get('/api/sales/:id/receipt', isAuthenticated, (req, res) => {
   <div class="company-name">${settings.companyName || 'HASLIM GROUP'}</div>
   ${settings.companyAddress ? `<div class="company-sub">${settings.companyAddress}</div>` : ''}
   ${settings.companyPhone ? `<div class="company-sub">Tel: ${settings.companyPhone}</div>` : ''}
-  ${settings.companyEmail ? `<div class="company-sub">${settings.companyEmail}</div>` : ''}
 </div>
 
-<hr class="divider-solid">
-<div class="receipt-title">*  RISITI  *</div>
-<hr class="divider-solid">
+<hr class="div-solid">
+<div class="receipt-title">RISITI</div>
+<hr class="div-solid">
 
-<!-- RECEIPT INFO -->
-<table class="info-table">
-  <tr>
-    <td>Namba:</td>
-    <td>${sale.receiptNumber}</td>
-  </tr>
-  <tr>
-    <td>Tarehe:</td>
-    <td>${dateStr}</td>
-  </tr>
-  ${customer ? `<tr><td>Mteja:</td><td>${customer.name}</td></tr>` : ''}
-  ${customer && customer.phone ? `<tr><td>Simu:</td><td>${customer.phone}</td></tr>` : ''}
-  <tr>
-    <td>Aina:</td>
-    <td>${sale.saleType === 'wholesale' ? 'Jumla' : 'Rejareja'}</td>
-  </tr>
-  ${sale.cashierName ? `<tr><td>Muuzaji:</td><td>${sale.cashierName}</td></tr>` : ''}
-</table>
+<!-- INFO -->
+<div class="info-row"><span class="lbl">Namba:</span><span class="val">${sale.receiptNumber}</span></div>
+<div class="info-row"><span class="lbl">Tarehe:</span><span class="val">${dateStr}</span></div>
+${customer ? `<div class="info-row"><span class="lbl">Mteja:</span><span class="val">${customer.name}</span></div>` : ''}
+${sale.cashierName ? `<div class="info-row"><span class="lbl">Muuzaji:</span><span class="val">${sale.cashierName}</span></div>` : ''}
 
-<hr class="divider">
+<hr class="div-dash">
+<div class="section-label">Bidhaa Zilizonunuliwa</div>
+<hr class="div-dash">
 
 <!-- ITEMS -->
-<table class="items-table">
-  <thead>
-    <tr>
-      <th class="item-name">Bidhaa</th>
-      <th class="item-qty">Idadi</th>
-      <th class="item-price">Bei</th>
-      <th class="item-total">Jumla</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${itemsHtml}
-  </tbody>
-</table>
+${itemsHtml}
 
-<!-- TOTALS -->
-<table class="summary-table">
-  <tr class="summary-row">
-    <td colspan="3">Subtotal</td>
-    <td>${fmt(sale.subtotal)} TZS</td>
-  </tr>
-  ${discountRow}
-  <tr class="total-row">
-    <td colspan="3">JUMLA KUU</td>
-    <td>${fmt(sale.totalAmount)} TZS</td>
-  </tr>
-  ${creditRow}
-</table>
+<hr class="div-dash">
 
-<hr class="divider">
+<!-- DISCOUNT (if any) -->
+${discountHtml}
 
-<!-- PAYMENT -->
-<div class="payment-section">
-  <div>Njia ya Malipo:</div>
-  <div class="payment-method">${paymentMethodLabel}</div>
-  ${sale.isCredit ? '<div style="margin-top:4px;font-size:10px;color:#c00;">⚠ MAUZO YA MKOPO</div>' : ''}
+<!-- TOTAL -->
+<div class="total-box">
+  <div class="total-label">Jumla ya Kulipa</div>
+  <div class="total-amount">TZS ${fmt(sale.totalAmount)}</div>
 </div>
 
-<hr class="divider">
+<!-- CREDIT BALANCE -->
+${creditHtml}
+
+<!-- PAYMENT METHOD -->
+<div class="payment-section">
+  <div>Njia ya Malipo:</div>
+  <div class="payment-badge">${paymentMethodLabel}</div>
+</div>
+
+${sale.isCredit ? '<div class="credit-warning">⚠ MAUZO YA MKOPO</div>' : ''}
+
+<hr class="div-dash">
 
 <!-- FOOTER -->
 <div class="footer">
   <div class="thank-you">${settings.receiptFooter || 'Asante kwa kununua!'}</div>
-  <div>Karibu tena — HASLIM GROUP LIMITED</div>
-  <div style="margin-top:4px;font-size:9px;color:#888;">Printed: ${moment().format('DD/MM/YYYY HH:mm')}</div>
+  <div class="footer-sub">Karibu tena</div>
+  <div class="footer-sub" style="font-size:11px;color:#888;margin-top:3px;">${moment().format('DD/MM/YYYY HH:mm')}</div>
 </div>
 
-<!-- Print button (hidden when printing) -->
-<div class="no-print" style="text-align:center;margin-top:12px;">
-  <button onclick="window.print()" style="padding:8px 24px;font-size:13px;cursor:pointer;background:#0d6efd;color:#fff;border:none;border-radius:4px;">
-    &#128438; Chapisha Risiti
+<!-- Print button -->
+<div class="no-print" style="text-align:center;margin-top:16px;">
+  <button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer;background:#0d6efd;color:#fff;border:none;border-radius:4px;">
+    🖨 Chapisha Risiti
   </button>
-  <div style="margin-top:8px;font-size:10px;color:#666;line-height:1.5;">
-    💡 Ili chapisha kwenye printer: badilisha <strong>"Destination"</strong><br>
-    kutoka <em>"Save as PDF"</em> hadi printer yako.
+  <div style="margin-top:8px;font-size:11px;color:#666;line-height:1.6;">
+    💡 Badilisha <strong>"Destination"</strong><br>
+    kutoka <em>"Save as PDF"</em> hadi printer yako (58mm).
   </div>
 </div>
 
 <script>
-  // Auto-print when opened
   window.addEventListener('load', function() {
     setTimeout(function() { window.print(); }, 400);
   });
