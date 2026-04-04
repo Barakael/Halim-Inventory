@@ -3156,6 +3156,95 @@ app.get('*', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
+// =============================================================
+// WEEKLY BACKUP SYSTEM
+// Every Sunday at 23:00 — full cumulative snapshot of all data.
+// Skips weeks with no activity (no sales + no stock changes).
+// Stored in backups/weekly/YYYY-WW/ — never committed to git.
+// =============================================================
+function runWeeklyBackup() {
+    try {
+        const now = moment();
+
+        // Skip if no activity this week (crash/idle day detection)
+        const sales = readDB(dbFiles.sales);
+        const stock = readDB(dbFiles.stock);
+        const weekStart = moment().startOf('isoWeek').toISOString();
+        const weekEnd = moment().endOf('isoWeek').toISOString();
+
+        const salesThisWeek = sales.filter(s => s.createdAt >= weekStart && s.createdAt <= weekEnd);
+        const stockChangesThisWeek = stock.filter(s => s.updatedAt >= weekStart && s.updatedAt <= weekEnd);
+
+        if (salesThisWeek.length === 0 && stockChangesThisWeek.length === 0) {
+            console.log(`⏭ Weekly backup skipped — no activity this week (${now.format('YYYY-[W]WW')})`);
+            return;
+        }
+
+        const weekLabel = now.format('YYYY-[W]WW'); // e.g. 2026-W14
+        const backupDir = path.join(__dirname, 'backups', 'weekly', weekLabel);
+
+        if (fs.existsSync(backupDir)) {
+            console.log(`ℹ Weekly backup for ${weekLabel} already exists — skipping.`);
+            return;
+        }
+
+        fs.mkdirSync(backupDir, { recursive: true });
+
+        // Full snapshot of every data file
+        Object.keys(dbFiles).forEach(key => {
+            if (fs.existsSync(dbFiles[key])) {
+                fs.copyFileSync(dbFiles[key], path.join(backupDir, `${key}.json`));
+            }
+        });
+
+        // Write a manifest with stats
+        const manifest = {
+            week: weekLabel,
+            createdAt: now.toISOString(),
+            stats: {
+                totalSales: sales.length,
+                salesThisWeek: salesThisWeek.length,
+                products: readDB(dbFiles.products).length,
+                categories: readDB(dbFiles.categories).length,
+                customers: readDB(dbFiles.customers).length,
+                suppliers: readDB(dbFiles.suppliers).length,
+            }
+        };
+        fs.writeFileSync(
+            path.join(backupDir, 'manifest.json'),
+            JSON.stringify(manifest, null, 2)
+        );
+
+        console.log(`✅ Weekly backup created: ${weekLabel} | ${salesThisWeek.length} sales this week | ${sales.length} total sales`);
+
+    } catch (err) {
+        console.error('❌ Weekly backup failed:', err.message);
+    }
+}
+
+// Check every minute — fire once on Sunday at 23:00
+let lastWeeklyBackup = null;
+setInterval(() => {
+    const now = moment();
+    const weekKey = now.format('YYYY-[W]WW');
+    if (now.day() === 0 && now.hours() === 23 && now.minutes() === 0 && lastWeeklyBackup !== weekKey) {
+        lastWeeklyBackup = weekKey;
+        runWeeklyBackup();
+    }
+}, 60 * 1000);
+
+// =============================================================
+// CRASH PROTECTION — keeps server alive on unhandled errors
+// =============================================================
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught Exception (server kept running):', err.message);
+    console.error(err.stack);
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('❌ Unhandled Promise Rejection (server kept running):', reason);
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
     const nets = os.networkInterfaces();

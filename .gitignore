@@ -14,6 +14,9 @@ receipts/
 # Backups (large, should be managed separately)
 backups/
 
+# Live database files — never commit, managed per machine separately
+data/*.json
+
 # Temporary write files from atomic DB writes
 data/*.tmp
 
