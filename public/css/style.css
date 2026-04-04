@@ -31,12 +31,12 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 260px;
+    width: 240px;
     height: 100vh;
     background: linear-gradient(180deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
     color: var(--white);
     z-index: 1000;
-    transition: transform 0.3s ease;
+    transition: transform 0.1s ease;
     overflow-y: auto;
 }
 
@@ -52,12 +52,12 @@ body {
 }
 
 .sidebar-header h1 {
-    font-size: 1.4rem;
+    font-size: 1rem;
     font-weight: 700;
 }
 
 .sidebar-menu {
-    padding: 15px 0;
+    padding: 13px 0;
 }
 
 .menu-category {
@@ -214,6 +214,7 @@ body {
 /* Content Area */
 .content-area {
     padding: 25px;
+    zoom: 90%;
 }
 
 /* Cards */
@@ -624,11 +625,110 @@ body {
 }
 
 .alert-item.low-stock {
-    border-color: var(--warning);
+    border-color: var(--primary-blue);
 }
 
 .alert-item.expiry {
     border-color: var(--danger);
+}
+
+/* Dashboard mini charts */
+.mini-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    height: 148px;
+    padding: 0 4px 4px;
+}
+
+.mini-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    height: 100%;
+    justify-content: flex-end;
+}
+
+.mini-bar {
+    width: 100%;
+    border-radius: 7px 7px 0 0;
+    background: linear-gradient(180deg, #4d9fff 0%, #0d6efd 60%, #0a58ca 100%);
+    transition: height 0.7s cubic-bezier(.4, 0, .2, 1);
+    min-height: 4px;
+    box-shadow: 0 2px 8px rgba(13,110,253,0.25);
+}
+
+.mini-bar-value {
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--primary-blue);
+    white-space: nowrap;
+    text-align: center;
+}
+
+.mini-bar-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Horizontal bar chart (Madeni vs Makusanyo) */
+.hbar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 6px 0;
+}
+
+.hbar-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.hbar-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.hbar-track {
+    height: 24px;
+    background: #f0f4ff;
+    border-radius: 7px;
+    overflow: hidden;
+}
+
+.hbar-fill {
+    height: 100%;
+    border-radius: 7px;
+    transition: width 0.85s cubic-bezier(.4, 0, .2, 1);
+    min-width: 4px;
+}
+
+.hbar-fill.hbar-blue {
+    background: linear-gradient(90deg, #0d6efd 0%, #4d9fff 100%);
+    box-shadow: 0 2px 8px rgba(13,110,253,0.3);
+}
+
+.hbar-fill.hbar-yellow {
+    background: linear-gradient(90deg, #e6a800 0%, #ffc107 60%, #ffda6a 100%);
+    box-shadow: 0 2px 8px rgba(255,193,7,0.35);
+}
+
+.hbar-footer {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
 }
 
 /* Charts */

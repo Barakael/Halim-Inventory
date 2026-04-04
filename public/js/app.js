@@ -31,9 +31,13 @@ let purchasesCurrentPage = 1;
 let purchasesTotalPages = 1;
 let productsCurrentPage = 1;
 let stockCurrentPage = 1;
+let categoriesCurrentPage = 1;
+let customersCurrentPage = 1;
 const PAGE_LIMIT = 10;
 const PRODUCTS_PAGE_LIMIT = 10;
 const STOCK_PAGE_LIMIT = 10;
+const CATEGORIES_PAGE_LIMIT = 10;
+const CUSTOMERS_PAGE_LIMIT = 10;
 
 // Pagination callback registry — avoids embedding function source in onclick attributes
 const _paginationCallbacks = {};
@@ -142,6 +146,12 @@ function formatCurrency(amount) {
         style: 'decimal',
         minimumFractionDigits: 0
     }).format(amount) + ' TZS';
+}
+
+function formatCurrencyShort(amount) {
+    if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (amount >= 1_000) return Math.round(amount / 1_000) + 'K';
+    return String(amount);
 }
 
 // Format date
@@ -339,10 +349,14 @@ function initPageFromUrl() {
 
 // Navigate to page
 function navigateTo(page, updateUrl = true) {
+    // Redirect settings sub-pages to the settings page
+    const settingsSubPages = ['branches', 'logs'];
+    const effectivePage = settingsSubPages.includes(page) ? 'settings' : page;
+
     // Update active menu item
     document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.remove('active');
-        if (item.dataset.page === page) {
+        if (item.dataset.page === effectivePage) {
             item.classList.add('active');
         }
     });
@@ -362,7 +376,7 @@ function navigateTo(page, updateUrl = true) {
         section.classList.remove('active');
     });
     
-    const targetSection = document.getElementById(`page-${page}`);
+    const targetSection = document.getElementById(`page-${effectivePage}`);
     if (targetSection) {
         targetSection.classList.add('active');
     } else {
@@ -398,11 +412,10 @@ function navigateTo(page, updateUrl = true) {
         reports: 'Ripoti',
         'my-guide': 'Mwongozo',
         docs: 'Mwongozo (Admin)',
-        branches: 'Matawi',
+        branches: 'Mipangilio',
         users: 'Watumiaji',
         settings: 'Mipangilio',
-        logs: 'Activity Logs',
-        docs: 'Mwongozo wa Mfumo'
+        logs: 'Mipangilio',
     };
     
     const pageTitle = titles[page] || page;
@@ -479,15 +492,18 @@ async function loadPageData(page) {
             await loadReports();
             break;
         case 'branches':
+            switchSettingsTab('branches');
             await loadBranchesList();
             break;
         case 'users':
             await loadUsers();
             break;
         case 'logs':
+            switchSettingsTab('logs');
             await loadActivityLogs();
             break;
         case 'settings':
+            switchSettingsTab('general');
             await loadSettings();
             break;
         case 'docs':
@@ -500,6 +516,33 @@ async function loadPageData(page) {
 }
 
 // Setup event listeners
+// =========================
+// SETTINGS TABS
+// =========================
+function switchSettingsTab(tab) {
+    // Make sure settings page is showing
+    const settingsPage = document.getElementById('page-settings');
+    if (settingsPage && !settingsPage.classList.contains('active')) {
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        settingsPage.classList.add('active');
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.page === 'settings');
+        });
+    }
+
+    const panes = ['general', 'branches', 'logs'];
+    panes.forEach(p => {
+        const pane = document.getElementById(`settingsPane-${p}`);
+        const tabEl = document.getElementById(`settingsTab-${p}`);
+        if (pane) pane.style.display = p === tab ? '' : 'none';
+        if (tabEl) tabEl.classList.toggle('active', p === tab);
+    });
+
+    // Load data for the selected tab
+    if (tab === 'branches') loadBranchesList();
+    if (tab === 'logs') loadActivityLogs();
+}
+
 function setupEventListeners() {
     // Sidebar toggle
     document.querySelector('.toggle-sidebar')?.addEventListener('click', () => {
@@ -551,7 +594,8 @@ async function loadDashboard() {
     const todayRevenueCard = document.getElementById('todayRevenueCard');
     const weekRevenueCard = document.getElementById('weekRevenueCard');
     const monthRevenueCard = document.getElementById('monthRevenueCard');
-    const debtsCard = document.getElementById('debtsCard');
+    const monthlyChartCard = document.getElementById('monthlyChartCard');
+    const debtsChartCard = document.getElementById('debtsChartCard');
     const topProductsCard = document.getElementById('topProductsCard');
     const revenueColumnHeader = document.querySelector('#topProductsHeader .revenue-column');
     
@@ -559,14 +603,16 @@ async function loadDashboard() {
         if (todayRevenueCard) todayRevenueCard.style.display = 'none';
         if (weekRevenueCard) weekRevenueCard.style.display = 'none';
         if (monthRevenueCard) monthRevenueCard.style.display = 'none';
-        if (debtsCard) debtsCard.style.display = 'none';
+        if (monthlyChartCard) monthlyChartCard.style.display = 'none';
+        if (debtsChartCard) debtsChartCard.style.display = 'none';
         if (topProductsCard) topProductsCard.style.display = 'none';
     } else {
         // Show and update financial stat cards for other roles
         if (todayRevenueCard) todayRevenueCard.style.display = '';
         if (weekRevenueCard) weekRevenueCard.style.display = '';
         if (monthRevenueCard) monthRevenueCard.style.display = '';
-        if (debtsCard) debtsCard.style.display = '';
+        if (monthlyChartCard) monthlyChartCard.style.display = '';
+        if (debtsChartCard) debtsChartCard.style.display = '';
         if (topProductsCard) topProductsCard.style.display = '';
         
         // Update financial stat cards for other roles
@@ -581,9 +627,58 @@ async function loadDashboard() {
             document.getElementById('monthRevenue').textContent = formatCurrency(data.month.revenue);
             document.getElementById('monthProfit').textContent = formatCurrency(data.month.profit);
         }
-        if (document.getElementById('totalDebts')) {
-            document.getElementById('totalDebts').textContent = formatCurrency(data.debts.total);
-            document.getElementById('debtorsCount').textContent = data.debts.count;
+
+        // ── 3-Month Revenue Chart ─────────────────────────────────
+        const monthlyChartEl = document.getElementById('monthlyRevenueChart');
+        if (monthlyChartEl) {
+            const last3 = (data.salesByMonth || []).slice(-3);
+            const maxVal = Math.max(...last3.map(m => m.revenue), 1);
+            monthlyChartEl.innerHTML = `
+                <div class="mini-bar-chart">
+                    ${last3.map(m => {
+                        const pct = Math.max(4, Math.round((m.revenue / maxVal) * 100));
+                        return `
+                            <div class="mini-bar-col">
+                                <div class="mini-bar-value">${formatCurrencyShort(m.revenue)}</div>
+                                <div class="mini-bar" style="height:${pct}%;"></div>
+                                <div class="mini-bar-label">${m.month} ${m.year}</div>
+                            </div>`;
+                    }).join('')}
+                </div>`;
+        }
+
+        // ── Madeni vs Makusanyo Chart ─────────────────────────────
+        const debtsChartEl = document.getElementById('debtsVsCollectedChart');
+        if (debtsChartEl) {
+            const outstanding = data.debts.total || 0;
+            const collected = data.debts.collected || 0;
+            const maxVal = Math.max(outstanding, collected, 1);
+            const outPct = Math.max(2, Math.round((outstanding / maxVal) * 100));
+            const colPct = Math.max(2, Math.round((collected / maxVal) * 100));
+            debtsChartEl.innerHTML = `
+                <div class="hbar-chart">
+                    <div class="hbar-row">
+                        <div class="hbar-label-row">
+                            <span><i class="bi bi-cash-coin me-1" style="color:#0d6efd;"></i>Makusanyo</span>
+                            <span style="color:#0d6efd;font-weight:700;">${formatCurrency(collected)}</span>
+                        </div>
+                        <div class="hbar-track">
+                            <div class="hbar-fill hbar-blue" style="width:${colPct}%;"></div>
+                        </div>
+                    </div>
+                    <div class="hbar-row">
+                        <div class="hbar-label-row">
+                            <span><i class="bi bi-exclamation-circle me-1" style="color:#e6a800;"></i>Madeni Baki</span>
+                            <span style="color:#e6a800;font-weight:700;">${formatCurrency(outstanding)}</span>
+                        </div>
+                        <div class="hbar-track">
+                            <div class="hbar-fill hbar-yellow" style="width:${outPct}%;"></div>
+                        </div>
+                    </div>
+                    <div class="hbar-footer">
+                        Wanadaiwa: <strong>${data.debts.count}</strong> &nbsp;|&nbsp; Jumla ya Mkopo: <strong>${formatCurrency(outstanding + collected)}</strong>
+                    </div>
+                </div>`;
         }
     }
     
@@ -592,7 +687,7 @@ async function loadDashboard() {
         document.getElementById('lowStockCount').textContent = data.products.lowStock;
     }
     
-    // Low stock alerts — all items rendered; CSS max-height shows ~3, scrollable if more
+    // Low stock alerts — primary blue colors
     const lowStockList = document.getElementById('lowStockList');
     if (lowStockList) {
         const lsItems = data.lowStockProducts || [];
@@ -603,25 +698,9 @@ async function loadDashboard() {
                         <strong>${p.name}</strong>
                         <div class="text-muted small">Stock: ${p.currentStock} ${p.unit || 'pcs'}</div>
                     </div>
-                    <span class="badge bg-warning text-dark">${p.currentStock}</span>
+                    <span class="badge bg-primary">${p.currentStock}</span>
                 </div>`).join('')
             : '<p class="text-muted text-center py-3 mb-0">Hakuna bidhaa zenye stock chini</p>';
-    }
-
-    // Expiring products — same scroll approach
-    const expiryList = document.getElementById('expiryList');
-    if (expiryList) {
-        const expItems = data.expiringProducts || [];
-        expiryList.innerHTML = expItems.length
-            ? expItems.map(p => `
-                <div class="alert-item expiry">
-                    <div>
-                        <strong>${p.productName}</strong>
-                        <div class="text-muted small">${p.batchNumber} | ${formatDate(p.expiryDate)}</div>
-                    </div>
-                    <span class="badge bg-danger">${p.daysToExpiry}d</span>
-                </div>`).join('')
-            : '<p class="text-muted text-center py-3 mb-0">Hakuna bidhaa zinazokaribia kuisha</p>';
     }
 
     // Top products — show first 3 rows; reveal footer if there are more
@@ -843,20 +922,27 @@ function filterCategoriesTable() {
             return searchText.includes(searchTerm);
         });
     }
-    
-    renderCategoriesTable();
+
+    categoriesCurrentPage = 1;
+    renderCategoriesTable(1);
 }
 
-function renderCategoriesTable() {
+function renderCategoriesTable(page = categoriesCurrentPage) {
     const tbody = document.getElementById('categoriesTableBody');
     if (!tbody) return;
-    
-    if (categories.length === 0) {
+
+    categoriesCurrentPage = page;
+    const totalPages = Math.max(1, Math.ceil(categories.length / CATEGORIES_PAGE_LIMIT));
+    const start = (page - 1) * CATEGORIES_PAGE_LIMIT;
+    const pageItems = categories.slice(start, start + CATEGORIES_PAGE_LIMIT);
+
+    if (pageItems.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Hakuna matokeo yaliyopatikana</td></tr>';
+        renderPagination('categoriesPagination', 1, 1, renderCategoriesTable);
         return;
     }
-    
-    tbody.innerHTML = categories.map(c => `
+
+    tbody.innerHTML = pageItems.map(c => `
         <tr>
             <td>${c.name}</td>
             <td>${c.description || '-'}</td>
@@ -874,6 +960,8 @@ function renderCategoriesTable() {
             </td>
         </tr>
     `).join('');
+
+    renderPagination('categoriesPagination', page, totalPages, renderCategoriesTable);
 }
 
 function loadCategoryOptions(selectId) {
@@ -1506,20 +1594,27 @@ function filterCustomersTable() {
             return searchText.includes(searchTerm);
         });
     }
-    
-    renderCustomersTable();
+
+    customersCurrentPage = 1;
+    renderCustomersTable(1);
 }
 
-function renderCustomersTable() {
+function renderCustomersTable(page = customersCurrentPage) {
     const tbody = document.getElementById('customersTableBody');
     if (!tbody) return;
-    
-    if (customers.length === 0) {
+
+    customersCurrentPage = page;
+    const totalPages = Math.max(1, Math.ceil(customers.length / CUSTOMERS_PAGE_LIMIT));
+    const start = (page - 1) * CUSTOMERS_PAGE_LIMIT;
+    const pageItems = customers.slice(start, start + CUSTOMERS_PAGE_LIMIT);
+
+    if (pageItems.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Hakuna matokeo yaliyopatikana</td></tr>';
+        renderPagination('customersPagination', 1, 1, renderCustomersTable);
         return;
     }
-    
-    tbody.innerHTML = customers.map(c => `
+
+    tbody.innerHTML = pageItems.map(c => `
         <tr>
             <td>${c.name}</td>
             <td>${c.businessName || '-'}</td>
@@ -1538,7 +1633,9 @@ function renderCustomersTable() {
                 </button>
             </td>
         </tr>
-    `).join('') || '<tr><td colspan="6" class="text-center text-muted">Hakuna wateja</td></tr>';
+    `).join('');
+
+    renderPagination('customersPagination', page, totalPages, renderCustomersTable);
 }
 
 async function saveCustomer() {
