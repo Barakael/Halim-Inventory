@@ -1492,76 +1492,282 @@ app.post('/api/sales', isAuthenticated, hasRole('admin', 'cashier', 'reception')
     res.json({ success: true, message: successMessage, data: newSale });
 });
 
-// API: Generate Receipt PDF
+// API: Generate Receipt (HTML for 80mm POS thermal printer)
 app.get('/api/sales/:id/receipt', isAuthenticated, (req, res) => {
     const { id } = req.params;
     const sales = readDB(dbFiles.sales);
     const settings = readDB(dbFiles.settings);
     const customers = readDB(dbFiles.customers);
-    
+
     const sale = sales.find(s => s.id === id);
     if (!sale) {
-        return res.json({ success: false, message: 'Sale not found' });
+        return res.status(404).send('<p>Sale not found</p>');
     }
-    
+
     const customer = customers.find(c => c.id === sale.customerId);
-    
-    // Create PDF
-    const doc = new PDFDocument({ size: [226, 500], margin: 10 }); // 80mm receipt
-    
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename=receipt-${sale.receiptNumber}.pdf`);
-    
-    doc.pipe(res);
-    
-    // Header
-    doc.fontSize(14).font('Helvetica-Bold').text(settings.companyName || 'DUKA JUMLA', { align: 'center' });
-    doc.fontSize(8).font('Helvetica').text(settings.companyAddress || '', { align: 'center' });
-    doc.text(settings.companyPhone || '', { align: 'center' });
-    doc.moveDown(0.5);
-    
-    doc.text('─'.repeat(30), { align: 'center' });
-    doc.fontSize(10).font('Helvetica-Bold').text('RISITI / RECEIPT', { align: 'center' });
-    doc.text('─'.repeat(30), { align: 'center' });
-    doc.moveDown(0.3);
-    
-    // Receipt info
-    doc.fontSize(8).font('Helvetica');
-    doc.text(`No: ${sale.receiptNumber}`);
-    doc.text(`Tarehe: ${moment(sale.createdAt).format('DD/MM/YYYY HH:mm')}`);
-    if (customer) {
-        doc.text(`Mteja: ${customer.name}`);
-    }
-    doc.text(`Aina: ${sale.saleType === 'wholesale' ? 'Jumla' : 'Rejareja'}`);
-    doc.moveDown(0.3);
-    
-    doc.text('─'.repeat(30), { align: 'center' });
-    
-    // Items
-    sale.items.forEach(item => {
-        doc.text(`${item.productName}`);
-        doc.text(`  ${item.quantity} x ${item.price.toLocaleString()} = ${item.total.toLocaleString()} TZS`);
-    });
-    
-    doc.text('─'.repeat(30), { align: 'center' });
-    
-    // Totals
-    doc.text(`Jumla: ${sale.subtotal.toLocaleString()} TZS`, { align: 'right' });
-    if (sale.discount > 0) {
-        doc.text(`Punguzo: -${sale.discount.toLocaleString()} TZS`, { align: 'right' });
-    }
-    doc.fontSize(10).font('Helvetica-Bold');
-    doc.text(`JUMLA KUU: ${sale.totalAmount.toLocaleString()} TZS`, { align: 'right' });
-    
-    doc.moveDown(0.5);
-    doc.fontSize(8).font('Helvetica');
-    doc.text(`Malipo: ${sale.paymentMethod.toUpperCase()}`, { align: 'center' });
-    
-    doc.moveDown(0.5);
-    doc.text('─'.repeat(30), { align: 'center' });
-    doc.text(settings.receiptFooter || 'Asante kwa kununua!', { align: 'center' });
-    
-    doc.end();
+    const fmt = n => Number(n || 0).toLocaleString('en-US');
+    const dateStr = moment(sale.createdAt).format('DD/MM/YYYY HH:mm');
+    const paymentMethodLabel = {
+        cash: 'Pesa Taslimu',
+        mpesa: 'M-Pesa',
+        airtel: 'Airtel Money',
+        tigo: 'Tigo Pesa',
+        bank: 'Bank Transfer'
+    }[sale.paymentMethod] || (sale.paymentMethod || '').toUpperCase();
+
+    const itemsHtml = sale.items.map(item => `
+        <tr>
+            <td class="item-name">${item.productName}</td>
+            <td class="item-qty">${item.quantity}</td>
+            <td class="item-price">${fmt(item.price)}</td>
+            <td class="item-total">${fmt(item.total)}</td>
+        </tr>`).join('');
+
+    const discountRow = (sale.discount > 0)
+        ? `<tr class="summary-row"><td colspan="3">Punguzo</td><td>-${fmt(sale.discount)}</td></tr>`
+        : '';
+
+    const creditRow = sale.isCredit
+        ? `<tr class="summary-row credit-row"><td colspan="3">Mkopo Baki</td><td>${fmt(sale.totalAmount - (sale.paidAmount || 0))}</td></tr>`
+        : '';
+
+    const html = `<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Risiti ${sale.receiptNumber}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    background: #fff;
+    color: #000;
+    width: 80mm;
+    margin: 0 auto;
+    padding: 4mm 3mm 8mm 3mm;
+  }
+
+  .header { text-align: center; margin-bottom: 6px; }
+  .header .company-name {
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .header .company-sub {
+    font-size: 10px;
+    color: #333;
+    margin-top: 1px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px dashed #000;
+    margin: 6px 0;
+  }
+  .divider-solid {
+    border: none;
+    border-top: 1px solid #000;
+    margin: 6px 0;
+  }
+
+  .receipt-title {
+    text-align: center;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin: 4px 0;
+  }
+
+  .info-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+  .info-table td { padding: 1px 0; vertical-align: top; }
+  .info-table td:first-child { width: 40%; color: #444; }
+  .info-table td:last-child { font-weight: bold; text-align: right; }
+
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin: 4px 0;
+  }
+  .items-table thead tr {
+    border-bottom: 1px solid #000;
+    border-top: 1px solid #000;
+  }
+  .items-table thead th {
+    padding: 3px 1px;
+    font-weight: bold;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+  .items-table th.item-name, .items-table td.item-name {
+    width: 42%; text-align: left;
+  }
+  .items-table th.item-qty, .items-table td.item-qty {
+    width: 10%; text-align: center;
+  }
+  .items-table th.item-price, .items-table td.item-price {
+    width: 24%; text-align: right;
+  }
+  .items-table th.item-total, .items-table td.item-total {
+    width: 24%; text-align: right;
+  }
+  .items-table tbody tr { border-bottom: 1px dotted #ccc; }
+  .items-table tbody td { padding: 3px 1px; vertical-align: top; }
+  .item-name { word-break: break-word; }
+
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    margin-top: 4px;
+  }
+  .summary-table td { padding: 2px 1px; }
+  .summary-row td:first-child { width: 70%; text-align: left; color: #444; }
+  .summary-row td:last-child { text-align: right; }
+  .total-row td { font-size: 13px; font-weight: bold; border-top: 1px solid #000; padding-top: 4px; }
+  .total-row td:first-child { text-align: left; }
+  .total-row td:last-child { text-align: right; }
+  .credit-row td { color: #c00; }
+
+  .payment-section {
+    margin-top: 6px;
+    text-align: center;
+    font-size: 11px;
+  }
+  .payment-method {
+    display: inline-block;
+    border: 1px solid #000;
+    padding: 2px 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 10px;
+    margin-top: 8px;
+    color: #444;
+    line-height: 1.4;
+  }
+  .footer .thank-you {
+    font-size: 12px;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 3px;
+  }
+
+  @media print {
+    body { width: 80mm; margin: 0; padding: 2mm 2mm 6mm; }
+    .no-print { display: none !important; }
+    @page { size: 80mm auto; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="company-name">${settings.companyName || 'HASLIM GROUP'}</div>
+  ${settings.companyAddress ? `<div class="company-sub">${settings.companyAddress}</div>` : ''}
+  ${settings.companyPhone ? `<div class="company-sub">Tel: ${settings.companyPhone}</div>` : ''}
+  ${settings.companyEmail ? `<div class="company-sub">${settings.companyEmail}</div>` : ''}
+</div>
+
+<hr class="divider-solid">
+<div class="receipt-title">*  RISITI  *</div>
+<hr class="divider-solid">
+
+<!-- RECEIPT INFO -->
+<table class="info-table">
+  <tr>
+    <td>Namba:</td>
+    <td>${sale.receiptNumber}</td>
+  </tr>
+  <tr>
+    <td>Tarehe:</td>
+    <td>${dateStr}</td>
+  </tr>
+  ${customer ? `<tr><td>Mteja:</td><td>${customer.name}</td></tr>` : ''}
+  ${customer && customer.phone ? `<tr><td>Simu:</td><td>${customer.phone}</td></tr>` : ''}
+  <tr>
+    <td>Aina:</td>
+    <td>${sale.saleType === 'wholesale' ? 'Jumla' : 'Rejareja'}</td>
+  </tr>
+  ${sale.cashierName ? `<tr><td>Muuzaji:</td><td>${sale.cashierName}</td></tr>` : ''}
+</table>
+
+<hr class="divider">
+
+<!-- ITEMS -->
+<table class="items-table">
+  <thead>
+    <tr>
+      <th class="item-name">Bidhaa</th>
+      <th class="item-qty">Idadi</th>
+      <th class="item-price">Bei</th>
+      <th class="item-total">Jumla</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${itemsHtml}
+  </tbody>
+</table>
+
+<!-- TOTALS -->
+<table class="summary-table">
+  <tr class="summary-row">
+    <td colspan="3">Subtotal</td>
+    <td>${fmt(sale.subtotal)} TZS</td>
+  </tr>
+  ${discountRow}
+  <tr class="total-row">
+    <td colspan="3">JUMLA KUU</td>
+    <td>${fmt(sale.totalAmount)} TZS</td>
+  </tr>
+  ${creditRow}
+</table>
+
+<hr class="divider">
+
+<!-- PAYMENT -->
+<div class="payment-section">
+  <div>Njia ya Malipo:</div>
+  <div class="payment-method">${paymentMethodLabel}</div>
+  ${sale.isCredit ? '<div style="margin-top:4px;font-size:10px;color:#c00;">⚠ MAUZO YA MKOPO</div>' : ''}
+</div>
+
+<hr class="divider">
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="thank-you">${settings.receiptFooter || 'Asante kwa kununua!'}</div>
+  <div>Karibu tena — HASLIM GROUP LIMITED</div>
+  <div style="margin-top:4px;font-size:9px;color:#888;">Printed: ${moment().format('DD/MM/YYYY HH:mm')}</div>
+</div>
+
+<!-- Print button (hidden when printing) -->
+<div class="no-print" style="text-align:center;margin-top:12px;">
+  <button onclick="window.print()" style="padding:8px 24px;font-size:13px;cursor:pointer;background:#0d6efd;color:#fff;border:none;border-radius:4px;">
+    &#128438; Print Receipt
+  </button>
+</div>
+
+<script>
+  // Auto-print when opened
+  window.addEventListener('load', function() {
+    setTimeout(function() { window.print(); }, 400);
+  });
+</script>
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(html);
 });
 
 // API: Credit Sales & Payments
