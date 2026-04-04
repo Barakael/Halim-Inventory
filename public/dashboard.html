@@ -826,60 +826,90 @@
             
             <!-- Reports Page -->
             <section class="page-section" id="page-reports">
-                <div class="row g-4">
-                    <div class="col-12">
+                <div class="row g-4 align-items-start">
+
+                    <!-- Left column: Filters -->
+                    <div class="col-12 col-lg-3">
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <h5><i class="bi bi-funnel me-2"></i>Vichujio</h5>
+                            </div>
+                            <div class="p-3">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold small">Tarehe ya Kuanzia</label>
+                                    <input type="date" class="form-control form-control-sm" id="reportStartDate">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold small">Tarehe ya Mwisho</label>
+                                    <input type="date" class="form-control form-control-sm" id="reportEndDate">
+                                </div>
+                                <div class="mb-3" id="reportSupplierFilterWrapper">
+                                    <label class="form-label fw-semibold small">Msambazaji</label>
+                                    <select class="form-select form-select-sm" id="reportSupplierFilter">
+                                        <option value="">Msambazaji Wote</option>
+                                    </select>
+                                </div>
+                                <button class="btn btn-primary w-100" onclick="loadSalesReport()">
+                                    <i class="bi bi-bar-chart me-2"></i>Tengeneza Ripoti
+                                </button>
+
+                                <hr class="my-3">
+
+                                <p class="text-muted small fw-semibold mb-2">Aina ya Ripoti</p>
+                                <div class="d-flex flex-column gap-2">
+                                    <a href="#" class="btn btn-outline-secondary text-start btn-sm" id="salesReportTab"
+                                       onclick="event.preventDefault(); loadSalesReport(); return false;">
+                                        <i class="bi bi-cart me-2"></i>Mauzo
+                                    </a>
+                                    <a href="#" class="btn btn-outline-secondary text-start btn-sm" id="purchaseReportTab"
+                                       onclick="event.preventDefault(); loadPurchaseReport(); return false;">
+                                        <i class="bi bi-box-arrow-in-down me-2"></i>Manunuzi
+                                    </a>
+                                    <a href="#" class="btn btn-outline-secondary text-start btn-sm" id="profitLossReportTab"
+                                       onclick="event.preventDefault(); loadProfitLossReport(); return false;">
+                                        <i class="bi bi-graph-up-arrow me-2"></i>Faida / Hasara
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right column: Report content -->
+                    <div class="col-12 col-lg-9">
                         <div class="data-card">
                             <div class="data-card-header">
                                 <h5><i class="bi bi-graph-up me-2"></i>Ripoti</h5>
-                                <div class="d-flex gap-2 align-items-center flex-wrap">
-                                    <input type="date" class="form-control form-control-sm" id="reportStartDate">
-                                    <span>-</span>
-                                    <input type="date" class="form-control form-control-sm" id="reportEndDate">
-                                    <select class="form-select form-select-sm" id="reportSupplierFilter" style="width: auto;">
-                                        <option value="">Msambazaji Wote</option>
-                                    </select>
-                                    <button class="btn btn-sm btn-primary" onclick="loadSalesReport()">Generate</button>
-                                </div>
                             </div>
-                            <div class="data-card-body p-4">
-                                <div class="row g-4 mb-4">
-                                    <div class="col-md-4">
+                            <div class="p-4">
+                                <!-- Summary stat cards -->
+                                <div class="row g-3 mb-4">
+                                    <div class="col-sm-4">
                                         <div class="stat-card">
                                             <div class="label">Jumla ya Mapato</div>
                                             <div class="value" id="reportTotalRevenue">0 TZS</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-sm-4">
                                         <div class="stat-card">
                                             <div class="label">Transactions</div>
                                             <div class="value" id="reportTotalTransactions">0</div>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-sm-4">
                                         <div class="stat-card">
-                                            <div class="label">Average per Transaction</div>
+                                            <div class="label">Wastani kwa Muamala</div>
                                             <div class="value" id="reportAvgTransaction">0 TZS</div>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <ul class="nav nav-tabs mb-4">
-                                    <li class="nav-item">
-                                        <a class="nav-link active" href="#" onclick="event.preventDefault(); loadSalesReport(); return false;" id="salesReportTab">Mauzo</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="#" onclick="event.preventDefault(); loadPurchaseReport(); return false;" id="purchaseReportTab">Manunuzi</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="#" onclick="event.preventDefault(); loadProfitLossReport(); return false;" id="profitLossReportTab">Faida/Hasara</a>
-                                    </li>
-                                </ul>
-                                
+
+                                <!-- Report data containers -->
                                 <div id="purchaseReport" style="display: none;"></div>
                                 <div id="profitLossReport" style="display: none;"></div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </section>
             

@@ -2440,25 +2440,34 @@ async function loadReports() {
                 ).join('');
         }
     } else {
-        const supplierFilter = document.getElementById('reportSupplierFilter');
-        if (supplierFilter) supplierFilter.style.display = 'none';
+        const supplierWrapper = document.getElementById('reportSupplierFilterWrapper');
+        if (supplierWrapper) supplierWrapper.style.display = 'none';
     }
     
     // Default to sales report
     await loadSalesReport();
 }
 
+function _setActiveReportTab(activeId) {
+    ['salesReportTab', 'purchaseReportTab', 'profitLossReportTab'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (id === activeId) {
+            el.classList.add('btn-primary');
+            el.classList.remove('btn-outline-secondary');
+        } else {
+            el.classList.remove('btn-primary');
+            el.classList.add('btn-outline-secondary');
+        }
+    });
+}
+
 async function loadSalesReport() {
     // Update active tab
-    const salesTab = document.getElementById('salesReportTab');
-    const purchaseTab = document.getElementById('purchaseReportTab');
-    const profitLossTab = document.getElementById('profitLossReportTab');
     const purchaseReportDiv = document.getElementById('purchaseReport');
     const profitLossReportDiv = document.getElementById('profitLossReport');
     
-    if (salesTab) salesTab.classList.add('active');
-    if (purchaseTab) purchaseTab.classList.remove('active');
-    if (profitLossTab) profitLossTab.classList.remove('active');
+    _setActiveReportTab('salesReportTab');
     if (purchaseReportDiv) purchaseReportDiv.style.display = 'none';
     if (profitLossReportDiv) profitLossReportDiv.style.display = 'none';
     
@@ -2494,15 +2503,10 @@ async function loadSalesReport() {
 
 async function loadPurchaseReport() {
     // Update active tab
-    const salesTab = document.getElementById('salesReportTab');
-    const purchaseTab = document.getElementById('purchaseReportTab');
-    const profitLossTab = document.getElementById('profitLossReportTab');
     const purchaseReportDiv = document.getElementById('purchaseReport');
     const profitLossReportDiv = document.getElementById('profitLossReport');
     
-    if (salesTab) salesTab.classList.remove('active');
-    if (purchaseTab) purchaseTab.classList.add('active');
-    if (profitLossTab) profitLossTab.classList.remove('active');
+    _setActiveReportTab('purchaseReportTab');
     if (purchaseReportDiv) purchaseReportDiv.style.display = 'block';
     if (profitLossReportDiv) profitLossReportDiv.style.display = 'none';
     
@@ -2762,15 +2766,10 @@ function exportPurchaseReportToExcel() {
 
 async function loadProfitLossReport() {
     // Update active tab
-    const salesTab = document.getElementById('salesReportTab');
-    const purchaseTab = document.getElementById('purchaseReportTab');
-    const profitLossTab = document.getElementById('profitLossReportTab');
     const purchaseReportDiv = document.getElementById('purchaseReport');
     const profitLossReportDiv = document.getElementById('profitLossReport');
     
-    if (salesTab) salesTab.classList.remove('active');
-    if (purchaseTab) purchaseTab.classList.remove('active');
-    if (profitLossTab) profitLossTab.classList.add('active');
+    _setActiveReportTab('profitLossReportTab');
     if (purchaseReportDiv) purchaseReportDiv.style.display = 'none';
     if (profitLossReportDiv) profitLossReportDiv.style.display = 'block';
     
