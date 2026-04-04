@@ -298,6 +298,12 @@ function applyRolePermissions() {
             creditsMenuItem.style.display = 'none';
         }
     }
+
+    // Storekeeper and reception don't use the dashboard — hide the link
+    const dashboardMenuItem = document.querySelector('a[data-page="dashboard"]');
+    if (dashboardMenuItem && (role === 'storekeeper' || role === 'reception')) {
+        dashboardMenuItem.style.display = 'none';
+    }
     
     // Hide menu items based on role
     document.querySelectorAll('[data-role]').forEach(el => {
@@ -342,6 +348,14 @@ function initPageFromUrl() {
         if (!allowedPages.includes(page) || page === 'dashboard' || page === '') {
             page = 'store-orders';
         }
+    }
+
+    // Storekeeper and reception don't have a dashboard — redirect to their main page
+    if (currentUser && currentUser.role === 'storekeeper') {
+        if (page === 'dashboard' || page === '') page = 'stock';
+    }
+    if (currentUser && currentUser.role === 'reception') {
+        if (page === 'dashboard' || page === '') page = 'pos';
     }
     
     navigateTo(page, false);
@@ -632,13 +646,49 @@ function setupEventListeners() {
 // DASHBOARD
 // =========================
 async function loadDashboard() {
+    // Only admin and cashier can see dashboard
+    const role = currentUser && currentUser.role;
+    if (role === 'storekeeper') {
+        navigateTo('stock', true);
+        return;
+    }
+    if (role === 'reception') {
+        navigateTo('pos', true);
+        return;
+    }
+    if (role === 'store_viewer') {
+        navigateTo('store-orders', true);
+        return;
+    }
+
     const result = await api('/api/dashboard/stats');
     if (!result.success) return;
-    
-    const data = result.data;
-    
+
+    let data = result.data;
+
+    // Cashier sees only their own sales figures
+    const isCashier = role === 'cashier';
+    if (isCashier) {
+        // Filter today/week/month stats to cashier's own sales
+        const salesResult = await api('/api/sales');
+        const allSales = salesResult.success ? salesResult.data : [];
+        const mySales = allSales.filter(s => s.cashierId === currentUser.id || s.cashierName === currentUser.fullName);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); weekAgo.setHours(0,0,0,0);
+        const monthAgo = new Date(); monthAgo.setDate(1); monthAgo.setHours(0,0,0,0);
+        const sum = arr => arr.reduce((t, s) => t + (s.totalAmount || 0), 0);
+        const todaySales = mySales.filter(s => new Date(s.createdAt) >= today);
+        const weekSales  = mySales.filter(s => new Date(s.createdAt) >= weekAgo);
+        const monthSales = mySales.filter(s => new Date(s.createdAt) >= monthAgo);
+        data = { ...data,
+            today: { revenue: sum(todaySales), transactions: todaySales.length },
+            week:  { revenue: sum(weekSales) },
+            month: { revenue: sum(monthSales), profit: 0 }
+        };
+    }
+
     // Hide financial information for Reception role
-    const isReception = currentUser && currentUser.role === 'reception';
+    const isReception = false; // reception is redirected above, kept for safety
     
     // Hide financial stat cards for Reception
     const todayRevenueCard = document.getElementById('todayRevenueCard');
@@ -2216,6 +2266,8 @@ function showAddUserModal() {
     document.getElementById('userForm').reset();
     document.getElementById('userPassword').required = true;
     document.getElementById('userModalLabel').textContent = 'Ongeza Mtumiaji';
+    // Remove any temporarily-added hidden role options from a previous edit
+    document.querySelectorAll('#userRole option[data-hidden="true"]').forEach(o => o.remove());
     loadBranchOptions('userBranch');
     new bootstrap.Modal(document.getElementById('userModal')).show();
 }
@@ -2233,6 +2285,17 @@ async function editUser(id) {
     document.getElementById('userEmail').value = user.email || '';
     document.getElementById('userPhone').value = user.phone || '';
     document.getElementById('userRole').value = user.role;
+    // If user has a hidden role (reception/store_viewer), temporarily add it so it shows correctly
+    const roleSelect = document.getElementById('userRole');
+    if (!roleSelect.querySelector(`option[value="${user.role}"]`)) {
+        const labels = { reception: 'Reception', store_viewer: 'Mwangaliaji Stoo (Store Viewer)' };
+        const opt = document.createElement('option');
+        opt.value = user.role;
+        opt.textContent = labels[user.role] || user.role;
+        opt.dataset.hidden = 'true';
+        roleSelect.appendChild(opt);
+    }
+    roleSelect.value = user.role;
     document.getElementById('userStatus').value = user.status;
     document.getElementById('userPassword').value = '';
     document.getElementById('userPassword').required = false;
