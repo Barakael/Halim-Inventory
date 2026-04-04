@@ -142,6 +142,23 @@ body {
     gap: 20px;
 }
 
+.fullscreen-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 4px 6px;
+    border-radius: 8px;
+    line-height: 1;
+}
+
+.fullscreen-btn:hover {
+    color: var(--primary-blue);
+    background: var(--light-blue);
+}
+
 .notification-btn {
     position: relative;
     background: none;
@@ -359,7 +376,7 @@ body {
     margin-top: 8px;
 }
 
-.kpi-blue   { background: linear-gradient(135deg, #1565c0 0%, #1e88e5 100%); }
+.kpi-blue   { background: linear-gradient(135deg, #0744e1 0%, #1e88e5 100%); }
 .kpi-green  { background: linear-gradient(135deg, #1b5e20 0%, #43a047 100%); }
 .kpi-purple { background: linear-gradient(135deg, #4a148c 0%, #8e24aa 100%); }
 .kpi-orange { background: linear-gradient(135deg, #e65100 0%, #fb8c00 100%); }

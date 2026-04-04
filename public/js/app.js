@@ -351,7 +351,9 @@ function initPageFromUrl() {
 function navigateTo(page, updateUrl = true) {
     // Redirect settings sub-pages to the settings page
     const settingsSubPages = ['branches', 'logs'];
-    const effectivePage = settingsSubPages.includes(page) ? 'settings' : page;
+    const stockSubPages = ['products', 'categories'];
+    let effectivePage = settingsSubPages.includes(page) ? 'settings' : page;
+    if (stockSubPages.includes(page)) effectivePage = 'stock';
 
     // Update active menu item
     document.querySelectorAll('.menu-item').forEach(item => {
@@ -397,8 +399,8 @@ function navigateTo(page, updateUrl = true) {
     const titles = {
         dashboard: 'Dashboard',
         pos: 'Point of Sale',
-        products: 'Bidhaa',
-        categories: 'Kategoria',
+        products: 'Stoo',
+        categories: 'Stoo',
         stock: 'Stoo',
         sales: 'Mauzo',
         purchases: 'Manunuzi',
@@ -447,13 +449,16 @@ async function loadPageData(page) {
             await loadPOS();
             break;
         case 'products':
+            switchStockTab('bidhaa');
             await loadProducts();
             break;
         case 'categories':
+            switchStockTab('kategoria');
             await loadCategoriesList();
             break;
         case 'stock':
-            await loadStock();
+            switchStockTab('bidhaa');
+            await loadProducts();
             break;
         case 'sales':
             await loadSales();
@@ -542,6 +547,51 @@ function switchSettingsTab(tab) {
     if (tab === 'branches') loadBranchesList();
     if (tab === 'logs') loadActivityLogs();
 }
+
+function switchStockTab(tab) {
+    // Make sure stock page is showing
+    const stockPage = document.getElementById('page-stock');
+    if (stockPage && !stockPage.classList.contains('active')) {
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        stockPage.classList.add('active');
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.page === 'stock');
+        });
+    }
+
+    const panes = ['bidhaa', 'stoo', 'kategoria'];
+    panes.forEach(p => {
+        const pane = document.getElementById(`stockPane-${p}`);
+        const tabEl = document.getElementById(`stockTab-${p}`);
+        if (pane) pane.style.display = p === tab ? '' : 'none';
+        if (tabEl) tabEl.classList.toggle('active', p === tab);
+    });
+
+    // Load data for the selected tab
+    if (tab === 'bidhaa') loadProducts();
+    if (tab === 'stoo') loadStock();
+    if (tab === 'kategoria') loadCategoriesList();
+}
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen();
+    }
+}
+
+document.addEventListener('fullscreenchange', () => {
+    const icon = document.getElementById('fullscreenIcon');
+    if (!icon) return;
+    if (document.fullscreenElement) {
+        icon.className = 'bi bi-fullscreen-exit';
+        document.getElementById('fullscreenBtn').title = 'Exit Full Screen';
+    } else {
+        icon.className = 'bi bi-fullscreen';
+        document.getElementById('fullscreenBtn').title = 'Full Screen';
+    }
+});
 
 function setupEventListeners() {
     // Sidebar toggle
@@ -800,12 +850,17 @@ function renderProductsTable(page = productsCurrentPage) {
                 </span>
             </td>
             <td>
-                <button class="btn btn-sm btn-primary btn-icon me-1" onclick="editProduct('${p.id}')" title="Hariri">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteProduct('${p.id}')" title="Futa">
-                    <i class="bi bi-trash"></i>
-                </button>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Vitendo">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item text-success" href="#" onclick="event.preventDefault();showStockInModal('${p.id}')"><i class="bi bi-plus-circle me-2"></i>Ongeza Stock</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault();editProduct('${p.id}')"><i class="bi bi-pencil me-2"></i>Hariri</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="event.preventDefault();deleteProduct('${p.id}')"><i class="bi bi-trash me-2"></i>Futa</a></li>
+                    </ul>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -1311,7 +1366,7 @@ function renderSuppliersTable(supplierDebts = {}) {
         const supplierNameEscaped = (s.name || '').replace(/'/g, "\\'");
         
         return `
-        <tr>
+        <tr class="align-middle">
             <td>${s.name}</td>
             <td>${s.contactPerson || '-'}</td>
             <td>${s.phone || '-'}</td>
@@ -1324,15 +1379,17 @@ function renderSuppliersTable(supplierDebts = {}) {
                 ${s.status === 'active' ? 'Active' : 'Inactive'}
             </td>
             <td>
-                ${hasDebt ? `<button class="btn btn-sm btn-success btn-icon me-1" onclick="showSupplierPaymentModal('${s.id}', '${supplierNameEscaped}', ${debtBalance})" title="Lipia Deni">
-                    <i class="bi bi-cash-coin"></i>
-                </button>` : ''}
-                <button class="btn btn-sm btn-primary btn-icon me-1" onclick="editSupplier('${s.id}')" title="Hariri">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-sm btn-danger btn-icon" onclick="deleteSupplier('${s.id}')" title="Futa">
-                    <i class="bi bi-trash"></i>
-                </button>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Vitendo">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        ${hasDebt ? `<li><a class="dropdown-item text-success" href="#" onclick="event.preventDefault();showSupplierPaymentModal('${s.id}','${supplierNameEscaped}',${debtBalance})"><i class="bi bi-cash-coin me-2"></i>Lipia Deni</a></li>` : ''}
+                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault();editSupplier('${s.id}')"><i class="bi bi-pencil me-2"></i>Hariri</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="event.preventDefault();deleteSupplier('${s.id}')"><i class="bi bi-trash me-2"></i>Futa</a></li>
+                    </ul>
+                </div>
             </td>
         </tr>
         `;
