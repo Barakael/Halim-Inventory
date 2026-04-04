@@ -2718,16 +2718,26 @@ async function loadActivityLogs() {
     
     const tbody = document.getElementById('logsTableBody');
     if (!tbody) return;
+
+    const allowed = ['LOGIN', 'LOGOUT', 'LOGIN_FAILED'];
+    const filtered = result.data.filter(l =>
+        allowed.includes(l.action) || l.action.startsWith('DELETE')
+    );
     
-    tbody.innerHTML = result.data.slice(0, 100).map(l => `
+    tbody.innerHTML = filtered.slice(0, 200).map(l => {
+        const badgeClass = l.action === 'LOGOUT' ? 'bg-secondary'
+            : l.action === 'LOGIN_FAILED' ? 'bg-danger'
+            : l.action.startsWith('DELETE') ? 'bg-warning text-dark'
+            : 'bg-success';
+        return `
         <tr>
             <td>${formatDateTime(l.timestamp)}</td>
             <td>${l.userName}</td>
-            <td><span class="badge bg-info">${l.action}</span></td>
+            <td><span class="badge ${badgeClass}">${l.action}</span></td>
             <td>${l.details}</td>
             <td><code>${l.ipAddress}</code></td>
-        </tr>
-    `).join('') || '<tr><td colspan="5" class="text-center text-muted">Hakuna logs</td></tr>';
+        </tr>`;
+    }).join('') || '<tr><td colspan="5" class="text-center text-muted">Hakuna logs</td></tr>';
 }
 
 // =========================
