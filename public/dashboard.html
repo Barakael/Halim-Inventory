@@ -22,7 +22,7 @@
         </div>
         
         <div class="sidebar-menu">
-            <div class="menu-category">MENU KUU</div>
+            
             <a class="menu-item" href="/dashboard" data-page="dashboard">
                 <i class="bi bi-speedometer2"></i>
                 <span>Dashboard</span>
@@ -44,48 +44,41 @@
                 <span>Agizo za Stoo</span>
             </a>
             
-            <div class="menu-category">BIDHAA</div>
-            <a class="menu-item" href="/products" data-page="products" data-role="admin,storekeeper">
-                <i class="bi bi-box-seam"></i>
-                <span>Bidhaa</span>
-            </a>
-            <a class="menu-item" href="/categories" data-page="categories" data-role="admin,storekeeper">
-                <i class="bi bi-tags"></i>
-                <span>Kategoria</span>
-            </a>
             <a class="menu-item" href="/stock" data-page="stock" data-role="admin,storekeeper">
                 <i class="bi bi-boxes"></i>
                 <span>Stoo</span>
-            </a>
-            
-            <div class="menu-category">MAUZO</div>
-            <a class="menu-item" href="/sales" data-page="sales">
+
+               <a class="menu-item" href="/sales" data-page="sales">
                 <i class="bi bi-receipt"></i>
                 <span>Mauzo</span>
             </a>
-            <a class="menu-item" href="/customers" data-page="customers">
-                <i class="bi bi-people"></i>
-                <span>Wateja</span>
-            </a>
+         
             <a class="menu-item" href="/credits" data-page="credits" data-role="admin,cashier,storekeeper">
                 <i class="bi bi-credit-card"></i>
                 <span>Madeni</span>
             </a>
+
+            </a>
             
-            <div class="menu-category">MANUNUZI</div>
+
             <a class="menu-item" href="/purchases" data-page="purchases" data-role="admin,storekeeper">
                 <i class="bi bi-truck"></i>
                 <span>Manunuzi</span>
+            </a>
+              <a class="menu-item" href="/expenses" data-page="expenses" data-role="admin">
+                <i class="bi bi-wallet2"></i>
+                <span>Matumizi</span>
             </a>
             <a class="menu-item" href="/suppliers" data-page="suppliers" data-role="admin,storekeeper">
                 <i class="bi bi-building"></i>
                 <span>Wasambazaji</span>
             </a>
             
-            <div class="menu-category">FEDHA</div>
-            <a class="menu-item" href="/expenses" data-page="expenses" data-role="admin">
-                <i class="bi bi-wallet2"></i>
-                <span>Matumizi</span>
+           
+          
+               <a class="menu-item" href="/customers" data-page="customers">
+                <i class="bi bi-people"></i>
+                <span>Wateja</span>
             </a>
             <a class="menu-item" href="/reports" data-page="reports" data-role="admin">
                 <i class="bi bi-graph-up"></i>
@@ -117,6 +110,9 @@
             </div>
             
             <div class="header-right">
+                <button class="fullscreen-btn" id="fullscreenBtn" title="Full Screen" onclick="toggleFullscreen()">
+                    <i class="bi bi-fullscreen" id="fullscreenIcon"></i>
+                </button>
                 <button class="notification-btn" id="notificationBtn">
                     <i class="bi bi-bell"></i>
                     <span class="notification-badge" id="notificationBadge">0</span>
@@ -349,103 +345,121 @@
                 </div>
             </section>
             
-            <!-- Products Page -->
-            <section class="page-section" id="page-products">
-                <div class="data-card">
-                    <div class="data-card-header">
-                        <h5><i class="bi bi-box-seam me-2"></i>Orodha ya Bidhaa</h5>
-                        <button class="btn btn-primary" onclick="showAddProductModal()">
-                            <i class="bi bi-plus-lg me-2"></i>Ongeza Bidhaa
-                        </button>
-                    </div>
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" id="productsSearchInput" placeholder="Tafuta bidhaa kwa jina, SKU, au kategoria..." oninput="filterProductsTable()">
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>SKU</th>
-                                    <th>Jina</th>
-                                    <th>Kategoria</th>
-                                    <th>Bei Jumla</th>
-                                    <th>Bei Rejareja</th>
-                                    <th>Kipimo</th>
-                                    <th>Stock</th>
-                                    <th>Vitendo</th>
-                                </tr>
-                            </thead>
-                            <tbody id="productsTableBody"></tbody>
-                        </table>
-                    </div>
-                    <div id="productsPagination" class="mt-2"></div>
-                </div>
-            </section>
-            
-            <!-- Categories Page -->
-            <section class="page-section" id="page-categories">
-                <div class="data-card">
-                    <div class="data-card-header">
-                        <h5><i class="bi bi-tags me-2"></i>Kategoria</h5>
-                        <button class="btn btn-primary" onclick="showAddCategoryModal()">
-                            <i class="bi bi-plus-lg me-2"></i>Ongeza Kategoria
-                        </button>
-                    </div>
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" id="categoriesSearchInput" placeholder="Tafuta kategoria kwa jina au maelezo..." oninput="filterCategoriesTable()">
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Jina</th>
-                                    <th>Maelezo</th>
-                                    <th>Hali</th>
-                                    <th>Vitendo</th>
-                                </tr>
-                            </thead>
-                            <tbody id="categoriesTableBody"></tbody>
-                        </table>
-                    </div>
-                    <div id="categoriesPagination" class="mt-2"></div>
-                </div>
-            </section>
-            
-            <!-- Stock Page -->
+            <!-- Stoo Page (tabbed: Bidhaa, Stoo, Kategoria) -->
             <section class="page-section" id="page-stock">
                 <div class="data-card">
-                    <div class="data-card-header">
-                        <h5><i class="bi bi-boxes me-2"></i>Usimamizi wa Stoo</h5>
-                        <button class="btn btn-primary" onclick="showStockInModal()">
-                            <i class="bi bi-plus-lg me-2"></i>Stock In
-                        </button>
+                    <!-- Tab navigation -->
+                    <div class="px-3 pt-3 border-bottom">
+                        <ul class="nav nav-tabs border-0" style="gap:4px;">
+                            <li class="nav-item">
+                                <button class="nav-link active" id="stockTab-bidhaa" onclick="switchStockTab('bidhaa')">
+                                    <i class="bi bi-box-seam me-1"></i>Bidhaa
+                                </button>
+                            </li>
+                         
+                            <li class="nav-item">
+                                <button class="nav-link" id="stockTab-kategoria" onclick="switchStockTab('kategoria')">
+                                    <i class="bi bi-tags me-1"></i>Kategoria
+                                </button>
+                            </li>
+                        </ul>
                     </div>
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" id="stockSearchInput" placeholder="Tafuta stoo kwa jina la bidhaa..." oninput="filterStockTable()">
+
+                    <!-- Bidhaa pane (default) -->
+                    <div id="stockPane-bidhaa">
+                        <div class="data-card-header">
+                            <h5><i class="bi bi-box-seam me-2"></i>Orodha ya Bidhaa</h5>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-success" onclick="showStockInModal()">
+                                    <i class="bi bi-plus-circle me-2"></i>Stock In
+                                </button>
+                                <button class="btn btn-primary" onclick="showAddProductModal()">
+                                    <i class="bi bi-plus-lg me-2"></i>Ongeza Bidhaa
+                                </button>
+                            </div>
                         </div>
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="productsSearchInput" placeholder="Tafuta bidhaa kwa jina, SKU, au kategoria..." oninput="filterProductsTable()">
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>SKU</th>
+                                        <th>Jina</th>
+                                        <th>Kategoria</th>
+                                        <th>Bei Jumla</th>
+                                        <th>Bei Rejareja</th>
+                                        <th>Kipimo</th>
+                                        <th>Stock</th>
+                                        <th>Vitendo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div id="productsPagination" class="mt-2"></div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Bidhaa</th>
-                                    <th>Kiasi</th>
-                                    <th>Batches</th>
-                                    <th>Vitendo</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stockTableBody"></tbody>
-                        </table>
+
+                    <!-- Stoo (batches) pane -->
+                    <div id="stockPane-stoo" style="display:none;">
+                        <div class="data-card-header">
+                            <h5><i class="bi bi-boxes me-2"></i>Usimamizi wa Stoo</h5>
+                        </div>
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="stockSearchInput" placeholder="Tafuta stoo kwa jina la bidhaa..." oninput="filterStockTable()">
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Bidhaa</th>
+                                        <th>Kiasi</th>
+                                        <th>Batches</th>
+                                        <th>Vitendo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stockTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div id="stockPagination" class="mt-2"></div>
                     </div>
-                    <div id="stockPagination" class="mt-2"></div>
+
+                    <!-- Kategoria pane -->
+                    <div id="stockPane-kategoria" style="display:none;">
+                        <div class="data-card-header">
+                            <h5><i class="bi bi-tags me-2"></i>Kategoria</h5>
+                            <button class="btn btn-primary" onclick="showAddCategoryModal()">
+                                <i class="bi bi-plus-lg me-2"></i>Ongeza Kategoria
+                            </button>
+                        </div>
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="categoriesSearchInput" placeholder="Tafuta kategoria kwa jina au maelezo..." oninput="filterCategoriesTable()">
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Jina</th>
+                                        <th>Maelezo</th>
+                                        <th>Hali</th>
+                                        <th>Vitendo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoriesTableBody"></tbody>
+                            </table>
+                        </div>
+                        <div id="categoriesPagination" class="mt-2"></div>
+                    </div>
                 </div>
             </section>
             
@@ -579,7 +593,7 @@
                             <i class="bi bi-plus-lg me-2"></i>Ongeza Msambazaji
                         </button>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
                             <input type="text" class="form-control" id="suppliersSearchInput" placeholder="Tafuta msambazaji kwa jina, simu, au email..." oninput="filterSuppliersTable()">
@@ -590,7 +604,7 @@
                             <thead>
                                 <tr>
                                     <th>Jina</th>
-                                    <th>Mwasiliani</th>
+                                    <th>Mwasiliano</th>
                                     <th>Simu</th>
                                     <th>Email</th>
                                     <th>Deni</th>
