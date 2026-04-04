@@ -2238,6 +2238,7 @@ app.get('/api/dashboard/stats', isAuthenticated, (req, res) => {
     // Credit/Debt stats
     const pendingCredits = creditSales.filter(cs => cs.status === 'pending');
     const totalDebts = pendingCredits.reduce((sum, cs) => sum + (cs.totalAmount - cs.paidAmount), 0);
+    const collectedCredits = creditSales.reduce((sum, cs) => sum + (cs.paidAmount || 0), 0);
     
     // Top selling products (this month)
     const productSales = {};
@@ -2317,7 +2318,8 @@ app.get('/api/dashboard/stats', isAuthenticated, (req, res) => {
             },
             debts: {
                 total: totalDebts,
-                count: pendingCredits.length
+                count: pendingCredits.length,
+                collected: collectedCredits
             },
             lowStockProducts: lowStockProducts.slice(0, 10),
             expiringProducts: expiringProducts.slice(0, 10),
