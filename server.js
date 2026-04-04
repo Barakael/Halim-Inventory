@@ -1753,8 +1753,12 @@ app.get('/api/sales/:id/receipt', isAuthenticated, (req, res) => {
 <!-- Print button (hidden when printing) -->
 <div class="no-print" style="text-align:center;margin-top:12px;">
   <button onclick="window.print()" style="padding:8px 24px;font-size:13px;cursor:pointer;background:#0d6efd;color:#fff;border:none;border-radius:4px;">
-    &#128438; Print Receipt
+    &#128438; Chapisha Risiti
   </button>
+  <div style="margin-top:8px;font-size:10px;color:#666;line-height:1.5;">
+    💡 Ili chapisha kwenye printer: badilisha <strong>"Destination"</strong><br>
+    kutoka <em>"Save as PDF"</em> hadi printer yako.
+  </div>
 </div>
 
 <script>
