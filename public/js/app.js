@@ -199,9 +199,11 @@ async function initApp() {
         await loadCategories();
         await loadBranches();
         
-        // Check role permissions
+        // Check role permissions — reveal sidebar only after filtering to prevent flash
         applyRolePermissions();
-        
+        const sidebarMenu = document.querySelector('.sidebar-menu');
+        if (sidebarMenu) sidebarMenu.style.visibility = 'visible';
+
         // Load notifications
         loadNotifications();
         

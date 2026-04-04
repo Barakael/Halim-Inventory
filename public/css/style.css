@@ -58,6 +58,7 @@ body {
 
 .sidebar-menu {
     padding: 13px 0;
+    visibility: hidden; /* Hidden until role permissions are applied — prevents FOUC */
 }
 
 .menu-category {
