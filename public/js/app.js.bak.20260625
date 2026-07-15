@@ -104,23 +104,12 @@ let pendingDeleteAction = null;
 async function api(endpoint, options = {}) {
     try {
         const response = await fetch(endpoint, {
-            credentials: 'same-origin',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers
             }
         });
-        const contentType = response.headers.get('content-type') || '';
-        if (!contentType.includes('application/json')) {
-            // Session expired / HTML redirect — treat as unauthenticated
-            if (response.redirected || response.status === 401 || response.status === 302 || contentType.includes('text/html')) {
-                return { success: false, message: 'Unauthorized', unauthorized: true };
-            }
-            const text = await response.text();
-            console.error('Non-JSON API response', endpoint, text.slice(0, 200));
-            return { success: false, message: 'Invalid server response' };
-        }
         return await response.json();
     } catch (error) {
         console.error('API Error:', error);
@@ -187,14 +176,6 @@ function formatDateTime(date) {
 // Initialize application
 async function initApp() {
     console.log('Initializing app...');
-    const boot = document.getElementById('appBootStatus');
-    if (boot) boot.style.display = 'block';
-
-    // Always show a page section so login never lands on a blank white content area
-    const dash = document.getElementById('page-dashboard');
-    if (dash && !document.querySelector('.page-section.active')) {
-        dash.classList.add('active');
-    }
     
     // Check authentication
     try {
@@ -214,17 +195,17 @@ async function initApp() {
         setupNavigation();
         setupEventListeners();
         
-        // Load initial data (do not block dashboard on failure)
-        try { await loadCategories(); } catch (e) { console.error('loadCategories', e); }
-        try { await loadBranches(); } catch (e) { console.error('loadBranches', e); }
+        // Load initial data
+        await loadCategories();
+        await loadBranches();
         
         // Check role permissions — reveal sidebar only after filtering to prevent flash
         applyRolePermissions();
         const sidebarMenu = document.querySelector('.sidebar-menu');
         if (sidebarMenu) sidebarMenu.style.visibility = 'visible';
 
-        // Load notifications (non-blocking)
-        try { loadNotifications(); } catch (e) { console.error('loadNotifications', e); }
+        // Load notifications
+        loadNotifications();
         
         // Navigate to the page based on current URL
         initPageFromUrl();
@@ -232,10 +213,7 @@ async function initApp() {
         console.log('App initialized successfully');
     } catch (error) {
         console.error('Init error:', error);
-        // Keep shell visible; only redirect on clear auth failure
         window.location.replace('/login');
-    } finally {
-        if (boot) boot.style.display = 'none';
     }
 }
 
@@ -357,11 +335,8 @@ function setupNavigation() {
 
 // Get page name from current URL
 function getPageFromUrl() {
-    let path = window.location.pathname || '/';
-    path = path.replace(/\/+$/, ''); // trailing slash
-    let page = path.substring(1) || 'dashboard';
-    page = page.replace(/\.html$/i, '');
-    if (!page || page === 'index') page = 'dashboard';
+    const path = window.location.pathname;
+    const page = path.substring(1) || 'dashboard'; // Remove leading slash
     return page;
 }
 
@@ -433,13 +408,6 @@ function navigateTo(page, updateUrl = true) {
             navigateTo('store-orders', true);
             showToast('Huna ruhusa ya kuona ukurasa huu', 'warning');
             return;
-        }
-        // Unknown route → show dashboard instead of blank content
-        const fallback = document.getElementById('page-dashboard');
-        if (fallback) {
-            fallback.classList.add('active');
-            effectivePage = 'dashboard';
-            page = 'dashboard';
         }
     }
     

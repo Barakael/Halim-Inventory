@@ -47,9 +47,7 @@ app.use(session({
     store: new FileStore({
         path: sessionsDir,
         ttl: 86400, // 24 hours
-        reapInterval: 3600, // Clean up expired sessions every hour
-        retries: 1,
-        logFn: () => {} // Suppress noisy session file warnings
+        reapInterval: 3600 // Clean up expired sessions every hour
     }),
     secret: process.env.SESSION_SECRET || 'haslim-dev-secret-change-in-production',
     resave: false,
@@ -264,48 +262,34 @@ function createNotification(type, title, message, targetRole = 'all', branchId =
         read: false,
         createdAt: new Date().toISOString()
     });
-    // Trim to last 2000 to prevent unbounded memory growth
-    if (notifications.length > 2000) notifications.splice(0, notifications.length - 2000);
     writeDB(dbFiles.notifications, notifications);
 }
 
 // Check for low stock and expiry alerts
-function hasRecentAlert(notifications, type, message, hours = 24) {
-    const cutoff = moment().subtract(hours, 'hours');
-    return notifications.some(n =>
-        n.type === type &&
-        n.message === message &&
-        moment(n.createdAt).isAfter(cutoff)
-    );
-}
-
 function checkAlerts() {
     const products = readDB(dbFiles.products);
     const stock = readDB(dbFiles.stock);
     const settings = readDB(dbFiles.settings);
-    const notifications = readDB(dbFiles.notifications);
     
     products.forEach(product => {
         const productStock = stock.filter(s => s.productId === product.id);
         const totalQty = productStock.reduce((sum, s) => sum + s.quantity, 0);
         
-        // Low stock alert (deduplicated — max once per 24h per product)
+        // Low stock alert
         if (totalQty <= (product.minStock || settings.lowStockThreshold)) {
-            const msg = `${product.name} ina stock chini (${totalQty} ${product.unit}). Tafadhali agiza zaidi.`;
-            if (!hasRecentAlert(notifications, 'low_stock', msg)) {
-                createNotification('low_stock', 'Low Stock Alert', msg, 'storekeeper');
-            }
+            createNotification('low_stock', 'Low Stock Alert', 
+                `${product.name} ina stock chini (${totalQty} ${product.unit}). Tafadhali agiza zaidi.`,
+                'storekeeper');
         }
         
-        // Expiry alert (deduplicated — max once per 24h per batch)
+        // Expiry alert
         productStock.forEach(s => {
             if (s.expiryDate) {
                 const daysToExpiry = moment(s.expiryDate).diff(moment(), 'days');
                 if (daysToExpiry <= settings.expiryAlertDays && daysToExpiry > 0) {
-                    const msg = `${product.name} (Batch: ${s.batchNumber}) itaisha muda tarehe ${moment(s.expiryDate).format('DD/MM/YYYY')}`;
-                    if (!hasRecentAlert(notifications, 'expiry', msg)) {
-                        createNotification('expiry', 'Expiry Alert', msg, 'storekeeper');
-                    }
+                    createNotification('expiry', 'Expiry Alert',
+                        `${product.name} (Batch: ${s.batchNumber}) itaisha muda tarehe ${moment(s.expiryDate).format('DD/MM/YYYY')}`,
+                        'storekeeper');
                 }
             }
         });

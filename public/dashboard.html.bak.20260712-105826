@@ -47,16 +47,17 @@
             <a class="menu-item" href="/stock" data-page="stock" data-role="admin,storekeeper">
                 <i class="bi bi-boxes"></i>
                 <span>Stoo</span>
-            </a>
 
-            <a class="menu-item" href="/sales" data-page="sales">
+               <a class="menu-item" href="/sales" data-page="sales">
                 <i class="bi bi-receipt"></i>
                 <span>Mauzo</span>
             </a>
-
+         
             <a class="menu-item" href="/credits" data-page="credits" data-role="admin,cashier,storekeeper">
                 <i class="bi bi-credit-card"></i>
                 <span>Madeni</span>
+            </a>
+
             </a>
             
 
@@ -148,11 +149,8 @@
         
         <!-- Content Area -->
         <div class="content-area">
-            <div id="appBootStatus" class="alert alert-info py-2 px-3 mb-3" style="display:none;">
-                <i class="bi bi-arrow-repeat me-1"></i> Inapakia dashboard...
-            </div>
             <!-- Dashboard Page -->
-            <section class="page-section active" id="page-dashboard">
+            <section class="page-section" id="page-dashboard">
 
                 <!-- ── Row 1: KPI stat cards ─────────────────────────── -->
                 <div class="row g-3 mb-3">

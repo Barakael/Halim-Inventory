@@ -232,6 +232,7 @@ body {
 /* Content Area */
 .content-area {
     padding: 25px;
+    zoom: 90%;
 }
 
 /* Cards */
