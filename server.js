@@ -18,12 +18,31 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { BackupManager } = require('./lib/backup-manager');
+const {
+    ABSOLUTE_TIMEOUT_MS,
+    destroySession,
+    FixedWindowRateLimiter,
+    IDLE_TIMEOUT_MS,
+    removeExpiredLowStockNotifications,
+    sessionExpiryReason
+} = require('./lib/security');
 
 const app = express();
-const PORT = 40000;
+const PORT = Number(process.env.PORT) || 40000;
+const COOKIE_NAME = 'haslim.sid';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'haslim-dev-secret-change-in-production';
 
-// Trust proxy for external access
-app.set('trust proxy', 1);
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+    throw new Error('SESSION_SECRET must be set in production');
+}
+
+// Configure this to the exact reverse proxy hop count/address in production.
+if (process.env.TRUST_PROXY) {
+    app.set('trust proxy', /^\d+$/.test(process.env.TRUST_PROXY)
+        ? Number(process.env.TRUST_PROXY)
+        : process.env.TRUST_PROXY);
+}
 
 // Middleware
 app.use(express.json());
@@ -44,20 +63,22 @@ if (!fs.existsSync(sessionsDir)) {
 
 // Session configuration with file store (persists across restarts)
 app.use(session({
+    name: COOKIE_NAME,
     store: new FileStore({
         path: sessionsDir,
-        ttl: 86400, // 24 hours
-        reapInterval: 3600, // Clean up expired sessions every hour
+        ttl: IDLE_TIMEOUT_MS / 1000,
+        reapInterval: 300,
         retries: 1,
         logFn: () => {} // Suppress noisy session file warnings
     }),
-    secret: process.env.SESSION_SECRET || 'haslim-dev-secret-change-in-production',
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     cookie: { 
         secure: 'auto',
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        maxAge: IDLE_TIMEOUT_MS,
         sameSite: 'lax'
     }
 }));
@@ -92,6 +113,11 @@ const dbFiles = {
     creditSales: path.join(DB_PATH, 'credit_sales.json'),
     supplierPayments: path.join(DB_PATH, 'supplier_payments.json')
 };
+const backupManager = new BackupManager({
+    backupRoot: path.join(__dirname, 'backups'),
+    dbFiles,
+    retention: 2
+});
 
 // Initialize database files with default data
 function initializeDatabase() {
@@ -208,11 +234,11 @@ function readDB(file) {
 }
 
 function writeDB(file, data) {
-    dbCache.set(file, data); // Update in-memory cache immediately
     try {
         const tempFile = file + '.tmp';
         fs.writeFileSync(tempFile, JSON.stringify(data), 'utf8'); // No pretty-print for speed
         fs.renameSync(tempFile, file);
+        dbCache.set(file, data);
         return true;
     } catch (error) {
         const tempFile = file + '.tmp';
@@ -269,6 +295,22 @@ function createNotification(type, title, message, targetRole = 'all', branchId =
     writeDB(dbFiles.notifications, notifications);
 }
 
+function cleanupExpiredLowStockReminders(now = Date.now()) {
+    const current = readDB(dbFiles.notifications);
+    const result = removeExpiredLowStockNotifications(current, now);
+    if (result.removed > 0) {
+        if (!writeDB(dbFiles.notifications, result.notifications)) {
+            console.error('Failed to persist expired low-stock reminder cleanup');
+            return { ...result, removed: 0 };
+        }
+        console.log(`Removed ${result.removed} low-stock reminder(s) older than seven days`);
+    }
+    if (result.malformed > 0) {
+        console.warn(`Preserved ${result.malformed} low-stock reminder(s) with invalid timestamps`);
+    }
+    return result;
+}
+
 // Check for low stock and expiry alerts
 function hasRecentAlert(notifications, type, message, hours = 24) {
     const cutoff = moment().subtract(hours, 'hours');
@@ -314,16 +356,34 @@ function checkAlerts() {
 
 // Authentication middleware
 function isAuthenticated(req, res, next) {
-    console.log(`Auth check - Session ID: ${req.sessionID}, Has user: ${!!req.session?.user}`);
-    
-    if (req.session && req.session.user) {
-        return next();
+    const expiryReason = sessionExpiryReason(req.session);
+    if (!expiryReason) {
+        const users = readDB(dbFiles.users);
+        const currentUser = users.find(user =>
+            user.id === req.session.user.id && user.status === 'active'
+        );
+        if (currentUser) {
+            req.session.user = {
+                id: currentUser.id,
+                username: currentUser.username,
+                fullName: currentUser.fullName,
+                role: currentUser.role,
+                branchId: currentUser.branchId
+            };
+            return next();
+        }
     }
-    
-    console.log('User not authenticated');
-    
-    if (req.xhr || req.headers.accept?.includes('application/json')) {
-        return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    if (req.session) req.session.destroy(() => {});
+    res.clearCookie(COOKIE_NAME, { path: '/', httpOnly: true, sameSite: 'lax' });
+
+    if (req.path.startsWith('/api/') || req.xhr || req.headers.accept?.includes('application/json')) {
+        return res.status(401).json({
+            success: false,
+            message: expiryReason === 'absolute'
+                ? 'Muda wa kuingia umeisha. Tafadhali ingia tena.'
+                : 'Unauthorized'
+        });
     }
     res.redirect('/login');
 }
@@ -343,6 +403,12 @@ function hasRole(...roles) {
 // Initialize database
 initializeDatabase();
 preloadCache(); // Load all data into memory for fast reads
+cleanupExpiredLowStockReminders();
+try {
+    backupManager.normalizeLegacySnapshots();
+} catch (error) {
+    console.error('Backup migration failed:', error.message);
+}
 
 // ==================== ROUTES ====================
 
@@ -392,56 +458,105 @@ dashboardRoutes.forEach(route => {
     });
 });
 
-// API: Authentication
-app.post('/api/auth/login', (req, res) => {
-    const { username, password } = req.body;
-    console.log(`Login attempt for user: ${username}`);
-    
-    const users = readDB(dbFiles.users);
-    
-    const user = users.find(u => u.username === username && u.status === 'active');
-    
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-        console.log(`Login failed for: ${username}`);
-        logActivity(null, 'LOGIN_FAILED', `Failed login attempt for: ${username}`, req.ip);
-        return res.json({ success: false, message: 'Jina la mtumiaji au nenosiri si sahihi' });
-    }
-    
-    // Update last login
-    user.lastLogin = new Date().toISOString();
-    writeDB(dbFiles.users, users);
-    
-    // Set session
-    req.session.user = {
-        id: user.id,
-        username: user.username,
-        fullName: user.fullName,
-        role: user.role,
-        branchId: user.branchId
+const loginIpLimiter = new FixedWindowRateLimiter({ limit: 50, windowMs: 15 * 60 * 1000 });
+const loginIdentityLimiter = new FixedWindowRateLimiter({ limit: 8, windowMs: 15 * 60 * 1000 });
+const invalidPasswordHash = bcrypt.hashSync(`invalid-${uuidv4()}`, 10);
+const limiterCleanup = setInterval(() => {
+    loginIpLimiter.prune();
+    loginIdentityLimiter.prune();
+}, 15 * 60 * 1000);
+limiterCleanup.unref();
+
+function applyLoginLimit(req, username) {
+    const ipKey = req.ip || req.socket.remoteAddress || 'unknown';
+    const identityKey = `${ipKey}:${username.toLowerCase()}`;
+    const ipResult = loginIpLimiter.consume(ipKey);
+    const identityResult = loginIdentityLimiter.consume(identityKey);
+    const blocked = !ipResult.allowed || !identityResult.allowed;
+    return {
+        blocked,
+        identityKey,
+        retryAfterSeconds: Math.max(ipResult.retryAfterSeconds, identityResult.retryAfterSeconds)
     };
-    
-    // Save session explicitly
-    req.session.save((err) => {
-        if (err) {
-            console.error('Session save error:', err);
-            return res.json({ success: false, message: 'Session error' });
+}
+
+// API: Authentication
+app.post('/api/auth/login', async (req, res) => {
+    const username = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    if (!username || username.length > 100 || !password || password.length > 200) {
+        return res.status(400).json({ success: false, message: 'Taarifa za kuingia si sahihi' });
+    }
+
+    const limit = applyLoginLimit(req, username);
+    if (limit.blocked) {
+        res.set('Retry-After', String(limit.retryAfterSeconds));
+        return res.status(429).json({
+            success: false,
+            message: `Majaribio mengi sana. Jaribu tena baada ya sekunde ${limit.retryAfterSeconds}.`,
+            retryAfter: limit.retryAfterSeconds
+        });
+    }
+
+    const users = readDB(dbFiles.users);
+    const user = users.find(u => u.username === username && u.status === 'active');
+    const passwordMatches = await bcrypt.compare(password, user?.password || invalidPasswordHash);
+
+    if (!user || !passwordMatches) {
+        logActivity(null, 'LOGIN_FAILED', `Failed login attempt for: ${username}`, req.ip);
+        return res.status(401).json({ success: false, message: 'Jina la mtumiaji au nenosiri si sahihi' });
+    }
+
+    loginIdentityLimiter.reset(limit.identityKey);
+    req.session.regenerate((regenerateError) => {
+        if (regenerateError) {
+            console.error('Session regeneration error:', regenerateError);
+            return res.status(500).json({ success: false, message: 'Session error' });
         }
-        
-        console.log(`Login successful for: ${username}, Session ID: ${req.sessionID}`);
-        logActivity(user.id, 'LOGIN', 'User logged in successfully', req.ip);
-        
-        res.json({ 
-            success: true, 
-            message: 'Umefanikiwa kuingia',
-            user: req.session.user
+
+        const startedAt = new Date().toISOString();
+        req.session.startedAt = startedAt;
+        req.session.absoluteExpiresAt = new Date(Date.now() + ABSOLUTE_TIMEOUT_MS).toISOString();
+        req.session.user = {
+            id: user.id,
+            username: user.username,
+            fullName: user.fullName,
+            role: user.role,
+            branchId: user.branchId
+        };
+
+        user.lastLogin = startedAt;
+        if (!writeDB(dbFiles.users, users)) {
+            return res.status(500).json({ success: false, message: 'Imeshindwa kuhifadhi taarifa za kuingia' });
+        }
+
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error:', err);
+                return res.status(500).json({ success: false, message: 'Session error' });
+            }
+
+            logActivity(user.id, 'LOGIN', 'User logged in successfully', req.ip);
+            res.json({
+                success: true,
+                message: 'Umefanikiwa kuingia',
+                user: req.session.user
+            });
         });
     });
 });
 
-app.post('/api/auth/logout', isAuthenticated, (req, res) => {
-    logActivity(req.session.user.id, 'LOGOUT', 'User logged out', req.ip);
-    req.session.destroy();
-    res.json({ success: true, message: 'Umetoka kwenye mfumo' });
+app.post('/api/auth/logout', isAuthenticated, async (req, res) => {
+    const userId = req.session.user.id;
+    try {
+        await destroySession(req.session);
+        res.clearCookie(COOKIE_NAME, { path: '/', httpOnly: true, sameSite: 'lax' });
+        logActivity(userId, 'LOGOUT', 'User logged out', req.ip);
+        res.json({ success: true, message: 'Umetoka kwenye mfumo' });
+    } catch (error) {
+        console.error('Session destroy error:', error);
+        res.status(500).json({ success: false, message: 'Imeshindwa kutoka salama' });
+    }
 });
 
 app.get('/api/auth/me', isAuthenticated, (req, res) => {
@@ -2273,14 +2388,16 @@ app.get('/api/stock/transfers', isAuthenticated, (req, res) => {
 });
 
 // API: Notifications
+function canAccessNotification(notification, user) {
+    return (notification.targetRole === 'all' || notification.targetRole === user.role) &&
+        (notification.branchId === 'all' || notification.branchId === user.branchId);
+}
+
 app.get('/api/notifications', isAuthenticated, (req, res) => {
     let notifications = readDB(dbFiles.notifications);
     
     // Filter by role and branch
-    notifications = notifications.filter(n => {
-        return (n.targetRole === 'all' || n.targetRole === req.session.user.role) &&
-               (n.branchId === 'all' || n.branchId === req.session.user.branchId);
-    });
+    notifications = notifications.filter(n => canAccessNotification(n, req.session.user));
     
     // Sort by date, newest first
     notifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -2290,24 +2407,36 @@ app.get('/api/notifications', isAuthenticated, (req, res) => {
 
 app.put('/api/notifications/:id/read', isAuthenticated, (req, res) => {
     const { id } = req.params;
-    const notifications = readDB(dbFiles.notifications);
+    const notifications = readDB(dbFiles.notifications).map(notification => ({ ...notification }));
     
-    const notifIndex = notifications.findIndex(n => n.id === id);
-    if (notifIndex !== -1) {
-        notifications[notifIndex].read = true;
-        writeDB(dbFiles.notifications, notifications);
+    const notifIndex = notifications.findIndex(n =>
+        n.id === id && canAccessNotification(n, req.session.user)
+    );
+    if (notifIndex === -1) {
+        return res.status(404).json({ success: false, message: 'Notification haipo' });
     }
-    
+
+    notifications[notifIndex].read = true;
+    if (!writeDB(dbFiles.notifications, notifications)) {
+        return res.status(500).json({ success: false, message: 'Imeshindwa kuhifadhi notification' });
+    }
     res.json({ success: true });
 });
 
 app.delete('/api/notifications/:id', isAuthenticated, (req, res) => {
     const { id } = req.params;
     let notifications = readDB(dbFiles.notifications);
-    
+    const notification = notifications.find(n =>
+        n.id === id && canAccessNotification(n, req.session.user)
+    );
+    if (!notification) {
+        return res.status(404).json({ success: false, message: 'Notification haipo' });
+    }
+
     notifications = notifications.filter(n => n.id !== id);
-    writeDB(dbFiles.notifications, notifications);
-    
+    if (!writeDB(dbFiles.notifications, notifications)) {
+        return res.status(500).json({ success: false, message: 'Imeshindwa kufuta notification' });
+    }
     res.json({ success: true });
 });
 
@@ -3085,70 +3214,61 @@ app.get('/api/barcode/:code', async (req, res) => {
 
 // API: Backup
 app.post('/api/backup', isAuthenticated, hasRole('admin'), (req, res) => {
-    const timestamp = moment().format('YYYY-MM-DD_HH-mm-ss');
-    const backupDir = path.join(__dirname, 'backups', timestamp);
-    
     try {
-        fs.mkdirSync(backupDir, { recursive: true });
-        
-        Object.keys(dbFiles).forEach(key => {
-            if (fs.existsSync(dbFiles[key])) {
-                fs.copyFileSync(dbFiles[key], path.join(backupDir, `${key}.json`));
-            }
+        const snapshot = backupManager.createSnapshot('manual', {
+            createdBy: req.session.user.id,
+            reason: 'manual'
         });
-        
-        logActivity(req.session.user.id, 'BACKUP', `Created backup: ${timestamp}`, req.ip);
-        
-        res.json({ success: true, message: `Backup imefanikiwa: ${timestamp}` });
+        logActivity(req.session.user.id, 'BACKUP', `Created backup: manual/${snapshot.name}`, req.ip);
+
+        res.json({
+            success: true,
+            message: `Backup imefanikiwa: ${snapshot.name}`,
+            data: snapshot,
+            warnings: snapshot.pruneResult.errors
+        });
     } catch (error) {
-        res.json({ success: false, message: `Backup imeshindikana: ${error.message}` });
+        res.status(500).json({ success: false, message: `Backup imeshindikana: ${error.message}` });
     }
 });
 
 app.get('/api/backups', isAuthenticated, hasRole('admin'), (req, res) => {
-    const backupDir = path.join(__dirname, 'backups');
-    
     try {
-        if (!fs.existsSync(backupDir)) {
-            return res.json({ success: true, data: [] });
-        }
-        
-        const backups = fs.readdirSync(backupDir)
-            .filter(f => fs.statSync(path.join(backupDir, f)).isDirectory())
-            .map(f => ({
-                name: f,
-                createdAt: fs.statSync(path.join(backupDir, f)).mtime
-            }))
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
+        const backups = backupManager.listAllSnapshots()
+            .sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt));
         res.json({ success: true, data: backups });
     } catch (error) {
-        res.json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
-app.post('/api/backup/restore/:name', isAuthenticated, hasRole('admin'), (req, res) => {
-    const { name } = req.params;
-    const backupDir = path.join(__dirname, 'backups', name);
-    
+function restoreBackup(req, res, type, name) {
     try {
-        if (!fs.existsSync(backupDir)) {
-            return res.json({ success: false, message: 'Backup haipo' });
-        }
-        
-        Object.keys(dbFiles).forEach(key => {
-            const backupFile = path.join(backupDir, `${key}.json`);
-            if (fs.existsSync(backupFile)) {
-                fs.copyFileSync(backupFile, dbFiles[key]);
-            }
-        });
-        
-        logActivity(req.session.user.id, 'RESTORE', `Restored backup: ${name}`, req.ip);
-        
+        backupManager.createSnapshot('manual', {
+            createdBy: req.session.user.id,
+            reason: `before restore ${type}/${name}`
+        }, { prune: false });
+        backupManager.restoreSnapshot(type, name);
+        dbCache.clear();
+        preloadCache();
+        backupManager.pruneType('manual');
+        logActivity(req.session.user.id, 'RESTORE', `Restored backup: ${type}/${name}`, req.ip);
         res.json({ success: true, message: 'Backup imerejesha data' });
     } catch (error) {
-        res.json({ success: false, message: `Restore imeshindikana: ${error.message}` });
+        res.status(500).json({ success: false, message: `Restore imeshindikana: ${error.message}` });
     }
+}
+
+app.post('/api/backup/restore/:type/:name', isAuthenticated, hasRole('admin'), (req, res) => {
+    restoreBackup(req, res, req.params.type, req.params.name);
+});
+
+app.post('/api/backup/restore/:name', isAuthenticated, hasRole('admin'), (req, res) => {
+    const matches = backupManager.listAllSnapshots().filter(snapshot => snapshot.name === req.params.name);
+    if (matches.length !== 1) {
+        return res.status(404).json({ success: false, message: 'Backup haipo au jina halitoshi' });
+    }
+    restoreBackup(req, res, matches[0].type, matches[0].name);
 });
 
 // Catch-all for SPA routing
@@ -3158,80 +3278,50 @@ app.get('*', isAuthenticated, (req, res) => {
 
 // =============================================================
 // WEEKLY BACKUP SYSTEM
-// Every Sunday at 23:00 — full cumulative snapshot of all data.
-// Skips weeks with no activity (no sales + no stock changes).
-// Stored in backups/weekly/YYYY-WW/ — never committed to git.
+// Creates a complete snapshot after the configured Sunday time and catches up
+// after downtime. Retention is handled by BackupManager.
 // =============================================================
-function runWeeklyBackup() {
+function mostRecentWeeklySchedule(now, backupTime) {
+    const [hour, minute] = String(backupTime || '23:00').split(':').map(Number);
+    const scheduled = now.clone().startOf('day')
+        .hour(Number.isInteger(hour) ? hour : 23)
+        .minute(Number.isInteger(minute) ? minute : 0);
+    scheduled.subtract(scheduled.day(), 'days');
+    if (scheduled.isAfter(now)) scheduled.subtract(7, 'days');
+    return scheduled;
+}
+
+function runWeeklyBackup(now = moment()) {
     try {
-        const now = moment();
+        const settings = readDB(dbFiles.settings);
+        if (settings.autoBackup === false) return { skipped: 'disabled' };
 
-        // Skip if no activity this week (crash/idle day detection)
-        const sales = readDB(dbFiles.sales);
-        const stock = readDB(dbFiles.stock);
-        const weekStart = moment().startOf('isoWeek').toISOString();
-        const weekEnd = moment().endOf('isoWeek').toISOString();
+        const scheduled = mostRecentWeeklySchedule(now, settings.backupTime);
+        const scheduleKey = scheduled.format('GGGG-[W]WW');
+        const alreadyCreated = backupManager.listSnapshots('weekly')
+            .some(snapshot => snapshot.metadata?.scheduleKey === scheduleKey);
+        if (alreadyCreated) return { skipped: 'exists', scheduleKey };
 
-        const salesThisWeek = sales.filter(s => s.createdAt >= weekStart && s.createdAt <= weekEnd);
-        const stockChangesThisWeek = stock.filter(s => s.updatedAt >= weekStart && s.updatedAt <= weekEnd);
-
-        if (salesThisWeek.length === 0 && stockChangesThisWeek.length === 0) {
-            console.log(`⏭ Weekly backup skipped — no activity this week (${now.format('YYYY-[W]WW')})`);
-            return;
-        }
-
-        const weekLabel = now.format('YYYY-[W]WW'); // e.g. 2026-W14
-        const backupDir = path.join(__dirname, 'backups', 'weekly', weekLabel);
-
-        if (fs.existsSync(backupDir)) {
-            console.log(`ℹ Weekly backup for ${weekLabel} already exists — skipping.`);
-            return;
-        }
-
-        fs.mkdirSync(backupDir, { recursive: true });
-
-        // Full snapshot of every data file
-        Object.keys(dbFiles).forEach(key => {
-            if (fs.existsSync(dbFiles[key])) {
-                fs.copyFileSync(dbFiles[key], path.join(backupDir, `${key}.json`));
-            }
-        });
-
-        // Write a manifest with stats
-        const manifest = {
-            week: weekLabel,
-            createdAt: now.toISOString(),
-            stats: {
-                totalSales: sales.length,
-                salesThisWeek: salesThisWeek.length,
-                products: readDB(dbFiles.products).length,
-                categories: readDB(dbFiles.categories).length,
-                customers: readDB(dbFiles.customers).length,
-                suppliers: readDB(dbFiles.suppliers).length,
-            }
-        };
-        fs.writeFileSync(
-            path.join(backupDir, 'manifest.json'),
-            JSON.stringify(manifest, null, 2)
+        const periodStart = scheduled.clone().subtract(7, 'days').valueOf();
+        const hasActivity = Object.values(dbFiles).some(file =>
+            fs.existsSync(file) && fs.statSync(file).mtimeMs >= periodStart
         );
+        if (!hasActivity) return { skipped: 'no-activity', scheduleKey };
 
-        console.log(`✅ Weekly backup created: ${weekLabel} | ${salesThisWeek.length} sales this week | ${sales.length} total sales`);
-
+        const snapshot = backupManager.createSnapshot('weekly', {
+            scheduleKey,
+            scheduledFor: scheduled.toISOString()
+        });
+        console.log(`Weekly backup created: ${scheduleKey} (${snapshot.name})`);
+        return snapshot;
     } catch (err) {
-        console.error('❌ Weekly backup failed:', err.message);
+        console.error('Weekly backup failed:', err.message);
+        return { error: err.message };
     }
 }
 
-// Check every minute — fire once on Sunday at 23:00
-let lastWeeklyBackup = null;
-setInterval(() => {
-    const now = moment();
-    const weekKey = now.format('YYYY-[W]WW');
-    if (now.day() === 0 && now.hours() === 23 && now.minutes() === 0 && lastWeeklyBackup !== weekKey) {
-        lastWeeklyBackup = weekKey;
-        runWeeklyBackup();
-    }
-}, 60 * 1000);
+const weeklyBackupTimer = setInterval(() => runWeeklyBackup(), 60 * 1000);
+weeklyBackupTimer.unref();
 
 // =============================================================
 // CRASH PROTECTION — keeps server alive on unhandled errors
@@ -3279,6 +3369,11 @@ ${lanLines}
     `);
     
     // Run periodic checks
-    setInterval(checkAlerts, 60 * 60 * 1000); // Every hour
+    runWeeklyBackup();
+    const alertTimer = setInterval(() => {
+        cleanupExpiredLowStockReminders();
+        checkAlerts();
+    }, 60 * 60 * 1000);
+    alertTimer.unref();
 });
 

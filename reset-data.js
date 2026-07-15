@@ -14,6 +14,7 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
+const { BackupManager } = require('./lib/backup-manager');
 
 // Database file paths
 const DB_PATH = path.join(__dirname, 'data');
@@ -39,6 +40,11 @@ const dbFiles = {
     creditSales: path.join(DB_PATH, 'credit_sales.json'),
     supplierPayments: path.join(DB_PATH, 'supplier_payments.json')
 };
+const backupManager = new BackupManager({
+    backupRoot: BACKUP_PATH,
+    dbFiles,
+    retention: 2
+});
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -78,31 +84,13 @@ function createDataBackup() {
         return null;
     }
 
-    // Create backup directory if it doesn't exist
-    if (!fs.existsSync(BACKUP_PATH)) {
-        fs.mkdirSync(BACKUP_PATH, { recursive: true });
+    backupManager.normalizeLegacySnapshots();
+    const snapshot = backupManager.createSnapshot('pre-reset', { reason: 'data reset' });
+    console.log(`📦 Created verified backup: ${snapshot.path}`);
+    if (snapshot.pruneResult.errors.length > 0) {
+        console.warn('Older backup cleanup had warnings:', snapshot.pruneResult.errors);
     }
-
-    // Create timestamped backup folder
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const backupDir = path.join(BACKUP_PATH, `backup-${timestamp}`);
-    fs.mkdirSync(backupDir, { recursive: true });
-
-    console.log(`📦 Creating backup in: ${backupDir}`);
-
-    // Copy all data files to backup
-    let backedUp = 0;
-    Object.keys(dbFiles).forEach(key => {
-        const filePath = dbFiles[key];
-        if (fs.existsSync(filePath)) {
-            const backupFilePath = path.join(backupDir, path.basename(filePath));
-            fs.copyFileSync(filePath, backupFilePath);
-            backedUp++;
-        }
-    });
-
-    console.log(`✓ Backed up ${backedUp} files`);
-    return backupDir;
+    return snapshot.path;
 }
 
 // Default data templates

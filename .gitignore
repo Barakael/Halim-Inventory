@@ -13,6 +13,8 @@ receipts/
 
 # Backups (large, should be managed separately)
 backups/
+*.bak
+*.bak.*
 
 # Live database files — never commit, managed per machine separately
 data/*.json

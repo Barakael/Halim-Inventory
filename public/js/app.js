@@ -112,16 +112,31 @@ async function api(endpoint, options = {}) {
             }
         });
         const contentType = response.headers.get('content-type') || '';
+        if (response.status === 401) {
+            if (!window.location.pathname.startsWith('/login')) {
+                window.location.replace('/login?reason=session-expired');
+            }
+            return { success: false, message: 'Unauthorized', unauthorized: true };
+        }
         if (!contentType.includes('application/json')) {
             // Session expired / HTML redirect — treat as unauthenticated
-            if (response.redirected || response.status === 401 || response.status === 302 || contentType.includes('text/html')) {
+            if (response.redirected || response.status === 302 || contentType.includes('text/html')) {
+                if (!window.location.pathname.startsWith('/login')) {
+                    window.location.replace('/login?reason=session-expired');
+                }
                 return { success: false, message: 'Unauthorized', unauthorized: true };
             }
             const text = await response.text();
             console.error('Non-JSON API response', endpoint, text.slice(0, 200));
             return { success: false, message: 'Invalid server response' };
         }
-        return await response.json();
+        const data = await response.json();
+        if (response.status === 429) {
+            const retryAfter = data.retryAfter || response.headers.get('Retry-After');
+            data.rateLimited = true;
+            data.message = data.message || `Majaribio mengi. Jaribu tena baada ya sekunde ${retryAfter}.`;
+        }
+        return data;
     } catch (error) {
         console.error('API Error:', error);
         showToast('Hitilafu ya mtandao', 'danger');
