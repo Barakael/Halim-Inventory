@@ -854,13 +854,20 @@ app.get('/api/stock', isAuthenticated, (req, res) => {
 });
 
 app.post('/api/stock/in', isAuthenticated, hasRole('admin', 'storekeeper'), (req, res) => {
-    const { productId, quantity, batchNumber, expiryDate, costPrice, branchId, purchaseId, notes } = req.body;
+    const { productId, quantity, batchNumber, expiryDate, costPrice, branchId, purchaseId, notes, supplierId } = req.body;
     const stock = readDB(dbFiles.stock);
     const products = readDB(dbFiles.products);
     
     const product = products.find(p => p.id === productId);
     if (!product) {
         return res.json({ success: false, message: 'Bidhaa haipo' });
+    }
+
+    if (supplierId) {
+        const suppliers = readDB(dbFiles.suppliers);
+        if (!suppliers.find(s => s.id === supplierId)) {
+            return res.json({ success: false, message: 'Msambazaji hapatikani' });
+        }
     }
     
     const newStock = {
@@ -872,6 +879,7 @@ app.post('/api/stock/in', isAuthenticated, hasRole('admin', 'storekeeper'), (req
         costPrice: parseFloat(costPrice) || 0,
         branchId: branchId || req.session.user.branchId,
         purchaseId: purchaseId || null,
+        supplierId: supplierId || null,
         notes,
         type: 'in',
         createdBy: req.session.user.id,
@@ -884,6 +892,98 @@ app.post('/api/stock/in', isAuthenticated, hasRole('admin', 'storekeeper'), (req
     logActivity(req.session.user.id, 'STOCK_IN', `Added stock: ${quantity} ${product.unit} of ${product.name}`, req.ip);
     
     res.json({ success: true, message: 'Stock imeongezwa', data: newStock });
+});
+
+app.put('/api/stock/:id', isAuthenticated, hasRole('admin', 'storekeeper'), (req, res) => {
+    const { id } = req.params;
+    const { quantity, batchNumber, expiryDate, costPrice, notes, supplierId } = req.body;
+    const stock = readDB(dbFiles.stock);
+    const products = readDB(dbFiles.products);
+
+    const index = stock.findIndex(s => s.id === id);
+    if (index === -1) {
+        return res.json({ success: false, message: 'Stock haipatikani' });
+    }
+
+    const entry = stock[index];
+    if (entry.type !== 'in') {
+        return res.json({ success: false, message: 'Huwezi kuhariri aina hii ya stock' });
+    }
+
+    const qty = parseInt(quantity);
+    if (isNaN(qty) || qty <= 0) {
+        return res.json({ success: false, message: 'Kiasi si sahihi' });
+    }
+
+    if (supplierId) {
+        const suppliers = readDB(dbFiles.suppliers);
+        if (!suppliers.find(s => s.id === supplierId)) {
+            return res.json({ success: false, message: 'Msambazaji hapatikani' });
+        }
+    }
+
+    const product = products.find(p => p.id === entry.productId);
+    stock[index] = {
+        ...entry,
+        quantity: qty,
+        batchNumber: batchNumber || entry.batchNumber,
+        expiryDate: expiryDate || null,
+        costPrice: parseFloat(costPrice) || 0,
+        notes: notes !== undefined ? notes : entry.notes,
+        supplierId: supplierId !== undefined ? (supplierId || null) : entry.supplierId,
+        updatedAt: new Date().toISOString()
+    };
+
+    writeDB(dbFiles.stock, stock);
+    logActivity(
+        req.session.user.id,
+        'UPDATE_STOCK',
+        `Updated stock entry: ${qty} ${product ? product.unit : ''} of ${product ? product.name : entry.productId}`,
+        req.ip
+    );
+
+    res.json({ success: true, message: 'Stock imeboreshwa', data: stock[index] });
+});
+
+app.delete('/api/stock/:id', isAuthenticated, hasRole('admin', 'storekeeper'), (req, res) => {
+    const { id } = req.params;
+    const { adminPassword } = req.body;
+    const stock = readDB(dbFiles.stock);
+    const products = readDB(dbFiles.products);
+    const users = readDB(dbFiles.users);
+
+    if (!adminPassword) {
+        return res.json({ success: false, message: 'Nenosiri la admin linahitajika' });
+    }
+
+    const adminUser = users.find(u => u.id === req.session.user.id && u.role === 'admin');
+    if (!adminUser || !bcrypt.compareSync(adminPassword, adminUser.password)) {
+        logActivity(req.session.user.id, 'DELETE_STOCK_FAILED', 'Failed to delete stock - invalid password', req.ip);
+        return res.json({ success: false, message: 'Nenosiri la admin si sahihi' });
+    }
+
+    const index = stock.findIndex(s => s.id === id);
+    if (index === -1) {
+        return res.json({ success: false, message: 'Stock haipatikani' });
+    }
+
+    const entry = stock[index];
+    if (entry.type !== 'in') {
+        return res.json({ success: false, message: 'Huwezi kufuta aina hii ya stock' });
+    }
+
+    const product = products.find(p => p.id === entry.productId);
+    stock.splice(index, 1);
+    writeDB(dbFiles.stock, stock);
+
+    logActivity(
+        req.session.user.id,
+        'DELETE_STOCK',
+        `Deleted stock entry: ${entry.quantity} ${product ? product.unit : ''} of ${product ? product.name : entry.productId}`,
+        req.ip
+    );
+
+    res.json({ success: true, message: 'Stock imefutwa' });
 });
 
 app.post('/api/stock/out', isAuthenticated, hasRole('admin', 'storekeeper', 'cashier'), (req, res) => {
@@ -1056,6 +1156,203 @@ app.delete('/api/suppliers/:id', isAuthenticated, hasRole('admin'), (req, res) =
     logActivity(req.session.user.id, 'DELETE_SUPPLIER', `Deleted supplier: ${supplier.name}`, req.ip);
     
     res.json({ success: true, message: 'Msambazaji amefutwa' });
+});
+
+function getSupplierStockHistory(supplierId, startDate, endDate) {
+    const suppliers = readDB(dbFiles.suppliers) || [];
+    const stock = readDB(dbFiles.stock) || [];
+    const purchases = readDB(dbFiles.purchases) || [];
+    const products = readDB(dbFiles.products) || [];
+
+    const supplier = Array.isArray(suppliers) ? suppliers.find(s => s.id === supplierId) : null;
+    if (!supplier) {
+        return null;
+    }
+
+    const purchaseMap = {};
+    (Array.isArray(purchases) ? purchases : []).forEach(p => {
+        purchaseMap[p.id] = p;
+    });
+
+    const productsList = Array.isArray(products) ? products : [];
+
+    let entries = (Array.isArray(stock) ? stock : [])
+        .filter(s => {
+            if (s.type !== 'in') return false;
+            if (s.supplierId === supplierId) return true;
+            if (s.purchaseId && purchaseMap[s.purchaseId]?.supplierId === supplierId) return true;
+            return false;
+        })
+        .map(s => {
+            const product = productsList.find(p => p.id === s.productId);
+            const purchase = s.purchaseId ? purchaseMap[s.purchaseId] : null;
+            const qty = parseInt(s.quantity) || 0;
+            const costPrice = parseFloat(s.costPrice) || 0;
+            return {
+                id: s.id,
+                date: s.createdAt,
+                productId: s.productId,
+                productName: product ? product.name : 'N/A',
+                unit: product ? product.unit : 'pcs',
+                quantity: qty,
+                batchNumber: s.batchNumber || '-',
+                expiryDate: s.expiryDate || null,
+                costPrice,
+                lineTotal: qty * costPrice,
+                notes: s.notes || '',
+                source: purchase ? 'purchase' : 'stock-in',
+                invoiceNumber: purchase ? purchase.invoiceNumber : null
+            };
+        });
+
+    if (startDate && endDate) {
+        const start = moment(startDate).startOf('day');
+        const end = moment(endDate).endOf('day');
+        entries = entries.filter(e => {
+            const d = moment(e.date);
+            return d.isSameOrAfter(start) && d.isSameOrBefore(end);
+        });
+    }
+
+    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const totalQuantity = entries.reduce((sum, e) => sum + e.quantity, 0);
+    const totalValue = entries.reduce((sum, e) => sum + e.lineTotal, 0);
+
+    return {
+        supplier,
+        summary: {
+            totalDeliveries: entries.length,
+            totalQuantity,
+            totalValue
+        },
+        entries
+    };
+}
+
+app.get('/api/suppliers/:id/stock-history', isAuthenticated, (req, res) => {
+    const { id } = req.params;
+    const { startDate, endDate } = req.query;
+
+    const data = getSupplierStockHistory(id, startDate, endDate);
+    if (!data) {
+        return res.json({ success: false, message: 'Msambazaji hapatikani' });
+    }
+
+    res.json({ success: true, data });
+});
+
+app.get('/api/suppliers/:id/stock-report', isAuthenticated, (req, res) => {
+    const { id } = req.params;
+    const { startDate, endDate } = req.query;
+
+    const data = getSupplierStockHistory(id, startDate, endDate);
+    if (!data) {
+        return res.status(404).json({ success: false, message: 'Msambazaji hapatikani' });
+    }
+
+    const settings = readDB(dbFiles.settings);
+    const { supplier, summary, entries } = data;
+
+    const safeName = (supplier.name || 'supplier').replace(/[^a-zA-Z0-9-_]/g, '_');
+    const filename = `supplier-${safeName}-stock-report.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    doc.pipe(res);
+
+    const fmt = n => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+    // Company header
+    doc.fontSize(18).font('Helvetica-Bold').text(settings.companyName || 'HASLIM GROUP LIMITED', { align: 'center' });
+    doc.fontSize(10).font('Helvetica').text(settings.companyAddress || '', { align: 'center' });
+    if (settings.companyPhone) {
+        doc.text(`Simu: ${settings.companyPhone}`, { align: 'center' });
+    }
+    doc.moveDown(0.5);
+    doc.fontSize(14).font('Helvetica-Bold').text('Ripoti ya Stock kutoka Msambazaji', { align: 'center' });
+    doc.moveDown(1);
+
+    // Supplier details
+    doc.fontSize(11).font('Helvetica-Bold').text('Taarifa za Msambazaji');
+    doc.font('Helvetica').fontSize(10);
+    doc.text(`Jina: ${supplier.name}`);
+    if (supplier.phone) doc.text(`Simu: ${supplier.phone}`);
+    if (supplier.address) doc.text(`Mahali: ${supplier.address}`);
+    if (supplier.contactPerson) doc.text(`Mwasiliano: ${supplier.contactPerson}`);
+    doc.moveDown(0.5);
+
+    const dateRangeLabel = (startDate && endDate)
+        ? `${moment(startDate).format('DD/MM/YYYY')} - ${moment(endDate).format('DD/MM/YYYY')}`
+        : 'Muda wote';
+    doc.text(`Kipindi: ${dateRangeLabel}`);
+    doc.text(`Imetengenezwa: ${moment().format('DD/MM/YYYY HH:mm')}`);
+    doc.moveDown(1);
+
+    // Table header
+    const colWidths = [70, 130, 45, 35, 70, 55, 55];
+    const headers = ['Tarehe', 'Bidhaa', 'Kiasi', 'Kipimo', 'Batch', 'Bei', 'Jumla'];
+    const tableTop = doc.y;
+    let x = doc.page.margins.left;
+
+    doc.font('Helvetica-Bold').fontSize(9);
+    headers.forEach((h, i) => {
+        doc.text(h, x, tableTop, { width: colWidths[i], align: i >= 2 ? 'right' : 'left' });
+        x += colWidths[i];
+    });
+
+    doc.moveTo(doc.page.margins.left, tableTop + 14)
+        .lineTo(doc.page.margins.left + pageWidth, tableTop + 14)
+        .stroke();
+
+    let y = tableTop + 20;
+    doc.font('Helvetica').fontSize(8);
+
+    entries.forEach(entry => {
+        if (y > doc.page.height - 100) {
+            doc.addPage();
+            y = doc.page.margins.top;
+        }
+
+        const row = [
+            moment(entry.date).format('DD/MM/YY'),
+            entry.productName.length > 22 ? entry.productName.substring(0, 20) + '..' : entry.productName,
+            String(entry.quantity),
+            entry.unit,
+            (entry.batchNumber || '-').substring(0, 12),
+            fmt(entry.costPrice),
+            fmt(entry.lineTotal)
+        ];
+
+        x = doc.page.margins.left;
+        row.forEach((cell, i) => {
+            doc.text(cell, x, y, { width: colWidths[i], align: i >= 2 ? 'right' : 'left' });
+            x += colWidths[i];
+        });
+        y += 16;
+    });
+
+    if (entries.length === 0) {
+        doc.text('Hakuna stock iliyopokelewa kutoka msambazaji huyu.', doc.page.margins.left, y);
+        y += 20;
+    }
+
+    // Summary
+    y += 10;
+    doc.moveTo(doc.page.margins.left, y).lineTo(doc.page.margins.left + pageWidth, y).stroke();
+    y += 10;
+
+    doc.font('Helvetica-Bold').fontSize(10);
+    doc.text(`Jumla ya Uwasilishaji: ${summary.totalDeliveries}`, doc.page.margins.left, y);
+    y += 16;
+    doc.text(`Jumla ya Kiasi: ${fmt(summary.totalQuantity)}`, doc.page.margins.left, y);
+    y += 16;
+    doc.text(`Jumla ya Thamani: TZS ${fmt(summary.totalValue)}`, doc.page.margins.left, y);
+
+    doc.end();
 });
 
 // API: Purchases
@@ -1284,6 +1581,7 @@ app.post('/api/purchases', isAuthenticated, hasRole('admin', 'storekeeper'), (re
             costPrice: parseFloat(item.costPrice),
             branchId: branchId || req.session.user.branchId,
             purchaseId,
+            supplierId: supplierId || null,
             type: 'in',
             createdBy: req.session.user.id,
             createdAt: new Date().toISOString()
@@ -3271,8 +3569,11 @@ app.post('/api/backup/restore/:name', isAuthenticated, hasRole('admin'), (req, r
     restoreBackup(req, res, matches[0].type, matches[0].name);
 });
 
-// Catch-all for SPA routing
+// Catch-all for SPA routing — never serve HTML for API paths
 app.get('*', isAuthenticated, (req, res) => {
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ success: false, message: 'API haipatikani' });
+    }
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 

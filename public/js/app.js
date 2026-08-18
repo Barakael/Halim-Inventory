@@ -108,6 +108,7 @@ async function api(endpoint, options = {}) {
             ...options,
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
                 ...options.headers
             }
         });
@@ -119,16 +120,14 @@ async function api(endpoint, options = {}) {
             return { success: false, message: 'Unauthorized', unauthorized: true };
         }
         if (!contentType.includes('application/json')) {
-            // Session expired / HTML redirect — treat as unauthenticated
-            if (response.redirected || response.status === 302 || contentType.includes('text/html')) {
-                if (!window.location.pathname.startsWith('/login')) {
-                    window.location.replace('/login?reason=session-expired');
-                }
-                return { success: false, message: 'Unauthorized', unauthorized: true };
-            }
             const text = await response.text();
             console.error('Non-JSON API response', endpoint, text.slice(0, 200));
-            return { success: false, message: 'Invalid server response' };
+            return {
+                success: false,
+                message: response.status === 404
+                    ? 'Huduma haipatikani. Hakikisha server imewashwa upya.'
+                    : 'Invalid server response'
+            };
         }
         const data = await response.json();
         if (response.status === 429) {
@@ -1276,6 +1275,7 @@ async function saveStockIn() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     data.productId = productId; // Ensure productId is set
+    if (!data.supplierId) delete data.supplierId;
     
     const result = await api('/api/stock/in', { 
         method: 'POST', 
@@ -1305,6 +1305,8 @@ async function showStockInModal(productId = '') {
     if (!products || products.length === 0) {
         await loadProducts();
     }
+
+    await loadSupplierOptions('stockInSupplier');
     
     // If productId is provided, pre-select it
     if (productId) {
@@ -1312,6 +1314,9 @@ async function showStockInModal(productId = '') {
         if (product) {
             document.getElementById('stockProductId').value = product.id;
             document.getElementById('stockProductSearch').value = `${product.name} (${product.currentStock || 0} ${product.unit || 'pcs'})`;
+            if (product.supplierId) {
+                document.getElementById('stockInSupplier').value = product.supplierId;
+            }
         }
     }
     
@@ -1465,8 +1470,8 @@ function renderSuppliersTable(supplierDebts = {}) {
         const supplierNameEscaped = (s.name || '').replace(/'/g, "\\'");
         
         return `
-        <tr class="align-middle">
-            <td>${s.name}</td>
+        <tr class="supplier-row-clickable align-middle" data-supplier-id="${s.id}" role="button" tabindex="0" title="Bofya kuona stock aliyowasilisha">
+            <td><span class="supplier-name-link">${s.name}</span></td>
             <td>${s.contactPerson || '-'}</td>
             <td>${s.phone || '-'}</td>
             <td>${s.email || '-'}</td>
@@ -1477,22 +1482,75 @@ function renderSuppliersTable(supplierDebts = {}) {
                 <span class="status-dot ${s.status === 'active' ? 'active' : 'inactive'}"></span>
                 ${s.status === 'active' ? 'Active' : 'Inactive'}
             </td>
-            <td>
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-strategy="fixed" aria-expanded="false" title="Vitendo">
+            <td onclick="event.stopPropagation()">
+                <div class="dropdown dropup">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-display="static" aria-expanded="false" title="Vitendo" onclick="event.stopPropagation()">
                         <i class="bi bi-three-dots-vertical"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        ${hasDebt ? `<li><a class="dropdown-item text-success" href="#" onclick="event.preventDefault();showSupplierPaymentModal('${s.id}','${supplierNameEscaped}',${debtBalance})"><i class="bi bi-cash-coin me-2"></i>Lipia Deni</a></li>` : ''}
-                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault();editSupplier('${s.id}')"><i class="bi bi-pencil me-2"></i>Hariri</a></li>
+                        ${hasDebt ? `<li><a class="dropdown-item text-success" href="#" onclick="event.preventDefault();event.stopPropagation();showSupplierPaymentModal('${s.id}','${supplierNameEscaped}',${debtBalance})"><i class="bi bi-cash-coin me-2"></i>Lipia Deni</a></li>` : ''}
+                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault();event.stopPropagation();editSupplier('${s.id}')"><i class="bi bi-pencil me-2"></i>Hariri</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#" onclick="event.preventDefault();deleteSupplier('${s.id}')"><i class="bi bi-trash me-2"></i>Futa</a></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="event.preventDefault();event.stopPropagation();deleteSupplier('${s.id}')"><i class="bi bi-trash me-2"></i>Futa</a></li>
                     </ul>
                 </div>
             </td>
         </tr>
         `;
     }).join('') || '<tr><td colspan="7" class="text-center text-muted">Hakuna wasambazaji</td></tr>';
+
+    setupSuppliersTableClick();
+}
+
+function setupSuppliersTableClick() {
+    const tbody = document.getElementById('suppliersTableBody');
+    if (!tbody || tbody.dataset.clickBound === '1') return;
+    tbody.dataset.clickBound = '1';
+
+    tbody.addEventListener('click', (e) => {
+        if (e.target.closest('[data-bs-toggle="dropdown"], .dropdown, .dropdown-menu, button, a')) {
+            e.stopPropagation();
+            return;
+        }
+        const row = e.target.closest('tr[data-supplier-id]');
+        if (!row) return;
+        e.preventDefault();
+        viewSupplierStockHistory(row.dataset.supplierId);
+    });
+
+    tbody.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const row = e.target.closest('tr[data-supplier-id]');
+        if (!row) return;
+        e.preventDefault();
+        viewSupplierStockHistory(row.dataset.supplierId);
+    });
+}
+
+function escapeHtml(text) {
+    if (text == null) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function removeSupplierStockModal() {
+    const existingModal = document.getElementById('supplierStockModal');
+    if (existingModal) {
+        const instance = bootstrap.Modal.getInstance(existingModal);
+        if (instance) {
+            instance.hide();
+            instance.dispose();
+        }
+        existingModal.remove();
+    }
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
 }
 
 async function loadSupplierOptions(selectId) {
@@ -1552,18 +1610,26 @@ function showAddSupplierModal() {
 function editSupplier(id) {
     const supplier = suppliers.find(s => s.id === id);
     if (!supplier) return;
-    
+
     document.getElementById('supplierId').value = supplier.id;
-    document.getElementById('supplierName').value = supplier.name;
-    document.getElementById('supplierContact').value = supplier.contactPerson || '';
+    document.getElementById('supplierName').value = supplier.name || '';
     document.getElementById('supplierPhone').value = supplier.phone || '';
-    document.getElementById('supplierEmail').value = supplier.email || '';
     document.getElementById('supplierAddress').value = supplier.address || '';
-    document.getElementById('supplierTaxId').value = supplier.taxId || '';
-    document.getElementById('supplierStatus').value = supplier.status;
-    
+    document.getElementById('supplierStatus').value = supplier.status || 'active';
+
     document.getElementById('supplierModalLabel').textContent = 'Hariri Msambazaji';
     new bootstrap.Modal(document.getElementById('supplierModal')).show();
+}
+
+function editSupplierFromStockModal() {
+    if (!currentSupplierStockHistoryId) return;
+    const supplierId = currentSupplierStockHistoryId;
+    const stockModal = document.getElementById('supplierStockModal');
+    if (stockModal) {
+        const instance = bootstrap.Modal.getInstance(stockModal);
+        if (instance) instance.hide();
+    }
+    editSupplier(supplierId);
 }
 
 async function deleteSupplier(id) {
@@ -1587,6 +1653,320 @@ async function deleteSupplier(id) {
         }
     };
     
+    document.getElementById('passwordConfirmInput').value = '';
+    new bootstrap.Modal(document.getElementById('passwordConfirmModal')).show();
+}
+
+let currentSupplierStockHistoryId = null;
+
+async function viewSupplierStockHistory(supplierId, startDate = '', endDate = '') {
+    if (!supplierId) return;
+    currentSupplierStockHistoryId = supplierId;
+
+    try {
+        let url = `/api/suppliers/${encodeURIComponent(supplierId)}/stock-history`;
+        const params = [];
+        if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
+        if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
+        if (params.length) url += '?' + params.join('&');
+
+        const result = await api(url);
+        if (!result.success || !result.data || !result.data.supplier) {
+            showToast(result.message || 'Imeshindwa kupakia historia ya stock', 'danger');
+            return;
+        }
+
+        const data = result.data;
+        const entries = Array.isArray(data.entries) ? data.entries : [];
+        const summary = data.summary || { totalDeliveries: 0, totalQuantity: 0, totalValue: 0 };
+        window.currentSupplierStockHistoryData = { ...data, entries, summary };
+
+        const sourceLabel = (source, invoice) => {
+            if (source === 'purchase') return `Manunuzi${invoice ? ` (${invoice})` : ''}`;
+            return 'Stock In';
+        };
+
+        const canManageStock = currentUser && ['admin', 'storekeeper'].includes(currentUser.role);
+        const actionCol = canManageStock ? '<th>Vitendo</th>' : '';
+        const actionFooterCol = canManageStock ? '<td></td>' : '';
+
+        const rowsHtml = entries.length
+            ? entries.map(e => {
+                const actions = canManageStock ? `
+                    <td class="text-nowrap" onclick="event.stopPropagation()">
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-icon me-1" title="Hariri" onclick="event.stopPropagation();editStockEntry('${e.id}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-icon" title="Futa" onclick="event.stopPropagation();deleteStockEntry('${e.id}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                ` : '';
+                return `
+                <tr>
+                    <td>${formatDate(e.date)}</td>
+                    <td>${escapeHtml(e.productName)}</td>
+                    <td>${e.quantity} ${escapeHtml(e.unit)}</td>
+                    <td>${escapeHtml(e.batchNumber)}</td>
+                    <td>${formatCurrency(e.costPrice)}</td>
+                    <td>${formatCurrency(e.lineTotal)}</td>
+                    <td><span class="badge ${e.source === 'purchase' ? 'bg-info' : 'bg-secondary'}">${escapeHtml(sourceLabel(e.source, e.invoiceNumber))}</span></td>
+                    ${actions}
+                </tr>
+            `;
+            }).join('')
+            : `<tr><td colspan="${canManageStock ? 8 : 7}" class="text-muted text-center">Hakuna stock iliyopokelewa kutoka msambazaji huyu</td></tr>`;
+
+        removeSupplierStockModal();
+
+        const editSupplierBtn = canManageStock
+            ? `<button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="editSupplierFromStockModal()"><i class="bi bi-pencil me-1"></i>Hariri Msambazaji</button>`
+            : '';
+
+        const modalHtml = `
+        <div class="modal fade" id="supplierStockModal" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Historia ya Stock - ${escapeHtml(data.supplier.name)}</h5>
+                        <div class="d-flex align-items-center">
+                            ${editSupplierBtn}
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <h6>Msambazaji</h6>
+                                <p class="mb-0 fw-semibold">${escapeHtml(data.supplier.name)}</p>
+                                <p class="text-muted mb-0">${escapeHtml(data.supplier.phone || '')}</p>
+                                <p class="text-muted">${escapeHtml(data.supplier.address || '')}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Jumla ya Uwasilishaji</h6>
+                                <p class="mb-0 fs-5">${summary.totalDeliveries}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Jumla ya Thamani</h6>
+                                <p class="mb-0 fs-5">${formatCurrency(summary.totalValue)}</p>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3 align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label mb-1 small">Tarehe Kuanzia</label>
+                                <input type="date" class="form-control form-control-sm" id="supplierStockStartDate" value="${escapeHtml(startDate)}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label mb-1 small">Tarehe Mwisho</label>
+                                <input type="date" class="form-control form-control-sm" id="supplierStockEndDate" value="${escapeHtml(endDate)}">
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-sm btn-primary" onclick="filterSupplierStockHistory()">
+                                    <i class="bi bi-funnel me-1"></i>Chuja
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Tarehe</th>
+                                        <th>Bidhaa</th>
+                                        <th>Kiasi</th>
+                                        <th>Batch</th>
+                                        <th>Bei</th>
+                                        <th>Jumla</th>
+                                        <th>Chanzo</th>
+                                        ${actionCol}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml}
+                                </tbody>
+                                ${entries.length > 0 ? `
+                                <tfoot>
+                                    <tr class="fw-bold">
+                                        <td colspan="2">Jumla</td>
+                                        <td>${summary.totalQuantity}</td>
+                                        <td colspan="2"></td>
+                                        <td>${formatCurrency(summary.totalValue)}</td>
+                                        <td></td>
+                                        ${actionFooterCol}
+                                    </tr>
+                                </tfoot>
+                                ` : ''}
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-success" onclick="downloadSupplierStockCsv()">
+                            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Pakua CSV
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="downloadSupplierStockPdf()">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Pakua PDF
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Funga</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        new bootstrap.Modal(document.getElementById('supplierStockModal')).show();
+    } catch (error) {
+        console.error('viewSupplierStockHistory', error);
+        showToast('Hitilafu katika kuonyesha historia ya stock', 'danger');
+    }
+}
+
+function filterSupplierStockHistory() {
+    if (!currentSupplierStockHistoryId) return;
+    const startDate = document.getElementById('supplierStockStartDate')?.value || '';
+    const endDate = document.getElementById('supplierStockEndDate')?.value || '';
+    viewSupplierStockHistory(currentSupplierStockHistoryId, startDate, endDate);
+}
+
+function downloadSupplierStockPdf() {
+    if (!currentSupplierStockHistoryId) return;
+    const startDate = document.getElementById('supplierStockStartDate')?.value || '';
+    const endDate = document.getElementById('supplierStockEndDate')?.value || '';
+    let url = `/api/suppliers/${currentSupplierStockHistoryId}/stock-report`;
+    const params = [];
+    if (startDate) params.push(`startDate=${startDate}`);
+    if (endDate) params.push(`endDate=${endDate}`);
+    if (params.length) url += '?' + params.join('&');
+    window.open(url, '_blank');
+}
+
+function downloadSupplierStockCsv() {
+    const data = window.currentSupplierStockHistoryData;
+    if (!data) {
+        showToast('Hakuna data ya ku-export', 'danger');
+        return;
+    }
+
+    const startDate = document.getElementById('supplierStockStartDate')?.value || '';
+    const endDate = document.getElementById('supplierStockEndDate')?.value || '';
+    const sourceLabel = (source, invoice) => {
+        if (source === 'purchase') return `Manunuzi${invoice ? ` (${invoice})` : ''}`;
+        return 'Stock In';
+    };
+
+    let csv = '\uFEFF';
+    csv += 'RIPOTI YA STOCK KUTOKA MSAMBAZAJI\n';
+    csv += `Msambazaji,${data.supplier.name}\n`;
+    if (data.supplier.phone) csv += `Simu,${data.supplier.phone}\n`;
+    if (data.supplier.address) csv += `Mahali,${data.supplier.address}\n`;
+    csv += `Kipindi,${startDate && endDate ? `${startDate} - ${endDate}` : 'Muda wote'}\n`;
+    csv += `Tarehe ya Kuunda,${formatDateTime(new Date())}\n\n`;
+
+    csv += 'MUHTASARI\n';
+    csv += `Jumla ya Uwasilishaji,${data.summary.totalDeliveries}\n`;
+    csv += `Jumla ya Kiasi,${data.summary.totalQuantity}\n`;
+    csv += `Jumla ya Thamani,${data.summary.totalValue}\n\n`;
+
+    csv += 'ORODHA YA STOCK\n';
+    csv += 'Tarehe,Bidhaa,Kiasi,Kipimo,Batch,Bei,Jumla,Chanzo\n';
+
+    data.entries.forEach(e => {
+        csv += `"${formatDate(e.date)}","${e.productName}",${e.quantity},"${e.unit}","${e.batchNumber}",${e.costPrice},${e.lineTotal},"${sourceLabel(e.source, e.invoiceNumber)}"\n`;
+    });
+
+    const safeName = (data.supplier.name || 'msambazaji').replace(/[^a-zA-Z0-9-_]/g, '_');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Stock_${safeName}_${startDate || 'zote'}_${endDate || 'zote'}.csv`;
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function editStockEntry(entryId) {
+    const data = window.currentSupplierStockHistoryData;
+    if (!data) return;
+
+    const entry = data.entries.find(e => e.id === entryId);
+    if (!entry) {
+        showToast('Stock haipatikani', 'danger');
+        return;
+    }
+
+    document.getElementById('stockEntryId').value = entry.id;
+    document.getElementById('stockEntryProductName').value = entry.productName || '';
+    document.getElementById('stockEntryQuantity').value = entry.quantity || '';
+    document.getElementById('stockEntryBatchNumber').value = entry.batchNumber && entry.batchNumber !== '-' ? entry.batchNumber : '';
+    document.getElementById('stockEntryExpiryDate').value = entry.expiryDate ? entry.expiryDate.split('T')[0] : '';
+    document.getElementById('stockEntryCostPrice').value = entry.costPrice || 0;
+    document.getElementById('stockEntryNotes').value = entry.notes || '';
+
+    document.getElementById('stockEntryModalLabel').textContent = 'Hariri Stock';
+    new bootstrap.Modal(document.getElementById('stockEntryModal')).show();
+}
+
+async function saveStockEntry() {
+    const entryId = document.getElementById('stockEntryId').value;
+    if (!entryId) return;
+
+    const data = {
+        quantity: document.getElementById('stockEntryQuantity').value,
+        batchNumber: document.getElementById('stockEntryBatchNumber').value,
+        expiryDate: document.getElementById('stockEntryExpiryDate').value || null,
+        costPrice: document.getElementById('stockEntryCostPrice').value,
+        notes: document.getElementById('stockEntryNotes').value
+    };
+
+    const result = await api(`/api/stock/${entryId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    });
+
+    if (result.success) {
+        showToast(result.message);
+        bootstrap.Modal.getInstance(document.getElementById('stockEntryModal')).hide();
+        const startDate = document.getElementById('supplierStockStartDate')?.value || '';
+        const endDate = document.getElementById('supplierStockEndDate')?.value || '';
+        if (currentSupplierStockHistoryId) {
+            await viewSupplierStockHistory(currentSupplierStockHistoryId, startDate, endDate);
+        }
+        await loadStock();
+        await loadProducts();
+    } else {
+        showToast(result.message, 'danger');
+    }
+}
+
+function deleteStockEntry(entryId) {
+    if (!entryId) return;
+    if (!confirm('Una uhakika unataka kufuta stock hii? Kitendo hiki hakiwezi kutenduliwa.')) return;
+
+    pendingDeleteAction = {
+        type: 'stock',
+        id: entryId,
+        callback: async (password) => {
+            const result = await api(`/api/stock/${entryId}`, {
+                method: 'DELETE',
+                body: JSON.stringify({ adminPassword: password })
+            });
+            if (result.success) {
+                showToast(result.message);
+                const startDate = document.getElementById('supplierStockStartDate')?.value || '';
+                const endDate = document.getElementById('supplierStockEndDate')?.value || '';
+                if (currentSupplierStockHistoryId) {
+                    await viewSupplierStockHistory(currentSupplierStockHistoryId, startDate, endDate);
+                }
+                await loadStock();
+                await loadProducts();
+            } else {
+                showToast(result.message, 'danger');
+            }
+        }
+    };
+
     document.getElementById('passwordConfirmInput').value = '';
     new bootstrap.Modal(document.getElementById('passwordConfirmModal')).show();
 }

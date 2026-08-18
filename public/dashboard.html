@@ -600,8 +600,9 @@
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
                             <input type="text" class="form-control" id="suppliersSearchInput" placeholder="Tafuta msambazaji kwa jina, simu, au email..." oninput="filterSuppliersTable()">
                         </div>
+                        <small class="text-muted"><i class="bi bi-hand-index me-1"></i>Bofya msambazaji kuona stock aliyowasilisha na kupakua ripoti</small>
                     </div>
-                    <div class="table-responsive">
+                    <div class="table-responsive suppliers-table-wrap">
                         <table class="table">
                             <thead>
                                 <tr>
@@ -1248,26 +1249,17 @@
                             <label class="form-label">Jina la Kampuni *</label>
                             <input type="text" class="form-control" id="supplierName" name="name" required>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Mwasiliani</label>
-                            <input type="text" class="form-control" id="supplierContact" name="contactPerson">
-                        </div>
+                       
                         <div class="mb-3">
                             <label class="form-label">Simu</label>
                             <input type="text" class="form-control" id="supplierPhone" name="phone">
                         </div>
+                       
                         <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" id="supplierEmail" name="email">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Anwani</label>
+                            <label class="form-label">Mahali / Anwani</label>
                             <textarea class="form-control" id="supplierAddress" name="address" rows="2"></textarea>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">TIN/Tax ID</label>
-                            <input type="text" class="form-control" id="supplierTaxId" name="taxId">
-                        </div>
+                      
                         <div class="mb-3">
                             <label class="form-label">Hali</label>
                             <select class="form-select" id="supplierStatus" name="status">
@@ -1280,6 +1272,51 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
                     <button type="button" class="btn btn-primary" onclick="saveSupplier()">Hifadhi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stock Entry Edit Modal -->
+    <div class="modal fade" id="stockEntryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="stockEntryModalLabel">Hariri Stock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="stockEntryForm">
+                        <input type="hidden" id="stockEntryId">
+                        <div class="mb-3">
+                            <label class="form-label">Bidhaa</label>
+                            <input type="text" class="form-control" id="stockEntryProductName" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kiasi *</label>
+                            <input type="number" class="form-control" id="stockEntryQuantity" name="quantity" required min="1">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Batch Number</label>
+                            <input type="text" class="form-control" id="stockEntryBatchNumber" name="batchNumber">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Expiry Date</label>
+                            <input type="date" class="form-control" id="stockEntryExpiryDate" name="expiryDate">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cost Price (TZS)</label>
+                            <input type="number" class="form-control" id="stockEntryCostPrice" name="costPrice" min="0" step="0.01">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Maelezo</label>
+                            <textarea class="form-control" id="stockEntryNotes" name="notes" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="saveStockEntry()">Hifadhi</button>
                 </div>
             </div>
         </div>
@@ -1574,7 +1611,13 @@
                             <small class="text-muted">Anza kuandika jina la bidhaa ili kutafuta</small>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Kiasi *</label>
+                            <label class="form-label">Msambazaji</label>
+                            <select class="form-select" id="stockInSupplier" name="supplierId">
+                                <option value="">Chagua Msambazaji (si lazima)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Idadi </label>
                             <input type="number" class="form-control" id="stockQuantity" name="quantity" required>
                         </div>
                         <div class="mb-3">
@@ -1908,6 +1951,39 @@
     
     <script src="/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="/js/app.js"></script>
+    <script>
+    // Fix Bootstrap nested modals: each new modal opens above the previous one.
+    (function () {
+        const BASE_MODAL_Z  = 1055;
+        const BASE_BACKDROP_Z = 1040;
+        const STEP = 20;
+
+        document.addEventListener('show.bs.modal', function (e) {
+            const openModals = document.querySelectorAll('.modal.show');
+            const depth = openModals.length; // number already open before this one
+
+            if (depth === 0) return; // first modal — Bootstrap handles it normally
+
+            // Raise this modal
+            e.target.style.zIndex = BASE_MODAL_Z + depth * STEP;
+
+            // Bootstrap will insert a new backdrop just after show fires;
+            // wait one tick for it to be added, then raise it too.
+            requestAnimationFrame(() => {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                const newBackdrop = backdrops[backdrops.length - 1];
+                if (newBackdrop) {
+                    newBackdrop.style.zIndex = BASE_BACKDROP_Z + depth * STEP;
+                }
+            });
+        });
+
+        document.addEventListener('hide.bs.modal', function (e) {
+            // Reset inline z-index so it doesn't affect future opens
+            e.target.style.zIndex = '';
+        });
+    }());
+    </script>
 </body>
 </html>
 
