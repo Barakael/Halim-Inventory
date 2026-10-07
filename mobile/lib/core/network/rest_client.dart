@@ -73,9 +73,14 @@ class RestClient implements ApiClient {
     required String endpoint,
     required T Function(dynamic json) parser,
     dynamic data,
+    Map<String, dynamic>? headers,
   }) async {
     try {
-      final response = await _dio.post(resolveApiPath(endpoint), data: data);
+      final response = await _dio.post(
+        resolveApiPath(endpoint),
+        data: data,
+        options: headers != null ? Options(headers: headers) : null,
+      );
       return parser(_extractData(response.data));
     } catch (e) {
       _rethrow(e);

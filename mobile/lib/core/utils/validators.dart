@@ -15,6 +15,12 @@ class Validators {
     return null;
   }
 
+  static String? username(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Username is required';
+    if (value.trim().length < 2) return 'Enter a valid username';
+    return null;
+  }
+
   static String? phone(String? value) {
     if (value == null || value.isEmpty) return 'Phone number is required';
     final cleaned = value.replaceAll(RegExp(r'[\s\-\+]'), '');

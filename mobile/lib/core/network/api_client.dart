@@ -12,6 +12,7 @@ abstract class ApiClient {
     required String endpoint,
     required T Function(dynamic json) parser,
     dynamic data,
+    Map<String, dynamic>? headers,
   });
 
   Future<T> put<T>({

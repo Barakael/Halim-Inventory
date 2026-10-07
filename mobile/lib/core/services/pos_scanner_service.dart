@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/services.dart';
+
+import '../utils/platform_utils.dart';
 
 /// Listens for built-in POS scanner broadcasts (Senraise H10S and similar).
 class PosScannerService {
@@ -15,7 +16,7 @@ class PosScannerService {
   StreamSubscription<String>? _subscription;
 
   Stream<String> get scans {
-    if (!Platform.isAndroid) return const Stream.empty();
+    if (!PlatformUtils.isAndroid) return const Stream.empty();
     _stream ??= _channel
         .receiveBroadcastStream()
         .where((event) => event != null)

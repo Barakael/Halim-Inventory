@@ -1,6 +1,6 @@
-import 'dart:io';
-
 import 'package:device_info_plus/device_info_plus.dart';
+
+import '../utils/platform_utils.dart';
 
 /// Runtime detection for Senraise H10 / H10S POS terminals (built-in printer & scanner).
 class PosDeviceInfo {
@@ -52,7 +52,7 @@ class PosDeviceService {
   Future<void> initialize() async {
     if (_initialized) return;
 
-    if (!Platform.isAndroid) {
+    if (!PlatformUtils.isAndroid) {
       _info = PosDeviceInfo.unknown();
       _initialized = true;
       return;
