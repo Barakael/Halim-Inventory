@@ -19,7 +19,7 @@ Your app now has the correct Bluetooth permissions for Android 12+:
 
 On Android 12+ devices, you need to manually grant the "Nearby devices" permission:
 
-1. Go to **Settings** → **Apps** → **Tera POS**
+1. Go to **Settings** → **Apps** → **POS App**
 2. Tap on **Permissions**
 3. Enable **Nearby devices** permission
 4. Also enable **Bluetooth** and **Location** (if shown)
@@ -34,7 +34,7 @@ On Android 12+ devices, you need to manually grant the "Nearby devices" permissi
 
 ### 4. In-App Connection Steps
 
-1. Open Tera POS and complete a sale
+1. Open POS App and complete a sale
 2. In the receipt dialog, tap **"Connect Printer"**
 3. Select your printer from the list
 4. The app will attempt to connect (up to 3 tries)
@@ -53,7 +53,7 @@ On Android 12+ devices, you need to manually grant the "Nearby devices" permissi
 #### Common error messages and solutions:
 
 - **"Bluetooth permission denied"**: 
-  - Go to Settings → Apps → Tera POS → Permissions
+  - Go to Settings → Apps → POS App → Permissions
   - Enable "Nearby devices" permission
 
 - **"No paired printers found"**:
