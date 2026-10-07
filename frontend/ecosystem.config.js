@@ -2,7 +2,8 @@ module.exports = {
   apps: [
     {
       name: "haslim-inventory",
-      cwd: "/var/www/haslim-inventory",
+      // Production host path (do not deploy until moving phase). Local: run from frontend/
+      cwd: __dirname,
       script: "server.js",
       instances: 1,
       exec_mode: "fork",
