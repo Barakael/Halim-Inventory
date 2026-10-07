@@ -47,7 +47,7 @@ class AppStrings {
   String _t(String en, String sw) => _sw ? sw : en;
 
   // ── App ────────────────────────────────────────────────────────────
-  String get appName => 'Tera POS';
+  String get appName => 'POS App';
   String get appTagline =>
       _t('Point of Sale System', 'Mfumo wa Mauzo (POS)');
   String get language => _t('Language', 'Lugha');
@@ -73,6 +73,7 @@ class AppStrings {
         'Ingia ili kuendelea kwenye dashibodi yako',
       );
   String get emailAddress => _t('Email Address', 'Barua pepe');
+  String get username => _t('Username', 'Jina la mtumiaji');
   String get password => _t('Password', 'Nenosiri');
   String get forgotPassword => _t('Forgot Password?', 'Umesahau nenosiri?');
   String get welcomeBack => _t('Welcome back', 'Karibu tena');
@@ -129,7 +130,7 @@ class AppStrings {
   String get changePassword => _t('Change Password', 'Badilisha nenosiri');
   String get changePasswordHint =>
       _t('Update your login credentials', 'Sasisha taarifa za kuingia');
-  String get aboutApp => _t('About Tera POS', 'Kuhusu Tera POS');
+  String get aboutApp => _t('About POS App', 'Kuhusu POS App');
   String get shopSettings => _t('Shop settings', 'Mipangilio ya duka');
   String get shopSettingsOwnerOnly => _t(
         'Store settings are only available for shop owners.',
@@ -145,7 +146,7 @@ class AppStrings {
   String get noShopProfile =>
       _t('No shop profile found.', 'Hakuna wasifu wa duka.');
   String get signOutConfirm =>
-      _t('Sign out of Tera POS?', 'Toka kwenye Tera POS?');
+      _t('Sign out of POS App?', 'Toka kwenye POS App?');
   String get addBranch => _t('Add Branch', 'Ongeza Tawi');
   String get editBranch => _t('Edit Branch', 'Hariri Tawi');
   String get branchNameLabel => _t('Branch name', 'Jina la tawi');

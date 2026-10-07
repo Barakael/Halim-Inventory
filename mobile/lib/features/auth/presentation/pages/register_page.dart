@@ -202,7 +202,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Tera POS',
+                                  'POS App',
                                   style: GoogleFonts.playfairDisplay(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,

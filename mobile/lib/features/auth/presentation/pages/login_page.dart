@@ -69,7 +69,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
   final _formKey            = GlobalKey<FormState>();
-  final _emailController    = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     _fadeCtrl.dispose();
     super.dispose();
@@ -103,7 +103,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       context.read<AuthBloc>().add(AuthLoginRequested(
-        email:    _emailController.text.trim(),
+        username: _usernameController.text.trim(),
         password: _passwordController.text,
       ));
     }
@@ -134,7 +134,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             if (state is AuthAuthenticated) {
               context.go(RouteNames.dashboard);
             } else if (state is AuthUnauthenticated) {
-              _showError(context, 'Invalid email or password.');
+              _showError(context, 'Invalid username or password.');
             } else if (state is AuthError) {
               _showError(context, state.message);
             } else if (state is AuthPhoneVerificationRequired) {
@@ -178,21 +178,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               children: [
                                 SizedBox(height: isSmallScreen ? 16 : 24),
 
-                                Row(
+                                const Row(
                                   children: [
-                                    IconButton(
-                                      onPressed: () =>
-                                          context.go(RouteNames.home),
-                                      icon: const Icon(Icons.arrow_back_rounded),
-                                      color: _T.inkMid,
-                                      tooltip: 'Back to home',
-                                      style: IconButton.styleFrom(
-                                        backgroundColor: _T.bgInput,
-                                        padding: const EdgeInsets.all(10),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    const LanguageChip(),
+                                    Spacer(),
+                                    LanguageChip(),
                                   ],
                                 ),
 
@@ -226,7 +215,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Tera VFD',
+                                          'POS App',
                                           style: TextStyle(
                                             fontSize: titleFontSize,
                                             fontWeight: FontWeight.w800,
@@ -288,15 +277,15 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                         children: [
                                           Align(
                                             alignment: Alignment.centerLeft,
-                                            child: _FieldLabel(context.t.emailAddress),
-                                          ),   
+                                            child: _FieldLabel(context.t.username),
+                                          ),
                                           const SizedBox(height: 8),
                                           _InputField(
-                                            controller: _emailController,
-                                            hint: 'you@business.com',
-                                            icon: Icons.alternate_email_rounded,
-                                            keyboardType: TextInputType.emailAddress,
-                                            validator: Validators.email,
+                                            controller: _usernameController,
+                                            hint: 'admin',
+                                            icon: Icons.person_outline_rounded,
+                                            keyboardType: TextInputType.text,
+                                            validator: Validators.username,
                                             textInputAction: TextInputAction.next,
                                           ),
 
@@ -366,7 +355,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
                               Center(
                                 child: Text(
-                                  '© 2026 Tera POS',
+                                  '© 2026 POS App',
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.4),
                                     fontSize: isSmallScreen ? 11 : 12,

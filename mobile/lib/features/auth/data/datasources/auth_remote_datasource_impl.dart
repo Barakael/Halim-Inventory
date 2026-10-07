@@ -12,13 +12,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<AuthResponseModel> login({
-    required String email,
+    required String username,
     required String password,
   }) async {
     try {
       final result = await apiService.post(
         ApiEndpoints.login,
-        data: {'email': email, 'password': password},
+        data: {'username': username, 'password': password},
       );
       
       print('API Result: $result'); // Debug log
@@ -89,6 +89,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     return result.fold(
       (failure) => throw Exception(failure.message),
       (response) => UserModel.fromJson(response as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<void> logout() async {
+    final result = await apiService.post(ApiEndpoints.logout);
+    result.fold(
+      (failure) {
+        // Still allow local logout if token already invalid.
+        if (failure is! UnauthorizedFailure) {
+          throw ServerException(message: failure.message);
+        }
+      },
+      (_) {},
     );
   }
 

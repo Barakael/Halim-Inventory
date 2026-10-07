@@ -2,7 +2,7 @@ import '../models/user_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<AuthResponseModel> login({
-    required String email,
+    required String username,
     required String password,
   });
 
@@ -22,6 +22,8 @@ abstract class AuthRemoteDataSource {
   Future<void> resendVerification({required String phone});
 
   Future<UserModel> getMe();
+
+  Future<void> logout();
 
   Future<void> changePassword({
     required String currentPassword,

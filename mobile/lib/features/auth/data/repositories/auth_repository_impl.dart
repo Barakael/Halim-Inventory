@@ -17,12 +17,12 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, UserEntity>> login({
-    required String email,
+    required String username,
     required String password,
   }) async {
     try {
       final response = await remoteDataSource.login(
-        email: email,
+        username: username,
         password: password,
       );
       await localDataSource.saveToken(response.token);
@@ -126,6 +126,11 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> logout() async {
     try {
+      try {
+        await remoteDataSource.logout();
+      } catch (_) {
+        // Clear local session even if revoke fails (offline / expired token).
+      }
       await localDataSource.clearSession();
       return const Right(null);
     } catch (e) {

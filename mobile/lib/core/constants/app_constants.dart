@@ -1,7 +1,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'Tera POS';
+  static const String appName = 'POS App';
   static const String appVersion = '1.0.0';
 
   // Pagination
