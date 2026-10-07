@@ -1,0 +1,8 @@
+child: const Text(
+  'Go to Login',
+  style: TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w700, 
+    color: Colors.white
+  ),
+),

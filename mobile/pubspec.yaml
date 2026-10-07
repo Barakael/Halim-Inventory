@@ -1,0 +1,113 @@
+name: tera_pos
+description: "Tera Point of Sale - Complete POS solution for retail businesses"
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  flutter_localizations:
+    sdk: flutter
+
+  # State Management
+  flutter_bloc: ^8.1.6
+  bloc_concurrency: ^0.2.5
+  equatable: ^2.0.5
+
+  # Networking
+  dio: ^5.7.0
+
+  # Dependency Injection
+  get_it: ^8.0.2
+
+  # Models & Serialization
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+
+  # Navigation
+  go_router: ^14.6.2
+
+  # Local Storage
+  hive_flutter: ^1.1.0
+
+  # Secure Storage (JWT token)
+  flutter_secure_storage: ^9.2.2
+
+  # Error Handling - Either<Failure, T>
+  fpdart: ^1.1.0
+
+  # Connectivity
+  connectivity_plus: ^6.1.1
+
+  # PDF Viewing & Sharing
+  printing: ^5.13.1
+  pdf: ^3.11.1
+
+  # Charts
+  fl_chart: ^0.69.0
+
+  # Image Caching
+  cached_network_image: ^3.4.1
+
+  # Localization / Formatting
+  intl: ^0.20.2
+
+  # UUID generation
+  uuid: ^4.5.1
+
+  # Image Picker (avatar upload)
+  image_picker: ^1.1.2
+
+  # Barcode Scanner
+  mobile_scanner: ^5.2.3
+
+  # URL Launcher
+  url_launcher: ^6.3.1 
+
+  # Device info — detects H10S vs other hardware at runtime
+  device_info_plus: ^10.0.0
+
+  # POS / Printing
+  # NOTE: sunmi_printer_plus intentionally removed.
+  # It binds a Sunmi AIDL service at Android startup which crashes
+  # any non-Sunmi device (including H10S) before Flutter renders.
+  pos_printer_helper:
+    path: packages/pos_printer_helper  # Patched: no Sunmi fallback on H10S
+  print_bluetooth_thermal: ^1.1.9
+  esc_pos_utils_plus: ^2.0.4
+
+  # SVG support
+  flutter_svg: ^2.0.10+1
+
+  # Shimmer loading placeholder
+  shimmer: ^3.0.0
+
+  # Google Fonts
+  google_fonts: ^6.2.1
+
+  cupertino_icons: ^1.0.8
+  shared_preferences: ^2.5.5
+  image: ^4.8.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Code generation
+  build_runner: ^2.4.13
+  freezed: ^2.4.7
+  json_serializable: ^6.7.1
+
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/images/logo/
+    - assets/images/home/
+    - assets/icons/
