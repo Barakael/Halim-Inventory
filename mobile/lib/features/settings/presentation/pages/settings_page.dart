@@ -75,7 +75,7 @@ class SettingsPage extends StatelessWidget {
                   context: context,
                   applicationName: t.appName,
                   applicationVersion: '1.0.0',
-                  applicationLegalese: '© 2026 Tera Tech. All rights reserved.',
+                  applicationLegalese: '© 2026 POS App. All rights reserved.',
                 ),
               ),
             ],
@@ -406,7 +406,7 @@ class _SignOutButton extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               const Text(
-                'Are you sure you want to sign out of Tera POS?',
+                'Are you sure you want to sign out of POS App?',
                 style: TextStyle(
                     fontSize: 14,
                     color: Color(0xFF64748B),

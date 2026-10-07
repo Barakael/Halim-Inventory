@@ -706,7 +706,7 @@ class _HeroHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Tera POS',
+                    'POS App',
                     style: _C.display(18, w: FontWeight.w800, color: _C.navy),
                   ),
                   const Spacer(),
@@ -764,7 +764,7 @@ class _HeroHeader extends StatelessWidget {
 
               const SizedBox(height: 16),
               Text(
-                'Tera POS',
+                'POS App',
                 style: _C.display(34, w: FontWeight.w800, color: _C.navy),
               ),
               const SizedBox(height: 10),
@@ -1345,7 +1345,7 @@ class _TestimonialCarouselState extends State<_TestimonialCarousel> {
     (
       'Fatma S.',
       'Boutique owner, Arusha',
-      'Switched from paper receipts to Tera in an afternoon. Customers trust the printed slip now.',
+      'Switched from paper receipts to POS App in an afternoon. Customers trust the printed slip now.',
     ),
   ];
 
@@ -1821,7 +1821,7 @@ class _Footer extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          '© 2026 Tera POS',
+          '© 2026 POS App',
           style: _C.body(12, color: _C.inkSoft.withValues(alpha: 0.7)),
         ),
       ],

@@ -35,7 +35,7 @@ class AppRouter {
   AppRouter({required this.secureStorage});
 
   late final GoRouter router = GoRouter(
-    initialLocation: RouteNames.home,
+    initialLocation: RouteNames.login,
     redirect: _authGuard,
     routes: [
       GoRoute(
@@ -142,12 +142,12 @@ class AppRouter {
 
     // Legacy routes — login-only app
     if (loc == '/register' || loc.startsWith('/verify')) {
-      return RouteNames.home;
+      return RouteNames.login;
     }
 
     if (loc == RouteNames.home) {
       if (isLoggedIn) return RouteNames.dashboard;
-      return null;
+      return RouteNames.login;
     }
 
     if (loc == RouteNames.login) {
@@ -155,7 +155,7 @@ class AppRouter {
       return null;
     }
 
-    if (!isLoggedIn) return RouteNames.home;
+    if (!isLoggedIn) return RouteNames.login;
 
     UserModel? user;
     final raw = await secureStorage.getUser();

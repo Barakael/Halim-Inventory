@@ -162,7 +162,7 @@ class _ReportsPageState extends State<ReportsPage> {
       );
       final stamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
       final name =
-          'TeraPOS_Report_${_period.name}_$stamp.pdf';
+          'POSApp_Report_${_period.name}_$stamp.pdf';
       await Printing.sharePdf(bytes: bytes, filename: name);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -217,6 +217,26 @@ class _ReportsPageState extends State<ReportsPage> {
         },
         child: BlocBuilder<SalesBloc, SalesState>(
           builder: (context, state) {
+            // After POS, bloc is SaleCreated — refetch so reports aren't empty.
+            final isTop = ModalRoute.of(context)?.isCurrent ?? true;
+            if (state is SaleCreated ||
+                (state is SaleDetailLoaded && isTop)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted &&
+                    (ModalRoute.of(context)?.isCurrent ?? false)) {
+                  context
+                      .read<SalesBloc>()
+                      .add(const SalesFetchRequested());
+                }
+              });
+              return Center(
+                child: CircularProgressIndicator(
+                  color: _R.primary,
+                  strokeWidth: 2.5,
+                ),
+              );
+            }
+
             if (state is SalesLoading || state is SalesInitial) {
               return Center(
                 child: CircularProgressIndicator(

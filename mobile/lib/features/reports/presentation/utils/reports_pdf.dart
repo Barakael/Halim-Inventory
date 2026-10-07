@@ -43,7 +43,7 @@ Future<Uint8List> buildSalesReportPdf({
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            'Tera POS — ${t.reports}',
+            'POS App — ${t.reports}',
             style: pw.TextStyle(
               fontSize: 18,
               fontWeight: pw.FontWeight.bold,

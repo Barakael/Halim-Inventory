@@ -56,7 +56,7 @@ class ProductModel {
       stock: stockVal,
       minStock: threshold,
       taxRate: 0,
-      unit: null,
+      unit: json['unit']?.toString(),
       category: json['category']?.toString(),
       companyId: json['shop_id']?.toString() ?? '',
       image: _imageFromJson(json),

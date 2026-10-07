@@ -166,7 +166,7 @@ class _AppState extends State<App> with TickerProviderStateMixin {
                                   child: Column(
                                     children: [
                                       const Text(
-                                        'Tera POS',
+                                        'POS App',
                                         style: TextStyle(
                                           fontSize: 32,
                                           fontWeight: FontWeight.w800,
@@ -260,9 +260,9 @@ class _AppState extends State<App> with TickerProviderStateMixin {
               _appRouter.router.go(RouteNames.dashboard);
             }
           } else if (state is AuthUnauthenticated) {
-            const publicRoutes = {RouteNames.home, RouteNames.login};
+            const publicRoutes = {RouteNames.login};
             if (!publicRoutes.contains(loc)) {
-              _appRouter.router.go(RouteNames.home);
+              _appRouter.router.go(RouteNames.login);
             }
           }
         },

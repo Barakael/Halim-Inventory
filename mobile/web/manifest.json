@@ -1,6 +1,6 @@
 {
-    "name": "tera_pos",
-    "short_name": "tera_pos",
+    "name": "POS App",
+    "short_name": "POS App",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
