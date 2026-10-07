@@ -27,6 +27,7 @@ const {
     removeExpiredLowStockNotifications,
     sessionExpiryReason
 } = require('./lib/security');
+const { mountLaravelSot, enabled: laravelSotEnabled } = require('./lib/laravel-sot');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 40000;
@@ -357,20 +358,28 @@ function checkAlerts() {
 // Authentication middleware
 function isAuthenticated(req, res, next) {
     const expiryReason = sessionExpiryReason(req.session);
-    if (!expiryReason) {
-        const users = readDB(dbFiles.users);
-        const currentUser = users.find(user =>
-            user.id === req.session.user.id && user.status === 'active'
-        );
-        if (currentUser) {
-            req.session.user = {
-                id: currentUser.id,
-                username: currentUser.username,
-                fullName: currentUser.fullName,
-                role: currentUser.role,
-                branchId: currentUser.branchId
-            };
-            return next();
+    if (!expiryReason && req.session?.user) {
+        // Laravel MySQL SoT: must have Sanctum token or proxy APIs 401 → login↔dashboard loop
+        if (laravelSotEnabled()) {
+            if (req.session.laravelToken) {
+                return next();
+            }
+            // Stale cookie from before SoT / after Express restart — force re-login
+        } else {
+            const users = readDB(dbFiles.users);
+            const currentUser = users.find(user =>
+                user.id === req.session.user.id && user.status === 'active'
+            );
+            if (currentUser) {
+                req.session.user = {
+                    id: currentUser.id,
+                    username: currentUser.username,
+                    fullName: currentUser.fullName,
+                    role: currentUser.role,
+                    branchId: currentUser.branchId
+                };
+                return next();
+            }
         }
     }
 
@@ -390,7 +399,10 @@ function isAuthenticated(req, res, next) {
 
 function hasRole(...roles) {
     return (req, res, next) => {
-        if (req.session && req.session.user && roles.includes(req.session.user.role)) {
+        const role = req.session?.user?.role;
+        // Laravel owner is mapped to admin; also accept owner explicitly
+        const effective = role === 'owner' ? 'admin' : role;
+        if (effective && (roles.includes(effective) || roles.includes(role))) {
             return next();
         }
         if (req.xhr || req.headers.accept?.includes('application/json')) {
@@ -418,15 +430,27 @@ app.use('/vendor/bootstrap-icons', express.static(path.join(__dirname, 'node_mod
 
 // Serve main pages
 app.get('/', (req, res) => {
-    if (req.session.user) {
+    const canUseApp = req.session?.user && (
+        !laravelSotEnabled() || req.session.laravelToken
+    ) && !sessionExpiryReason(req.session);
+    if (canUseApp) {
         return res.redirect('/dashboard');
     }
     res.redirect('/login');
 });
 
 app.get('/login', (req, res) => {
-    if (req.session.user) {
+    // Only skip login when session can actually call APIs (SoT needs laravelToken)
+    const canUseApp = req.session?.user && (
+        !laravelSotEnabled() || req.session.laravelToken
+    ) && !sessionExpiryReason(req.session);
+    if (canUseApp) {
         return res.redirect('/dashboard');
+    }
+    if (req.session?.user && !canUseApp) {
+        // Clear half-dead sessions so the login form stays put
+        req.session.destroy(() => {});
+        res.clearCookie(COOKIE_NAME, { path: '/', httpOnly: true, sameSite: 'lax' });
     }
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
@@ -480,7 +504,13 @@ function applyLoginLimit(req, username) {
     };
 }
 
-// API: Authentication
+// MySQL SoT: register Laravel proxy routes FIRST (Express first-match wins over JSON handlers below)
+mountLaravelSot(app, { isAuthenticated, hasRole });
+if (laravelSotEnabled()) {
+    console.log('📦 Web dashboard using Laravel MySQL as single source of truth');
+}
+
+// API: Authentication (JSON fallback when LARAVEL_SOT=0)
 app.post('/api/auth/login', async (req, res) => {
     const username = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
