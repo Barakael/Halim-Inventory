@@ -18,6 +18,7 @@ class SalesRepositoryImpl implements SalesRepository {
       return {
         'product_id': pid is int ? pid : int.tryParse(pid.toString()) ?? pid,
         'quantity': m['quantity'],
+        if (m['price'] != null) 'price': m['price'],
       };
     }).toList();
 
@@ -58,6 +59,10 @@ class SalesRepositoryImpl implements SalesRepository {
       if (raw['customer_id'] != null || raw['customerId'] != null)
         'customer_id': raw['customer_id'] ?? raw['customerId'],
       if (amountTendered != null) 'amount_tendered': amountTendered,
+      if (raw['subtotal'] != null) 'subtotal': raw['subtotal'],
+      if (raw['tax'] != null) 'tax': raw['tax'],
+      if (raw['discount'] != null) 'discount': raw['discount'],
+      if (raw['total'] != null) 'total': raw['total'],
       if (raw.containsKey('apply_loyalty_discount'))
         'apply_loyalty_discount': raw['apply_loyalty_discount'],
       if (raw['discount_mode'] != null) 'discount_mode': raw['discount_mode'],
@@ -67,6 +72,8 @@ class SalesRepositoryImpl implements SalesRepository {
         'manual_discount_amount': raw['manual_discount_amount'],
       if (raw['debt_note'] != null) 'debt_note': raw['debt_note'],
       if (raw['debt_due_date'] != null) 'debt_due_date': raw['debt_due_date'],
+      if (raw['client_sale_id'] != null || raw['clientSaleId'] != null)
+        'client_sale_id': raw['client_sale_id'] ?? raw['clientSaleId'],
     };
   }
 

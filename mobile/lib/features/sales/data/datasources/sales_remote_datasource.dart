@@ -25,11 +25,16 @@ class SalesRemoteDataSource {
             SaleModel.fromLaravelJson(json as Map<String, dynamic>),
       );
 
-  Future<SaleModel> createSale(Map<String, dynamic> data) =>
-      apiClient.post<SaleModel>(
-        endpoint: ApiEndpoints.sales,
-        data: data,
-        parser: (json) =>
-            SaleModel.fromLaravelJson(json as Map<String, dynamic>),
-      );
+  Future<SaleModel> createSale(Map<String, dynamic> data) {
+    final key = data['client_sale_id']?.toString();
+    return apiClient.post<SaleModel>(
+      endpoint: ApiEndpoints.sales,
+      data: data,
+      headers: key != null && key.isNotEmpty
+          ? {'Idempotency-Key': key}
+          : null,
+      parser: (json) =>
+          SaleModel.fromLaravelJson(json as Map<String, dynamic>),
+    );
+  }
 }

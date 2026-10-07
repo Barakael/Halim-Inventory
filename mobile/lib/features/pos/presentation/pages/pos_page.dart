@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
 import '../../../../core/theme/brand_palette.dart';
 import 'package:go_router/go_router.dart';
 
@@ -14,6 +14,7 @@ import '../../../../core/services/pos_device_service.dart';
 import '../../../../core/services/pos_scanner_service.dart';
 import '../../../../core/services/shop_profile_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/utils/platform_utils.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../products/presentation/bloc/products_bloc.dart';
@@ -383,7 +384,7 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
   bool _showScanner = false;
   bool _processingPayment = false;
   late final bool _isH10Device;
-  bool get _hardwareScanEnabled => _isH10Device || Platform.isAndroid;
+  bool get _hardwareScanEnabled => _isH10Device || PlatformUtils.isAndroid;
 
   late final AnimationController _cartBadgeCtrl;
   late final Animation<double> _cartBadgeAnim;
@@ -396,7 +397,7 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
     context.read<ProductsBloc>().add(const ProductsFetchRequested());
     _prefetchShopProfile();
 
-    if (Platform.isAndroid) {
+    if (PlatformUtils.isAndroid) {
       _scannerSub = PosScannerService.instance.listen(_handleBarcodeScan);
     }
 
@@ -573,6 +574,9 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
 
     setState(() => _processingPayment = true);
 
+    // One UUID per checkout submit — Laravel returns original sale on retry.
+    final clientSaleId = const Uuid().v4();
+
     context.read<SalesBloc>().add(SaleCreateRequested({
       'items': _cart
           .map((i) => {
@@ -588,6 +592,7 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
       'payment_method': payment.method,
       'amount_tendered': payment.amountTendered,
       'cashier_id': authState.user.id,
+      'client_sale_id': clientSaleId,
       if (payment.shopCustomerId != null)
         'shop_customer_id': int.tryParse(payment.shopCustomerId!) ??
             payment.shopCustomerId,
