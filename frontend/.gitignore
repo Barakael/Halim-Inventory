@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Secrets / local env
+.env
+.env.local
+.env.*.local
+
+# Runtime / generated
+sessions/
+uploads/
+receipts/
+backups/
+*.bak
+*.bak.*
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Live JSON store (keep structure; ignore data contents)
+data/*.json
+data/*.tmp
+!data/.gitkeep
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Packaging artifacts
+haslim-inventory
+haslim-inventory.exe
+*.pkg

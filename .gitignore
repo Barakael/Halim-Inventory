@@ -1,38 +1,67 @@
-# Dependencies
-node_modules/
-
-# Environment secrets - never commit this
-.env
-
-# Runtime session files
-sessions/
-
-# Generated / uploaded files
-uploads/
-receipts/
-
-# Backups (large, should be managed separately)
-backups/
-*.bak
-*.bak.*
-
-# Live database files — never commit, managed per machine separately
-data/*.json
-
-# Temporary write files from atomic DB writes
-data/*.tmp
-
-# macOS system files
+# OS / editor
 .DS_Store
 .DS_Store?
 ._*
-.Spotlight-V3
+.Spotlight-V100
 .Trashes
-
-# Editor folders
 .vscode/
 .idea/
+*.swp
+*~
 
-# Logs
+# Root leftovers (pre-restructure)
+/node_modules/
+/.env
 *.log
 npm-debug.log*
+
+# Frontend (Express) — also see frontend/.gitignore
+frontend/node_modules/
+frontend/.env
+frontend/sessions/
+frontend/uploads/
+frontend/receipts/
+frontend/backups/
+frontend/*.bak
+frontend/*.bak.*
+frontend/data/*.json
+frontend/data/*.tmp
+
+# Backend (Laravel) — also see backend/.gitignore
+backend/vendor/
+backend/node_modules/
+backend/.env
+backend/.env.backup
+backend/.phpunit.result.cache
+backend/storage/*.key
+backend/storage/logs/*
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+!backend/storage/logs/.gitignore
+!backend/storage/framework/cache/.gitignore
+!backend/storage/framework/sessions/.gitignore
+!backend/storage/framework/views/.gitignore
+!backend/storage/logs/.gitkeep
+!backend/storage/framework/cache/.gitkeep
+!backend/storage/framework/sessions/.gitkeep
+!backend/storage/framework/views/.gitkeep
+backend/bootstrap/cache/*.php
+!backend/bootstrap/cache/.gitignore
+!backend/bootstrap/cache/.gitkeep
+backend/public/storage
+backend/database/*.sqlite
+
+# Mobile (Flutter) — also see mobile/.gitignore
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/build/
+mobile/temp_test/
+mobile/fix_button.txt
+mobile/**/.gradle/
+mobile/**/Generated.xcconfig
+mobile/**/Flutter/ephemeral/
+mobile/.idea/
+mobile/*.iml
