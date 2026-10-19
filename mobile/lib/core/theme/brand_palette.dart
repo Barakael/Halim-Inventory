@@ -8,6 +8,8 @@ class BrandPalette {
     required this.primaryLt,
     required this.accent,
     required this.accentSoft,
+    required this.cta,
+    required this.ctaInk,
     required this.bg,
     required this.white,
     required this.ink,
@@ -24,6 +26,9 @@ class BrandPalette {
   final Color primaryLt;
   final Color accent;
   final Color accentSoft;
+  /// Filled button / primary CTA color (yellow on classic).
+  final Color cta;
+  final Color ctaInk;
   final Color bg;
   final Color white;
   final Color ink;
@@ -34,62 +39,76 @@ class BrandPalette {
   final Color info;
   final Color warn;
 
+  /// Web dashboard blue + mustard CTA (default).
+  /// Matches frontend `--dark-blue` / `--primary-blue` / `--light-gray`.
   static const classic = BrandPalette(
     id: 'classic',
-    primary: Color(0xFF1E3A5F),
-    primaryLt: Color(0xFF2B527A),
-    accent: Color(0xFF00C896),
-    accentSoft: Color(0x1A00C896),
-    bg: Color(0xFFF5F6FA),
+    primary: Color(0xFF0A58CA),
+    primaryLt: Color(0xFF0D6EFD),
+    accent: Color(0xFF0A58CA),
+    accentSoft: Color(0x1A0A58CA),
+    cta: Color(0xFFFFB800),
+    ctaInk: Color(0xFF212529),
+    bg: Color(0xFFF8F9FA),
     white: Color(0xFFFFFFFF),
-    ink: Color(0xFF1A2332),
-    inkMid: Color(0xFF64748B),
-    border: Color(0xFFE8EDF5),
-    danger: Color(0xFFFF4D4D),
-    dangerSoft: Color(0x1AFF4D4D),
-    info: Color(0xFF3B82F6),
-    warn: Color(0xFFFFA726),
+    ink: Color(0xFF212529),
+    inkMid: Color(0xFF6C757D),
+    border: Color(0xFFDEE2E6),
+    danger: Color(0xFFDC3545),
+    dangerSoft: Color(0x1ADC3545),
+    info: Color(0xFF0D6EFD),
+    warn: Color(0xFFFFB800),
   );
 
-  static const warm = BrandPalette(
-    id: 'warm',
-    primary: Color(0xFF2C3E50),
-    primaryLt: Color(0xFF3D5166),
-    accent: Color(0xFFE8A838),
-    accentSoft: Color(0x1AE8A838),
-    bg: Color(0xFFF6F4F1),
+  /// Dark navy + coral-orange (replaces warm).
+  static const coral = BrandPalette(
+    id: 'coral',
+    primary: Color(0xFF082032),
+    primaryLt: Color(0xFF2C394B),
+    accent: Color(0xFFFF4C29),
+    accentSoft: Color(0x1AFF4C29),
+    cta: Color(0xFFFF4C29),
+    ctaInk: Color(0xFFFFFFFF),
+    bg: Color(0xFFF3F3F4),
     white: Color(0xFFFFFFFF),
-    ink: Color(0xFF1F2933),
-    inkMid: Color(0xFF6B7280),
-    border: Color(0xFFE8E4DE),
-    danger: Color(0xFFE05A4F),
-    dangerSoft: Color(0x1AE05A4F),
-    info: Color(0xFF4A7C9B),
-    warn: Color(0xFFD4922A),
+    ink: Color(0xFF082032),
+    inkMid: Color(0xFF334756),
+    border: Color(0xFFD2D2D2),
+    danger: Color(0xFFFF4C29),
+    dangerSoft: Color(0x1AFF4C29),
+    info: Color(0xFF2C394B),
+    warn: Color(0xFFFFB800),
   );
 
-  static const grove = BrandPalette(
-    id: 'grove',
-    primary: Color(0xFF2F4A3C),
-    primaryLt: Color(0xFF3D5F4E),
-    accent: Color(0xFF3D9B7A),
-    accentSoft: Color(0x1A3D9B7A),
-    bg: Color(0xFFF4F6F3),
+  /// Muted slate greys (settings label: Slate; replaces grove).
+  static const indigo = BrandPalette(
+    id: 'indigo',
+    primary: Color(0xFF1C2E35),
+    primaryLt: Color(0xFF3D5259),
+    accent: Color(0xFF778E9A),
+    accentSoft: Color(0x1A778E9A),
+    cta: Color(0xFF778E9A),
+    ctaInk: Color(0xFFFFFFFF),
+    bg: Color(0xFFF0F1F3),
     white: Color(0xFFFFFFFF),
-    ink: Color(0xFF1C2B24),
-    inkMid: Color(0xFF5F7168),
-    border: Color(0xFFDDE5E0),
-    danger: Color(0xFFD45B4A),
-    dangerSoft: Color(0x1AD45B4A),
-    info: Color(0xFF3B7A8C),
-    warn: Color(0xFFC9A227),
+    ink: Color(0xFF111D21),
+    inkMid: Color(0xFF606B72),
+    border: Color(0xFFB9BDC5),
+    danger: Color(0xFFDC3B2E),
+    dangerSoft: Color(0x1ADC3B2E),
+    info: Color(0xFF778E9A),
+    warn: Color(0xFFE8B84A),
   );
 
-  static const all = <BrandPalette>[classic, warm, grove];
+  static const all = <BrandPalette>[classic, coral, indigo];
 
   static BrandPalette byId(String? id) {
+    final key = (id ?? '').toLowerCase().trim();
+    // Legacy migrations
+    if (key == 'warm') return coral;
+    if (key == 'grove') return indigo;
     for (final p in all) {
-      if (p.id == id) return p;
+      if (p.id == key) return p;
     }
     return classic;
   }
