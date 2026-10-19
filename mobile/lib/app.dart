@@ -17,6 +17,7 @@ import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/products/presentation/bloc/products_bloc.dart';
 import 'features/sales/presentation/bloc/sales_bloc.dart';
 import 'features/staff/presentation/bloc/staff_bloc.dart';
+import 'features/shops/domain/repositories/shop_repository.dart';
 import 'features/shops/presentation/bloc/shop_bloc.dart';
 import 'features/transactions/presentation/bloc/transactions_bloc.dart';
 import 'features/users/presentation/bloc/user_bloc.dart';
@@ -112,6 +113,18 @@ class _AppState extends State<App> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Future<void> _syncShopTheme(BuildContext context) async {
+    final themeCubit = context.read<ThemeCubit>();
+    try {
+      final shop = await sl<ShopRepository>().getCurrentShop();
+      final themeId = shop?.themeId;
+      if (!mounted || themeId == null || themeId.isEmpty) return;
+      await themeCubit.setTheme(themeId);
+    } catch (_) {
+      // Offline: keep cached SharedPreferences theme.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized) {
@@ -146,50 +159,19 @@ class _AppState extends State<App> with TickerProviderStateMixin {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Logo (drop assets/images/logo/logo.png)
-                                SizedBox(
-                                  width: 120,
-                                  height: 120,
-                                  child: Image.asset(
-                                    'assets/images/logo/logo.png',
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (_, __, ___) => Icon(
-                                      Icons.point_of_sale_rounded,
-                                      size: 72,
-                                      color: Colors.white.withValues(alpha: 0.95),
+                                FadeTransition(
+                                  opacity: _fadeAnimation,
+                                  child: const Text(
+                                    'POS App',
+                                    style: TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: 2.0,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 30),
-                                FadeTransition(
-                                  opacity: _fadeAnimation,
-                                  child: Column(
-                                    children: [
-                                      const Text(
-                                        'POS App',
-                                        style: TextStyle(
-                                          fontSize: 32,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.white,
-                                          letterSpacing: 2.0,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        AppStrings.fromLocale(
-                                                sl<LocaleCubit>().state)
-                                            .appTagline,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white.withValues(alpha: 0.7),
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                                 const SizedBox(height: 40),
-                                // Loading indicator
                                 AnimatedBuilder(
                                   animation: _fadeAnimation,
                                   builder: (context, child) {
@@ -256,6 +238,8 @@ class _AppState extends State<App> with TickerProviderStateMixin {
         listener: (context, state) {
           final loc = _appRouter.router.state.matchedLocation;
           if (state is AuthAuthenticated) {
+            // Shop theme applies to owner + cashiers.
+            _syncShopTheme(context);
             if (loc == RouteNames.home || loc == RouteNames.login) {
               _appRouter.router.go(RouteNames.dashboard);
             }
