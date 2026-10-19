@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CustomerDebt extends Model
 {
     protected $fillable = [
-        'shop_id', 'customer_id', 'amount', 'amount_paid', 'status', 'note', 'due_date', 'legacy_id',
+        'shop_id', 'customer_id', 'sale_id', 'amount', 'amount_paid', 'status', 'note', 'due_date', 'legacy_id',
     ];
 
     protected function casts(): array
@@ -25,6 +25,11 @@ class CustomerDebt extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function sale(): BelongsTo
+    {
+        return $this->belongsTo(Sale::class);
     }
 
     public function payments(): HasMany
@@ -42,11 +47,25 @@ class CustomerDebt extends Model
         return max(0, (float) $this->amount - (float) $this->amount_paid);
     }
 
+    public static function recomputeOpenBalance(?Customer $customer): void
+    {
+        if (! $customer) {
+            return;
+        }
+        $open = static::where('customer_id', $customer->id)
+            ->where('status', 'open')
+            ->get()
+            ->sum(fn (self $d) => $d->balance());
+        $customer->open_debt_balance = $open;
+        $customer->save();
+    }
+
     public function toApiArray(): array
     {
         return [
             'id' => $this->id,
             'customer_id' => $this->customer_id,
+            'sale_id' => $this->sale_id,
             'customer' => $this->relationLoaded('customer') && $this->customer
                 ? [
                     'id' => $this->customer->id,
