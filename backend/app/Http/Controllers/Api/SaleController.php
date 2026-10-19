@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\CustomerDebt;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -150,16 +151,41 @@ class SaleController extends Controller
                 $tendered = isset($data['amount_tendered']) ? (float) $data['amount_tendered'] : null;
                 $change = $tendered !== null ? max(0, $tendered - $total) : null;
 
-                $customerId = null;
+                $paymentMethod = strtolower(trim((string) ($data['payment_method'] ?? 'cash')));
+                if ($paymentMethod === '') {
+                    $paymentMethod = 'cash';
+                }
+                $isCredit = $paymentMethod === 'credit';
+
+                $customer = null;
                 if (! empty($data['shop_customer_id'])) {
                     $customer = Customer::forShop($shopId)
                         ->where(function ($q) use ($data) {
                             $q->where('id', $data['shop_customer_id'])
                                 ->orWhere('legacy_id', (string) $data['shop_customer_id']);
                         })
+                        ->lockForUpdate()
                         ->first();
-                    $customerId = $customer?->id;
                 }
+
+                if (! $customer && $isCredit) {
+                    $name = trim((string) ($data['customer_name'] ?? ''));
+                    $phone = trim((string) ($data['customer_phone'] ?? ''));
+                    if ($name === '' && $phone === '') {
+                        abort(422, 'Credit sale needs a customer — who owes the shop?');
+                    }
+                    if ($name === '') {
+                        $name = $phone;
+                    }
+                    $customer = Customer::create([
+                        'shop_id' => $shopId,
+                        'name' => $name,
+                        'phone' => $phone !== '' ? $phone : null,
+                        'is_active' => true,
+                    ]);
+                }
+
+                $customerId = $customer?->id;
 
                 $serial = 'SN-'.now()->format('YmdHis').'-'.random_int(100, 999);
 
@@ -169,15 +195,15 @@ class SaleController extends Controller
                     'customer_id' => $customerId,
                     'serial_number' => $serial,
                     'client_sale_id' => $clientSaleId,
-                    'payment_method' => $data['payment_method'] ?? 'cash',
+                    'payment_method' => $paymentMethod,
                     'subtotal' => $subtotal,
                     'tax' => $tax,
                     'discount' => $discount,
                     'total' => $total,
                     'amount_tendered' => $tendered,
                     'change_amount' => $change,
-                    'customer_name' => $data['customer_name'] ?? null,
-                    'customer_phone' => $data['customer_phone'] ?? null,
+                    'customer_name' => $data['customer_name'] ?? $customer?->name,
+                    'customer_phone' => $data['customer_phone'] ?? $customer?->phone,
                     'customer_address' => $data['customer_address'] ?? null,
                     'customer_id_type' => $data['customer_id_type'] ?? null,
                     'customer_id_number' => $data['customer_id'] ?? null,
@@ -214,13 +240,29 @@ class SaleController extends Controller
                     ]);
                 }
 
-                if ($customerId) {
-                    $customer = Customer::where('id', $customerId)->lockForUpdate()->first();
+                if ($customer) {
+                    $customer->refresh();
+                    $customer = Customer::where('id', $customer->id)->lockForUpdate()->first();
                     if ($customer) {
                         $customer->purchase_count = (int) $customer->purchase_count + 1;
                         $customer->total_spent = (float) $customer->total_spent + $total;
                         $customer->save();
                     }
+                }
+
+                if ($isCredit && $customer && $total > 0) {
+                    CustomerDebt::firstOrCreate(
+                        ['sale_id' => $sale->id],
+                        [
+                            'shop_id' => $shopId,
+                            'customer_id' => $customer->id,
+                            'amount' => $total,
+                            'amount_paid' => 0,
+                            'status' => 'open',
+                            'note' => 'POS sale '.$serial,
+                        ]
+                    );
+                    CustomerDebt::recomputeOpenBalance($customer->fresh());
                 }
 
                 return $sale->load(['items', 'shop', 'cashier']);
