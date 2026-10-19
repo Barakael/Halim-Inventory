@@ -86,6 +86,7 @@ function adaptSale(s) {
         serial_number: s.serial_number,
         paymentMethod: s.payment_method,
         payment_method: s.payment_method,
+        isCredit: isCreditPaymentMethod(s.payment_method),
         subtotal: s.subtotal,
         tax: s.tax,
         discount: s.discount,
@@ -114,6 +115,7 @@ function adaptSale(s) {
 
 function adaptCustomer(c) {
     if (!c || typeof c !== 'object') return c;
+    const openDebt = Number(c.open_debt_balance ?? c.openDebtBalance ?? 0) || 0;
     return {
         id: c.id,
         name: c.name,
@@ -121,12 +123,51 @@ function adaptCustomer(c) {
         phone: c.phone,
         address: c.address,
         notes: c.notes,
+        businessName: c.notes || c.businessName || '',
         status: c.is_active === false ? 'inactive' : 'active',
-        openDebtBalance: c.open_debt_balance,
+        openDebtBalance: openDebt,
+        // Wateja table uses totalDebt
+        totalDebt: openDebt,
         purchaseCount: c.purchase_count,
         totalSpent: c.total_spent,
         shop_id: c.shop_id,
     };
+}
+
+/** Laravel customer_debts → Express credit-sales UI shape */
+function adaptCreditDebt(d) {
+    if (!d || typeof d !== 'object') return d;
+    const status = d.status === 'paid' || d.status === 'written_off' ? 'paid' : 'pending';
+    const amount = Number(d.amount) || 0;
+    const paid = Number(d.amount_paid ?? d.amountPaid) || 0;
+    const balance = d.balance != null ? Number(d.balance) : Math.max(0, amount - paid);
+    return {
+        id: d.id,
+        receiptNumber: d.note || (d.sale_id ? `Sale #${d.sale_id}` : `Debt #${d.id}`),
+        saleId: d.sale_id,
+        customerId: d.customer_id,
+        customerName: d.customer?.name || 'Mteja',
+        customerPhone: d.customer?.phone || null,
+        totalAmount: amount,
+        paidAmount: paid,
+        balance,
+        dueDate: d.due_date || d.dueDate || null,
+        status,
+        note: d.note,
+        createdAt: d.created_at,
+        shop_id: d.shop_id,
+    };
+}
+
+function isCreditPaymentMethod(method) {
+    const m = String(method || '').toLowerCase().trim();
+    return m === 'credit' || m.includes('deni');
+}
+
+function isCashLikePaymentMethod(method) {
+    const m = String(method || '').toLowerCase().trim();
+    if (isCreditPaymentMethod(m)) return false;
+    return m === 'cash' || m === 'card' || m.includes('mobile') || m === 'bank' || m === '';
 }
 
 function adaptCategory(c) {
@@ -405,10 +446,18 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
         const token = requireLaravelToken(req, res);
         if (!token) return;
         try {
-            const { ok, json, status } = await laravelFetch('/dashboard', { token });
+            const [{ ok, json, status }, debtsRes, customersRes] = await Promise.all([
+                laravelFetch('/dashboard', { token }),
+                laravelFetch('/debts/summary', { token }),
+                laravelFetch('/customers', { token }),
+            ]);
             if (!ok) {
                 return res.status(status).json({ success: false, message: json?.message || 'Failed' });
             }
+            const debtSummary = debtsRes.ok ? debtsRes.json : {};
+            const customersList = customersRes.ok
+                ? (unwrapData(customersRes.json) || [])
+                : [];
             // Shape for Express dashboard widgets
             return res.json({
                 success: true,
@@ -427,8 +476,12 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
                         lowStock: json.low_stock_count || 0,
                         expiring: 0,
                     },
-                    customers: { total: 0 },
-                    debts: { total: 0, count: 0, collected: 0 },
+                    customers: { total: Array.isArray(customersList) ? customersList.length : 0 },
+                    debts: {
+                        total: Number(debtSummary.open_balance) || 0,
+                        count: Number(debtSummary.open_count) || 0,
+                        collected: Number(debtSummary.collected_total) || 0,
+                    },
                     lowStockProducts: [],
                     expiringProducts: [],
                     topProducts: [],
@@ -438,6 +491,99 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
                         transactions: d.transactions,
                     })),
                     salesByMonth: [],
+                },
+            });
+        } catch (err) {
+            return res.status(502).json({ success: false, message: err.message });
+        }
+    });
+
+    // Madeni — Laravel customer_debts
+    app.get('/api/credit-sales', isAuthenticated, hasRole('admin', 'cashier', 'storekeeper'), (req, res) => {
+        const q = new URLSearchParams();
+        if (req.query.status) q.set('status', req.query.status);
+        if (req.query.customerId) q.set('customer_id', req.query.customerId);
+        const qs = q.toString() ? `?${q}` : '';
+        return proxyJson(req, res, { path: `/debts${qs}`, adapt: adaptCreditDebt });
+    });
+
+    app.post('/api/credit-sales/:id/pay', isAuthenticated, hasRole('admin', 'cashier', 'storekeeper'), (req, res) => {
+        const b = req.body || {};
+        return proxyJson(req, res, {
+            path: `/debts/${req.params.id}/payments`,
+            method: 'POST',
+            body: {
+                amount: b.amount,
+                note: b.note || b.reference || null,
+            },
+            adapt: adaptCreditDebt,
+        });
+    });
+
+    // Ripoti — aggregate Laravel sales (cash vs credit)
+    app.get('/api/reports/sales', isAuthenticated, async (req, res) => {
+        const token = requireLaravelToken(req, res);
+        if (!token) return;
+        try {
+            const q = new URLSearchParams();
+            if (req.query.startDate) q.set('from', req.query.startDate);
+            if (req.query.endDate) q.set('to', req.query.endDate);
+            q.set('per_page', '500');
+            const { ok, json, status } = await laravelFetch(`/sales?${q}`, { token });
+            if (!ok) {
+                return res.status(status).json({ success: false, message: json?.message || 'Failed' });
+            }
+            const raw = unwrapData(json) || [];
+            const sales = (Array.isArray(raw) ? raw : []).map(adaptSale);
+
+            let totalCash = 0;
+            let totalDebts = 0;
+            let totalRevenue = 0;
+            let totalDiscount = 0;
+            const groupedData = {};
+
+            for (const s of sales) {
+                const amount = Number(s.totalAmount) || 0;
+                const discount = Number(s.discount) || 0;
+                totalRevenue += amount;
+                totalDiscount += discount;
+                if (isCreditPaymentMethod(s.paymentMethod)) {
+                    totalDebts += amount;
+                } else if (isCashLikePaymentMethod(s.paymentMethod)) {
+                    totalCash += amount;
+                } else {
+                    totalCash += amount;
+                }
+
+                const key = (s.createdAt || '').slice(0, 10) || 'unknown';
+                if (!groupedData[key]) {
+                    groupedData[key] = { date: key, revenue: 0, cash: 0, debts: 0, transactions: 0, items: 0 };
+                }
+                groupedData[key].revenue += amount;
+                groupedData[key].transactions += 1;
+                groupedData[key].items += (s.items || []).reduce((sum, i) => sum + (i.quantity || 0), 0);
+                if (isCreditPaymentMethod(s.paymentMethod)) {
+                    groupedData[key].debts += amount;
+                } else {
+                    groupedData[key].cash += amount;
+                }
+            }
+
+            const totalTransactions = sales.length;
+            return res.json({
+                success: true,
+                data: {
+                    summary: {
+                        totalRevenue,
+                        totalCash,
+                        totalDebts,
+                        totalDiscount,
+                        totalTransactions,
+                        averageTransaction: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+                    },
+                    groupedData: Object.values(groupedData).sort((a, b) =>
+                        String(a.date).localeCompare(String(b.date))),
+                    sales,
                 },
             });
         } catch (err) {
@@ -570,9 +716,13 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
             quantity: it.quantity,
             price: it.price,
         }));
+        const isCredit = !!(b.isCredit || b.is_credit);
+        const paymentMethod = isCredit
+            ? 'credit'
+            : (b.paymentMethod || b.payment_method || 'cash');
         const body = {
             items,
-            payment_method: b.paymentMethod || b.payment_method || 'cash',
+            payment_method: paymentMethod,
             discount: b.discount || 0,
             subtotal: b.subtotal,
             total: b.totalAmount ?? b.total,
