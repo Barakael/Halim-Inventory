@@ -20,12 +20,12 @@ class RecentSalesWidget extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   'Recent Sales',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                    color: Colors.black,
                   ),
                 ),
                 TextButton(
@@ -50,7 +50,7 @@ class RecentSalesWidget extends StatelessWidget {
                   );
                 } else if (state is SalesLoaded && state.sales.isNotEmpty) {
                   return Column(
-                    children: state.sales.take(5).map((sale) => _SaleItem(sale: sale)).toList(),
+                    children: state.sales.take(4).map((sale) => _SaleItem(sale: sale)).toList(),
                   );
                 }
                 return const Center(
@@ -127,7 +127,7 @@ class _SaleItem extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 2),
