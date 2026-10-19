@@ -29,7 +29,7 @@ class StatsCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: Colors.black87,
                       ),
                 ),
                 Container(
@@ -46,6 +46,7 @@ class StatsCard extends StatelessWidget {
               value,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
+                    color: Colors.black,
                   ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
