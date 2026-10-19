@@ -35,9 +35,10 @@ class _D {
   static Color get dangerSoft => _p.dangerSoft;
   static Color get info => _p.info;
   static Color get infoSoft => _p.info.withValues(alpha: 0.1);
-  static Color get ink => _p.ink;
-  static Color get inkMid => _p.inkMid;
-  static Color get inkLight => const Color(0xFFCBD5E1);
+  /// Dashboard body copy uses black for readability (icons/CTAs keep brand).
+  static const Color ink = Color(0xFF000000);
+  static const Color inkMid = Color(0xFF1A1A1A);
+  static const Color inkLight = Color(0xFF4A4A4A);
   static Color get border => _p.border;
 
   static TextStyle ts(
@@ -47,11 +48,13 @@ class _D {
     double? height,
     double? letterSpacing,
   }) =>
-      _p.ts(size,
-          weight: weight,
-          color: color,
-          height: height,
-          letterSpacing: letterSpacing);
+      TextStyle(
+        fontSize: size,
+        fontWeight: weight,
+        color: color ?? ink,
+        height: height,
+        letterSpacing: letterSpacing,
+      );
 
   static List<BoxShadow> get cardShadow => _p.cardShadow;
   static Color primaryOpacity(double o) => _p.primaryOpacity(o);
@@ -224,6 +227,20 @@ class _CashierDashboardViewState extends State<_CashierDashboardView> {
 
   bool _sameDay(DateTime a, DateTime b) => _isSameDay(a, b);
 
+  bool _isCreditPaymentMethod(String raw) {
+    final key = raw.toLowerCase().trim();
+    return key == 'credit' || key.contains('deni');
+  }
+
+  bool _isCashLikePaymentMethod(String raw) {
+    final key = raw.toLowerCase().trim();
+    if (_isCreditPaymentMethod(key)) return false;
+    return key == 'cash' ||
+        key == 'card' ||
+        key.contains('mobile') ||
+        key == 'bank';
+  }
+
   String _greeting(BuildContext context) {
     final name = (widget.user.firstName as String?)?.trim();
     return context.t.goodGreeting(
@@ -260,7 +277,7 @@ class _CashierDashboardViewState extends State<_CashierDashboardView> {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 90),
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 88),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _GreetingBanner(
@@ -314,37 +331,20 @@ class _CashierDashboardViewState extends State<_CashierDashboardView> {
                                 .toList();
                             final todayTotal = todaySales.fold<double>(
                                 0, (a, s) => a + s.total);
+                            final todayCash = todaySales
+                                .where((s) =>
+                                    _isCashLikePaymentMethod(s.paymentMethod))
+                                .fold<double>(0, (a, s) => a + s.total);
+                            final todayCredit = todaySales
+                                .where((s) =>
+                                    _isCreditPaymentMethod(s.paymentMethod))
+                                .fold<double>(0, (a, s) => a + s.total);
                             final lowStock = products.where((p) {
                               final threshold =
                                   p.lowStockThreshold ?? p.minStock ?? 10;
                               return p.stock <= threshold;
                             }).toList();
-                            final totalStock =
-                                products.fold<int>(0, (a, p) => a + p.stock);
                             final t = context.t;
-
-                            final weekly = List.generate(7, (i) {
-                              final d =
-                                  DateTime.now().subtract(Duration(days: 6 - i));
-                              final dayTotal = sales
-                                  .where((s) => _sameDay(s.createdAt, d))
-                                  .fold<double>(0, (a, s) => a + s.total);
-                              return _WeekBar(
-                                label: t.weekdayShort(d.weekday),
-                                value: dayTotal,
-                              );
-                            });
-
-                            final categoryMap = <String, int>{};
-                            for (final p in products) {
-                              final cat = (p.category?.isNotEmpty ?? false)
-                                  ? p.category!
-                                  : t.otherCategory;
-                              categoryMap[cat] =
-                                  (categoryMap[cat] ?? 0) + p.stock;
-                            }
-                            final categories = categoryMap.entries.toList()
-                              ..sort((a, b) => b.value.compareTo(a.value));
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,16 +367,17 @@ class _CashierDashboardViewState extends State<_CashierDashboardView> {
                                       color: _D.accent,
                                     ),
                                     _CashierStat(
-                                      title: t.transactions,
-                                      value: '${todaySales.length}',
-                                      icon: Icons.shopping_cart_rounded,
+                                      title: t.cashSales,
+                                      value: CurrencyFormatter.format(
+                                          todayCash),
+                                      icon: Icons.payments_rounded,
                                       color: _D.info,
                                     ),
                                     _CashierStat(
-                                      title: t.inventory,
-                                      value: '${products.length}',
-                                      subtitle: t.unitsCount(totalStock),
-                                      icon: Icons.inventory_2_outlined,
+                                      title: t.creditsMadeni,
+                                      value: CurrencyFormatter.format(
+                                          todayCredit),
+                                      icon: Icons.menu_book_rounded,
                                       color: _D.primary,
                                     ),
                                     _CashierStat(
@@ -392,158 +393,7 @@ class _CashierDashboardViewState extends State<_CashierDashboardView> {
                                 ),
                                 const SizedBox(height: 14),
 
-                                // Weekly chart
-                                _SectionCard(
-                                  title: t.weeklySalesOverview,
-                                  icon: Icons.show_chart_rounded,
-                                  child: SizedBox(
-                                    height: 150,
-                                    child: _WeeklyBars(bars: weekly),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Stock by category
-                                if (categories.isNotEmpty) ...[
-                                  _SectionCard(
-                                    title: t.stockByCategory,
-                                    icon: Icons.category_outlined,
-                                    child: Column(
-                                      children: categories.take(6).map((e) {
-                                        final max = categories.first.value
-                                            .toDouble()
-                                            .clamp(1, double.infinity);
-                                        return Padding(
-                                          padding:
-                                              const EdgeInsets.only(bottom: 8),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                flex: 2,
-                                                child: Text(
-                                                  e.key,
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: _D.ts(12,
-                                                      weight: FontWeight.w600),
-                                                ),
-                                              ),
-                                              Expanded(
-                                                flex: 3,
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                  child:
-                                                      LinearProgressIndicator(
-                                                    value: e.value / max,
-                                                    minHeight: 7,
-                                                    backgroundColor: _D.primary
-                                                        .withValues(
-                                                            alpha: 0.1),
-                                                    color: _D.primary,
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text('${e.value}',
-                                                  style: _D.ts(12,
-                                                      weight:
-                                                          FontWeight.w700)),
-                                            ],
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                ],
-
-                                // Low stock
-                                _SectionCard(
-                                  title: t.lowStockAlerts,
-                                  icon: Icons.warning_amber_rounded,
-                                  iconColor: _D.warn,
-                                  child: lowStock.isEmpty
-                                      ? _InlineEmptyRow(
-                                          icon: Icons.check_circle_outline_rounded,
-                                          message: t.allProductsWellStocked,
-                                        )
-                                      : Column(
-                                          children: lowStock
-                                              .take(5)
-                                              .map((p) => Container(
-                                                    margin:
-                                                        const EdgeInsets.only(
-                                                            bottom: 6),
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            10),
-                                                    decoration: BoxDecoration(
-                                                      color: _D.bg,
-                                                      borderRadius:
-                                                          BorderRadius
-                                                              .circular(9),
-                                                    ),
-                                                    child: Row(
-                                                      children: [
-                                                        Expanded(
-                                                          child: Column(
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .start,
-                                                            children: [
-                                                              Text(p.name,
-                                                                  style: _D.ts(
-                                                                      13,
-                                                                      weight:
-                                                                          FontWeight
-                                                                              .w600)),
-                                                              if (p.barcode !=
-                                                                      null &&
-                                                                  p.barcode!
-                                                                      .isNotEmpty)
-                                                                Text(
-                                                                  p.barcode!,
-                                                                  style: _D.ts(
-                                                                      11,
-                                                                      color: _D
-                                                                          .inkMid),
-                                                                ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                        Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .end,
-                                                          children: [
-                                                            Text(
-                                                              t.leftCount(p.stock),
-                                                              style: _D.ts(13,
-                                                                  weight:
-                                                                      FontWeight
-                                                                          .w800,
-                                                                  color: _D
-                                                                      .danger),
-                                                            ),
-                                                            Text(
-                                                              t.minStockLabel(p.lowStockThreshold ?? p.minStock ?? 10),
-                                                              style: _D.ts(11,
-                                                                  color: _D
-                                                                      .inkMid),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ))
-                                              .toList(),
-                                        ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Recent transactions
+                                // Recent sales (max 4) — end of dashboard scroll
                                 _SectionCard(
                                   title: t.recentTransactions,
                                   icon: Icons.trending_up_rounded,
@@ -555,7 +405,7 @@ class _CashierDashboardViewState extends State<_CashierDashboardView> {
                                         )
                                       : Column(
                                           children: sales
-                                              .take(5)
+                                              .take(4)
                                               .map((sale) => Container(
                                                     margin:
                                                         const EdgeInsets.only(
@@ -689,12 +539,6 @@ class DateFormatHelper {
   }
 }
 
-class _WeekBar {
-  final String label;
-  final double value;
-  const _WeekBar({required this.label, required this.value});
-}
-
 class _CashierStat extends StatelessWidget {
   const _CashierStat({
     required this.title,
@@ -810,65 +654,6 @@ class _InlineEmptyRow extends StatelessWidget {
         const SizedBox(width: 7),
         Expanded(
           child: Text(message, style: _D.ts(12.5, color: _D.inkMid)),
-        ),
-      ],
-    );
-  }
-}
-
-class _WeeklyBars extends StatelessWidget {
-  const _WeeklyBars({required this.bars});
-  final List<_WeekBar> bars;
-
-  @override
-  Widget build(BuildContext context) {
-    final maxV =
-        bars.map((b) => b.value).fold<double>(0, (a, b) => a > b ? a : b);
-    final peak = maxV > 0 ? maxV : 1.0;
-
-    return Column(
-      children: [
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: bars.map((b) {
-              final h = (b.value / peak) * 110;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Align(
-                    alignment: Alignment.bottomCenter,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      height: h.clamp(3, 110),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [_D.primary, _D.primaryLt],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(4),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 7),
-        Row(
-          children: bars
-              .map((b) => Expanded(
-                    child: Text(
-                      b.label,
-                      textAlign: TextAlign.center,
-                      style: _D.ts(10.5, color: _D.inkMid, weight: FontWeight.w600),
-                    ),
-                  ))
-              .toList(),
         ),
       ],
     );
@@ -1203,7 +988,7 @@ class _StatCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(value,
-                  style: _D.ts(15, weight: FontWeight.w800, color: color),
+                  style: _D.ts(15, weight: FontWeight.w800, color: _D.ink),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis),
               Text(title,
@@ -1327,7 +1112,7 @@ class _SaleRow extends StatelessWidget {
               ),
               Text(
                 CurrencyFormatter.format((sale.total as num).toDouble()),
-                style: _D.ts(13.5, weight: FontWeight.w800, color: _D.primary),
+                style: _D.ts(13.5, weight: FontWeight.w800, color: _D.ink),
               ),
               const SizedBox(width: 4),
               Icon(Icons.chevron_right_rounded,
@@ -1464,7 +1249,7 @@ class _PaymentBreakdown extends StatelessWidget {
                     ),
                     Text(
                       '${(pct * 100).toStringAsFixed(1)}%',
-                      style: _D.ts(12.5, weight: FontWeight.w700, color: color),
+                      style: _D.ts(12.5, weight: FontWeight.w700, color: _D.ink),
                     ),
                   ],
                 ),
@@ -1799,7 +1584,7 @@ class _OverviewTab extends StatelessWidget {
                 _EmptyState(
                     icon: Icons.receipt_outlined, message: t.noSalesRecordedYet)
               else
-                ...sales.take(5).map((s) => _SaleRow(
+                ...sales.take(4).map((s) => _SaleRow(
                       sale: s,
                       onTap: () => context.push('${RouteNames.sales}/${s.id}'),
                     )),
