@@ -18,9 +18,11 @@ void main() {
 
       await Hive.initFlutter();
 
+      // Local Laravel SaaS API. Override with:
+      // --dart-define=API_BASE_URL=http://<LAN_IP>:8000/api
       const String baseUrl = String.fromEnvironment(
         'API_BASE_URL',
-        defaultValue: 'https://terapay.teratech.co.tz/api',
+        defaultValue: 'http://127.0.0.1:8000/api',
       );
 
       try {
