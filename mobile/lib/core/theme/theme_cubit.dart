@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'brand_palette.dart';
 
-/// Persisted brand theme preset: classic / warm / grove.
+/// Persisted brand theme preset: classic / coral / indigo (Slate).
 class ThemeCubit extends Cubit<BrandPalette> {
   ThemeCubit() : super(BrandPalette.classic);
 
