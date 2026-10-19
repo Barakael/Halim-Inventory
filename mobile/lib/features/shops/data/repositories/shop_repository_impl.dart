@@ -194,6 +194,7 @@ class ShopRepositoryImpl implements ShopRepository {
     String? mobile,
     String? location,
     String? taxOffice,
+    String? themeId,
   }) async {
     try {
       final response = await _apiClient.put<Map<String, dynamic>>(
@@ -211,6 +212,7 @@ class ShopRepositoryImpl implements ShopRepository {
           if (mobile != null) 'mobile': mobile,
           if (location != null) 'location': location,
           if (taxOffice != null) 'tax_office': taxOffice,
+          if (themeId != null) 'theme_id': themeId,
         },
       );
       return ShopModel.fromApi(response);
