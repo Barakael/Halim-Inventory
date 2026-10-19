@@ -59,12 +59,18 @@ class AppStrings {
       );
   String get theme => _t('Theme', 'Mandhari');
   String get themeHint => _t(
-        'Choose app color style',
-        'Chagua mtindo wa rangi wa programu',
+        'Applies to all cashiers at this shop',
+        'Inatumika kwa wakasiri wote wa dukani hii',
       );
   String get themeClassic => _t('Classic', 'Asili');
-  String get themeWarm => _t('Warm', 'Joto');
-  String get themeGrove => _t('Grove', 'Kijani');
+  String get themeCoral => _t('Coral', 'Korali');
+  String get themeSlate => _t('Slate', 'Kijivu');
+  @Deprecated('Use themeSlate')
+  String get themeIndigo => themeSlate;
+  @Deprecated('Use themeCoral')
+  String get themeWarm => themeCoral;
+  @Deprecated('Use themeSlate')
+  String get themeGrove => themeSlate;
 
   // ── Auth / Login ───────────────────────────────────────────────────
   String get signIn => _t('Sign In', 'Ingia');
@@ -356,22 +362,27 @@ class AppStrings {
   String get paymentMethod => _t('Payment method', 'Njia ya malipo');
   String get cash => _t('Cash', 'Fedha taslimu');
   String get card => _t('Card', 'Kadi');
-  String get mobileMoney => _t('Mobile Money', 'Pesa za simu');
+  String get mobileMoney =>
+      _t('Mobile Money (Bank)', 'Pesa za simu (Benki)');
   String get creditDebtBook =>
-      _t('Credit (debt book)', 'Mkopo (kitabu cha deni)');
+      _t('Credit (Deni)', 'Mkopo (Deni)');
   String get cashDesc =>
       _t('Physical currency payment', 'Malipo kwa fedha taslimu');
   String get cardDesc => _t('Credit or debit card', 'Kadi ya mkopo au debiti');
-  String get mobileDesc =>
-      _t('M-Pesa, Airtel Money, etc.', 'M-Pesa, Airtel Money, n.k.');
+  String get mobileDesc => _t(
+        'M-Pesa, Airtel Money, bank transfer',
+        'M-Pesa, Airtel Money, uhamisho wa benki',
+      );
   String get creditDesc => _t(
-        'Pay later — recorded as open debt',
+        'Pay later — recorded as open deni',
         'Lipa baadaye — itawekwa kama deni lililo wazi',
       );
   String get amountTendered => _t('Amount tendered', 'Kiasi kilichotolewa');
   String get selectMethod => _t('Select method', 'Chagua njia');
   String get confirmPayment => _t('Confirm Payment', 'Thibitisha malipo');
   String get confirmWithAmount => _t('Confirm', 'Thibitisha');
+  String get continueLabel => _t('Continue', 'Endelea');
+  String get back => _t('Back', 'Rudi');
   String get creditNeedsCustomer => _t(
         'Credit sale needs a customer — who owes the shop?',
         'Uuzaji wa mkopo unahitaji mteja — nani anadaiwa na duka?',
@@ -528,6 +539,18 @@ class AppStrings {
   String get periodWeekly => _t('Weekly', 'Wiki');
   String get periodMonthly => _t('Monthly', 'Mwezi');
   String get totalRevenue => _t('Total Revenue', 'Jumla ya Mapato');
+  String get totalCash => _t('Total cash', 'Jumla ya taslimu');
+  String get totalDebts => _t('Total debts', 'Jumla ya madeni');
+  String get openDebtsBalance =>
+      _t('Open deni (to collect)', 'Deni lililo wazi (kukusanya)');
+  String get cashCollectedHint => _t(
+        'Cash, mobile money & card received',
+        'Fedha, pesa za simu na kadi zilizopokelewa',
+      );
+  String get debtsPeriodHint => _t(
+        'Credit sales in this period',
+        'Mauzo ya mkopo katika kipindi hiki',
+      );
   String get avgTransaction =>
       _t('Avg. Transaction', 'Wastani wa Muamala');
   String get hourlySales => _t('Hourly Sales', 'Mauzo kwa Saa');
@@ -601,6 +624,8 @@ class AppStrings {
         'Wasiliana na msimamizi wako akupatie jukumu',
       );
   String get todaysSales => _t("Today's Sales", 'Mauzo ya Leo');
+  String get cashSales => _t('Cash sales', 'Mauzo taslimu');
+  String get creditsMadeni => _t('Credits (Madeni)', 'Mikopo (Madeni)');
   String get todaysRevenue => _t("Today's Revenue", 'Mapato ya Leo');
   String get totalSales => _t('Total Sales', 'Jumla ya Mauzo');
   String unitsCount(int n) => _t('$n units', 'vipimo $n');
