@@ -13,7 +13,7 @@ class Shop extends Model
     protected $fillable = [
         'name', 'address', 'phone', 'email', 'tax_rate', 'currency',
         'tin', 'vrn', 'mobile', 'location', 'tax_office', 'serial_prefix',
-        'receipt_footer', 'status', 'legacy_id',
+        'receipt_footer', 'status', 'theme_id', 'legacy_id',
     ];
 
     protected function casts(): array
@@ -55,8 +55,31 @@ class Shop extends Model
             'tax_office' => $this->tax_office,
             'serial_prefix' => $this->serial_prefix,
             'status' => $this->status,
+            'theme_id' => $this->normalizedThemeId(),
             'branches_count' => $this->branches()->count(),
             'staff_count' => $this->users()->count(),
         ];
+    }
+
+    public function normalizedThemeId(): string
+    {
+        $id = strtolower(trim((string) ($this->theme_id ?? 'classic')));
+        return match ($id) {
+            'coral', 'indigo', 'classic' => $id,
+            'warm' => 'coral',
+            'grove' => 'indigo',
+            default => 'classic',
+        };
+    }
+
+    public static function normalizeThemeId(?string $id): string
+    {
+        $key = strtolower(trim((string) $id));
+        return match ($key) {
+            'coral', 'indigo', 'classic' => $key,
+            'warm' => 'coral',
+            'grove' => 'indigo',
+            default => 'classic',
+        };
     }
 }
