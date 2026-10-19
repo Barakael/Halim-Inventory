@@ -15,6 +15,7 @@ class ShopEntity extends Equatable {
   final String taxOffice;
   final String serialPrefix;
   final String status;
+  final String themeId;
   final String? manager;
   final String? ownerName;
   final String? ownerEmail;
@@ -38,6 +39,7 @@ class ShopEntity extends Equatable {
     this.taxOffice = '',
     this.serialPrefix = 'DEM',
     this.status = 'active',
+    this.themeId = 'classic',
     this.manager,
     this.ownerName,
     this.ownerEmail,
@@ -63,6 +65,7 @@ class ShopEntity extends Equatable {
         taxOffice,
         serialPrefix,
         status,
+        themeId,
         manager,
         ownerName,
         ownerEmail,
