@@ -1,12 +1,12 @@
 const _apiBase = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'https://terapay.teratech.co.tz/api',
+  defaultValue: 'http://127.0.0.1:8000/api',
 );
 
 String mediaOrigin() {
   final parsed = Uri.tryParse(_apiBase.trim());
   if (parsed == null || parsed.host.isEmpty) {
-    return 'https://terapay.teratech.co.tz';
+    return 'http://127.0.0.1:8000';
   }
   final port = parsed.hasPort ? ':${parsed.port}' : '';
   return '${parsed.scheme}://${parsed.host}$port';
