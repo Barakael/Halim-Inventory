@@ -40,7 +40,8 @@ class _C {
   static Color get white => _p.white;
   static Color get primary => _p.primary;
   static Color get accent => _p.accent;
-  static Color get info => _p.info;
+  static Color get cta => _p.cta;
+  static Color get ctaInk => _p.ctaInk;
   static Color get warn => _p.warn;
   static Color get ink => _p.ink;
   static Color get inkMid => _p.inkMid;
@@ -63,7 +64,7 @@ TextStyle _ts(
       letterSpacing: letterSpacing,
     );
 
-/// Payment checkout sheet — pick purchaser to confirm loyalty discount.
+/// Two-step checkout sheet: purchaser (+ discount), then payment method.
 class PaymentMethodDialog extends StatefulWidget {
   const PaymentMethodDialog({
     super.key,
@@ -96,6 +97,8 @@ class PaymentMethodDialog extends StatefulWidget {
 }
 
 class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
+  /// 1 = purchaser + discount, 2 = payment method
+  int _step = 1;
   String? _selected;
   late final TextEditingController _cashAmountCtrl;
   late final TextEditingController _customerNameCtrl;
@@ -265,6 +268,21 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
     } else {
       FocusScope.of(context).unfocus();
     }
+  }
+
+  void _goToPaymentStep() {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _showPicker = false;
+      _step = 2;
+      // Card was removed from the UI; drop a stale selection if any.
+      if (_selected == 'card') _selected = null;
+    });
+  }
+
+  void _goBackToPurchaser() {
+    FocusScope.of(context).unfocus();
+    setState(() => _step = 1);
   }
 
   void _confirm() {
@@ -481,443 +499,11 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
                 ),
 
                 Flexible(
-                  child: SingleChildScrollView(
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(t.purchaser.toUpperCase(),
-                            style: _ts(11,
-                                color: _C.inkMid,
-                                weight: FontWeight.w700,
-                                letterSpacing: 0.4)),
-                        const SizedBox(height: 6),
-                        Text(
-                          t.selectPurchaserHint,
-                          style: _ts(12, color: _C.inkMid),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Pick existing
-                        OutlinedButton.icon(
-                          onPressed: _loadingCustomers
-                              ? null
-                              : () => setState(() => _showPicker = !_showPicker),
-                          icon: Icon(
-                            _showPicker
-                                ? Icons.keyboard_arrow_up_rounded
-                                : Icons.person_search_rounded,
-                            size: 18,
-                          ),
-                          label: Text(
-                            _loadingCustomers
-                                ? t.loadingCustomers
-                                : (_selectedCustomer != null
-                                    ? t.changePurchaser
-                                    : t.selectSavedPurchaser),
-                            style: _ts(13, weight: FontWeight.w600),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: _C.primary,
-                            minimumSize: const Size(double.infinity, 44),
-                            side: BorderSide(color: _C.border),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-
-                        if (_showPicker) ...[
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: _searchCtrl,
-                            style: _ts(14, color: _C.ink),
-                            cursorColor: _C.primary,
-                            onChanged: _filterCustomers,
-                            decoration: _fieldDecoration(
-                              'Search',
-                              hint: 'Name or phone…',
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            constraints: const BoxConstraints(maxHeight: 180),
-                            decoration: BoxDecoration(
-                              color: _C.bg,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: _C.border),
-                            ),
-                            child: _filtered.isEmpty
-                                ? Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Text(
-                                      'No purchasers found. Add them under Customers, or type a name below.',
-                                      style: _ts(12, color: _C.inkMid),
-                                    ),
-                                  )
-                                : ListView.separated(
-                                    shrinkWrap: true,
-                                    itemCount: _filtered.length,
-                                    separatorBuilder: (_, __) =>
-                                        const Divider(height: 1),
-                                    itemBuilder: (_, i) {
-                                      final c = _filtered[i];
-                                      final selected =
-                                          _selectedCustomer?.id == c.id;
-                                      return ListTile(
-                                        dense: true,
-                                        selected: selected,
-                                        selectedTileColor:
-                                            _C.colorOp(_C.accent, 0.12),
-                                        leading: CircleAvatar(
-                                          radius: 16,
-                                          backgroundColor:
-                                              _C.colorOp(_C.primary, 0.1),
-                                          child: Text(
-                                            c.name.isNotEmpty
-                                                ? c.name[0].toUpperCase()
-                                                : '?',
-                                            style: _ts(12,
-                                                weight: FontWeight.w800,
-                                                color: _C.primary),
-                                          ),
-                                        ),
-                                        title: Text(c.name,
-                                            style: _ts(13,
-                                                weight: FontWeight.w700)),
-                                        subtitle: Text(
-                                          [
-                                            if ((c.phone ?? '').isNotEmpty)
-                                              c.phone,
-                                            c.loyaltyTier.toUpperCase(),
-                                            if (c.discountPercent > 0)
-                                              '${c.discountPercent}% off',
-                                          ].join(' · '),
-                                          style: _ts(11, color: _C.inkMid),
-                                        ),
-                                        trailing: selected
-                                            ? Icon(
-                                                Icons.check_circle_rounded,
-                                                color: _C.accent,
-                                                size: 20,
-                                              )
-                                            : null,
-                                        onTap: () => _pickCustomer(c),
-                                      );
-                                    },
-                                  ),
-                          ),
-                        ],
-
-                        if (_selectedCustomer != null) ...[
-                          const SizedBox(height: 10),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: _C.colorOp(_C.accent, 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                  color: _C.colorOp(_C.accent, 0.35)),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.verified_rounded,
-                                    color: _C.accent, size: 20),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _selectedCustomer!.name,
-                                        style: _ts(14, weight: FontWeight.w800),
-                                      ),
-                                      Text(
-                                        [
-                                          _selectedCustomer!.loyaltyTier
-                                              .toUpperCase(),
-                                          if (_loyaltyPercent > 0)
-                                            '$_loyaltyPercent% loyalty discount',
-                                          if (_loyaltyPercent == 0)
-                                            'No discount set',
-                                        ].join(' · '),
-                                        style: _ts(12, color: _C.inkMid),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: _clearCustomer,
-                                  icon: Icon(Icons.close_rounded,
-                                      size: 18),
-                                  color: _C.inkMid,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _customerNameCtrl,
-                          focusNode: _nameFocus,
-                          style:
-                              _ts(14, color: _C.ink, weight: FontWeight.w500),
-                          cursorColor: _C.primary,
-                          textCapitalization: TextCapitalization.words,
-                          textInputAction: TextInputAction.next,
-                          onChanged: (_) {
-                            // Typing manually clears linked id (walk-in / new)
-                            if (_selectedCustomer != null &&
-                                _customerNameCtrl.text.trim() !=
-                                    _selectedCustomer!.name) {
-                              setState(() => _selectedCustomer = null);
-                            }
-                          },
-                          onSubmitted: (_) => _phoneFocus.requestFocus(),
-                          decoration: _fieldDecoration(t.walkInName),
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _customerPhoneCtrl,
-                          focusNode: _phoneFocus,
-                          style:
-                              _ts(14, color: _C.ink, weight: FontWeight.w500),
-                          cursorColor: _C.primary,
-                          keyboardType: TextInputType.phone,
-                          textInputAction: _selected == 'cash'
-                              ? TextInputAction.next
-                              : TextInputAction.done,
-                          onSubmitted: (_) {
-                            if (_selected == 'cash') {
-                              _cashFocus.requestFocus();
-                            } else {
-                              FocusScope.of(context).unfocus();
-                            }
-                          },
-                          decoration: _fieldDecoration(t.phone),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(t.discountSection.toUpperCase(),
-                            style: _ts(11,
-                                color: _C.inkMid,
-                                weight: FontWeight.w700,
-                                letterSpacing: 0.4)),
-                        const SizedBox(height: 6),
-                        Text(
-                          t.discountSectionHint,
-                          style: _ts(12, color: _C.inkMid),
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _DiscountModeChip(
-                              label: t.discountNone,
-                              selected: _discountMode == 'none',
-                              onTap: () => _setDiscountMode('none'),
-                            ),
-                            if (_loyaltyPercent > 0)
-                              _DiscountModeChip(
-                                label: '${t.loyaltyOff} $_loyaltyPercent%',
-                                selected: _discountMode == 'loyalty',
-                                onTap: () => _setDiscountMode('loyalty'),
-                              ),
-                            _DiscountModeChip(
-                              label: t.discountByPercent,
-                              selected: _discountMode == 'percent',
-                              onTap: () => _setDiscountMode('percent'),
-                            ),
-                            _DiscountModeChip(
-                              label: t.discountByAmount,
-                              selected: _discountMode == 'amount',
-                              onTap: () => _setDiscountMode('amount'),
-                            ),
-                          ],
-                        ),
-                        if (_discountMode == 'percent') ...[
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: _manualPercentCtrl,
-                            style: _ts(14,
-                                color: _C.ink, weight: FontWeight.w600),
-                            cursorColor: _C.primary,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            onChanged: (_) => setState(_syncCashToPayable),
-                            decoration: _fieldDecoration(
-                              t.discountPercent,
-                              hint: '0 – 100',
-                            ),
-                          ),
-                        ],
-                        if (_discountMode == 'amount') ...[
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: _manualAmountCtrl,
-                            style: _ts(14,
-                                color: _C.ink, weight: FontWeight.w600),
-                            cursorColor: _C.primary,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                RegExp(r'[\d.,]'),
-                              ),
-                            ],
-                            onChanged: (_) => setState(_syncCashToPayable),
-                            decoration: _fieldDecoration(
-                              t.manualDiscountAmount,
-                              hint: CurrencyFormatter.format(0),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 20),
-                        Text(t.paymentMethod.toUpperCase(),
-                            style: _ts(11,
-                                color: _C.inkMid,
-                                weight: FontWeight.w700,
-                                letterSpacing: 0.4)),
-                        const SizedBox(height: 10),
-                        _PayOption(
-                          icon: Icons.payments_rounded,
-                          label: t.cash,
-                          description: t.cashDesc,
-                          color: _C.accent,
-                          selected: _selected == 'cash',
-                          onTap: () => _select('cash'),
-                        ),
-                        if (_selected == 'cash') ...[
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: _cashAmountCtrl,
-                            focusNode: _cashFocus,
-                            style:
-                                _ts(14, color: _C.ink, weight: FontWeight.w600),
-                            cursorColor: _C.primary,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                RegExp(r'[\d.,]'),
-                              ),
-                            ],
-                            textInputAction: TextInputAction.done,
-                            onSubmitted: (_) => _confirm(),
-                            decoration: _fieldDecoration(
-                              'Amount tendered',
-                              hint: CurrencyFormatter.format(_payable),
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 10),
-                        _PayOption(
-                          icon: Icons.credit_card_rounded,
-                          label: t.card,
-                          description: t.cardDesc,
-                          color: _C.info,
-                          selected: _selected == 'card',
-                          onTap: () => _select('card'),
-                        ),
-                        const SizedBox(height: 10),
-                        _PayOption(
-                          icon: Icons.smartphone_rounded,
-                          label: t.mobileMoney,
-                          description: t.mobileDesc,
-                          color: _C.warn,
-                          selected: _selected == 'mobile',
-                          onTap: () => _select('mobile'),
-                        ),
-                        const SizedBox(height: 10),
-                        _PayOption(
-                          icon: Icons.menu_book_rounded,
-                          label: t.creditDebtBook,
-                          description: t.creditDesc,
-                          color: _C.primary,
-                          selected: _selected == 'credit',
-                          onTap: () => _select('credit'),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _step == 1
+                      ? _buildPurchaserStep(t)
+                      : _buildPaymentStep(t),
                 ),
-
-                SafeArea(
-                  top: false,
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                    decoration: BoxDecoration(
-                      border: Border(top: BorderSide(color: _C.border)),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              FocusScope.of(context).unfocus();
-                              Navigator.of(context).pop();
-                            },
-                            style: OutlinedButton.styleFrom(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              side: BorderSide(color: _C.border),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(t.cancel,
-                                style: _ts(14,
-                                    weight: FontWeight.w600,
-                                    color: _C.inkMid)),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton.icon(
-                            onPressed: _selected == null ? null : _confirm,
-                            icon: const Icon(
-                              Icons.check_circle_outline_rounded,
-                              size: 18,
-                            ),
-                            label: Text(
-                              _selected == null
-                                  ? t.selectMethod
-                                  : (_discountAmount > 0
-                                      ? '${t.confirmWithAmount} · ${CurrencyFormatter.format(_payable)}'
-                                      : t.confirmPayment),
-                              style: _ts(13,
-                                  weight: FontWeight.w700,
-                                  color: Colors.white),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              backgroundColor: _selected == null
-                                  ? _C.inkLight
-                                  : _C.primary,
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor: _C.inkLight,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                _buildFooter(t),
               ],
             ),
           ),
@@ -925,7 +511,439 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
       ),
     );
   }
+
+  Widget _buildPurchaserStep(AppStrings t) {
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t.purchaser.toUpperCase(),
+              style: _ts(11,
+                  color: _C.inkMid,
+                  weight: FontWeight.w700,
+                  letterSpacing: 0.4)),
+          const SizedBox(height: 6),
+          Text(
+            t.selectPurchaserHint,
+            style: _ts(12, color: _C.inkMid),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: _loadingCustomers
+                ? null
+                : () => setState(() => _showPicker = !_showPicker),
+            icon: Icon(
+              _showPicker
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.person_search_rounded,
+              size: 18,
+            ),
+            label: Text(
+              _loadingCustomers
+                  ? t.loadingCustomers
+                  : (_selectedCustomer != null
+                      ? t.changePurchaser
+                      : t.selectSavedPurchaser),
+              style: _ts(13, weight: FontWeight.w600),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _C.primary,
+              minimumSize: const Size(double.infinity, 44),
+              side: BorderSide(color: _C.border),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          if (_showPicker) ...[
+            const SizedBox(height: 10),
+            TextField(
+              controller: _searchCtrl,
+              style: _ts(14, color: _C.ink),
+              cursorColor: _C.primary,
+              onChanged: _filterCustomers,
+              decoration: _fieldDecoration(
+                'Search',
+                hint: 'Name or phone…',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 180),
+              decoration: BoxDecoration(
+                color: _C.bg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _C.border),
+              ),
+              child: _filtered.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'No purchasers found. Add them under Customers, or type a name below.',
+                        style: _ts(12, color: _C.inkMid),
+                      ),
+                    )
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _filtered.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (_, i) {
+                        final c = _filtered[i];
+                        final selected = _selectedCustomer?.id == c.id;
+                        return ListTile(
+                          dense: true,
+                          selected: selected,
+                          selectedTileColor: _C.colorOp(_C.accent, 0.12),
+                          leading: CircleAvatar(
+                            radius: 16,
+                            backgroundColor: _C.colorOp(_C.primary, 0.1),
+                            child: Text(
+                              c.name.isNotEmpty
+                                  ? c.name[0].toUpperCase()
+                                  : '?',
+                              style: _ts(12,
+                                  weight: FontWeight.w800,
+                                  color: _C.primary),
+                            ),
+                          ),
+                          title: Text(c.name,
+                              style: _ts(13, weight: FontWeight.w700)),
+                          subtitle: Text(
+                            [
+                              if ((c.phone ?? '').isNotEmpty) c.phone,
+                              c.loyaltyTier.toUpperCase(),
+                              if (c.discountPercent > 0)
+                                '${c.discountPercent}% off',
+                            ].join(' · '),
+                            style: _ts(11, color: _C.inkMid),
+                          ),
+                          trailing: selected
+                              ? Icon(
+                                  Icons.check_circle_rounded,
+                                  color: _C.accent,
+                                  size: 20,
+                                )
+                              : null,
+                          onTap: () => _pickCustomer(c),
+                        );
+                      },
+                    ),
+            ),
+          ],
+          if (_selectedCustomer != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _C.colorOp(_C.accent, 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _C.colorOp(_C.accent, 0.35)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.verified_rounded, color: _C.accent, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _selectedCustomer!.name,
+                          style: _ts(14, weight: FontWeight.w800),
+                        ),
+                        Text(
+                          [
+                            _selectedCustomer!.loyaltyTier.toUpperCase(),
+                            if (_loyaltyPercent > 0)
+                              '$_loyaltyPercent% loyalty discount',
+                            if (_loyaltyPercent == 0) 'No discount set',
+                          ].join(' · '),
+                          style: _ts(12, color: _C.inkMid),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _clearCustomer,
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    color: _C.inkMid,
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          TextField(
+            controller: _customerNameCtrl,
+            focusNode: _nameFocus,
+            style: _ts(14, color: _C.ink, weight: FontWeight.w500),
+            cursorColor: _C.primary,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            onChanged: (_) {
+              if (_selectedCustomer != null &&
+                  _customerNameCtrl.text.trim() != _selectedCustomer!.name) {
+                setState(() => _selectedCustomer = null);
+              }
+            },
+            onSubmitted: (_) => _phoneFocus.requestFocus(),
+            decoration: _fieldDecoration(t.walkInName),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _customerPhoneCtrl,
+            focusNode: _phoneFocus,
+            style: _ts(14, color: _C.ink, weight: FontWeight.w500),
+            cursorColor: _C.primary,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => FocusScope.of(context).unfocus(),
+            decoration: _fieldDecoration(t.phone),
+          ),
+          const SizedBox(height: 20),
+          Text(t.discountSection.toUpperCase(),
+              style: _ts(11,
+                  color: _C.inkMid,
+                  weight: FontWeight.w700,
+                  letterSpacing: 0.4)),
+          const SizedBox(height: 6),
+          Text(
+            t.discountSectionHint,
+            style: _ts(12, color: _C.inkMid),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _DiscountModeChip(
+                label: t.discountNone,
+                selected: _discountMode == 'none',
+                onTap: () => _setDiscountMode('none'),
+              ),
+              if (_loyaltyPercent > 0)
+                _DiscountModeChip(
+                  label: '${t.loyaltyOff} $_loyaltyPercent%',
+                  selected: _discountMode == 'loyalty',
+                  onTap: () => _setDiscountMode('loyalty'),
+                ),
+              _DiscountModeChip(
+                label: t.discountByPercent,
+                selected: _discountMode == 'percent',
+                onTap: () => _setDiscountMode('percent'),
+              ),
+              _DiscountModeChip(
+                label: t.discountByAmount,
+                selected: _discountMode == 'amount',
+                onTap: () => _setDiscountMode('amount'),
+              ),
+            ],
+          ),
+          if (_discountMode == 'percent') ...[
+            const SizedBox(height: 10),
+            TextField(
+              controller: _manualPercentCtrl,
+              style: _ts(14, color: _C.ink, weight: FontWeight.w600),
+              cursorColor: _C.primary,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+              onChanged: (_) => setState(_syncCashToPayable),
+              decoration: _fieldDecoration(
+                t.discountPercent,
+                hint: '0 – 100',
+              ),
+            ),
+          ],
+          if (_discountMode == 'amount') ...[
+            const SizedBox(height: 10),
+            TextField(
+              controller: _manualAmountCtrl,
+              style: _ts(14, color: _C.ink, weight: FontWeight.w600),
+              cursorColor: _C.primary,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r'[\d.,]'),
+                ),
+              ],
+              onChanged: (_) => setState(_syncCashToPayable),
+              decoration: _fieldDecoration(
+                t.manualDiscountAmount,
+                hint: CurrencyFormatter.format(0),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentStep(AppStrings t) {
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t.paymentMethod.toUpperCase(),
+              style: _ts(11,
+                  color: _C.inkMid,
+                  weight: FontWeight.w700,
+                  letterSpacing: 0.4)),
+          const SizedBox(height: 10),
+          _PayOption(
+            icon: Icons.payments_rounded,
+            label: t.cash,
+            description: t.cashDesc,
+            color: _C.accent,
+            selected: _selected == 'cash',
+            onTap: () => _select('cash'),
+          ),
+          if (_selected == 'cash') ...[
+            const SizedBox(height: 10),
+            TextField(
+              controller: _cashAmountCtrl,
+              focusNode: _cashFocus,
+              style: _ts(14, color: _C.ink, weight: FontWeight.w600),
+              cursorColor: _C.primary,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r'[\d.,]'),
+                ),
+              ],
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _confirm(),
+              decoration: _fieldDecoration(
+                t.amountTendered,
+                hint: CurrencyFormatter.format(_payable),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          _PayOption(
+            icon: Icons.smartphone_rounded,
+            label: t.mobileMoney,
+            description: t.mobileDesc,
+            color: _C.warn,
+            selected: _selected == 'mobile',
+            onTap: () => _select('mobile'),
+          ),
+          const SizedBox(height: 10),
+          _PayOption(
+            icon: Icons.menu_book_rounded,
+            label: t.creditDebtBook,
+            description: t.creditDesc,
+            color: _C.primary,
+            selected: _selected == 'credit',
+            onTap: () => _select('credit'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter(AppStrings t) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: _C.border)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  FocusScope.of(context).unfocus();
+                  if (_step == 1) {
+                    Navigator.of(context).pop();
+                  } else {
+                    _goBackToPurchaser();
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(color: _C.border),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  _step == 1 ? t.cancel : t.back,
+                  style: _ts(14, weight: FontWeight.w600, color: _C.inkMid),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: _step == 1
+                  ? ElevatedButton.icon(
+                      onPressed: _goToPaymentStep,
+                      icon: Icon(Icons.arrow_forward_rounded,
+                          size: 18, color: _C.ctaInk),
+                      label: Text(
+                        t.continueLabel,
+                        style: _ts(13,
+                            weight: FontWeight.w700, color: _C.ctaInk),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: _C.cta,
+                        foregroundColor: _C.ctaInk,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: _selected == null ? null : _confirm,
+                      icon: Icon(
+                        Icons.check_circle_outline_rounded,
+                        size: 18,
+                        color: _C.ctaInk,
+                      ),
+                      label: Text(
+                        _selected == null
+                            ? t.selectMethod
+                            : (_discountAmount > 0
+                                ? '${t.confirmWithAmount} · ${CurrencyFormatter.format(_payable)}'
+                                : t.confirmPayment),
+                        style: _ts(13,
+                            weight: FontWeight.w700, color: _C.ctaInk),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor:
+                            _selected == null ? _C.inkLight : _C.cta,
+                        foregroundColor: _C.ctaInk,
+                        disabledBackgroundColor: _C.inkLight,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+
 
 class _DiscountModeChip extends StatelessWidget {
   const _DiscountModeChip({
