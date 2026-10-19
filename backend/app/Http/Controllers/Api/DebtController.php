@@ -41,9 +41,14 @@ class DebtController extends Controller
             ->get()
             ->map->toApiArray();
 
+        $collected = DebtPayment::query()
+            ->whereHas('debt', fn ($q) => $q->where('shop_id', $shopId))
+            ->sum('amount');
+
         return response()->json([
             'open_count' => $open->count(),
             'open_balance' => round($open->sum(fn (CustomerDebt $d) => $d->balance()), 2),
+            'collected_total' => round((float) $collected, 2),
             'top_debtors' => $top,
         ]);
     }
@@ -95,7 +100,7 @@ class DebtController extends Controller
                 'due_date' => $data['due_date'] ?? null,
             ]);
 
-            $this->recomputeCustomerDebt($customer);
+            CustomerDebt::recomputeOpenBalance($customer);
 
             return $debt->load('customer');
         });
@@ -133,7 +138,7 @@ class DebtController extends Controller
                 $debt->amount_paid = (float) $debt->amount;
             }
             $debt->save();
-            $this->recomputeCustomerDebt($debt->customer);
+            CustomerDebt::recomputeOpenBalance($debt->customer);
 
             return $debt->fresh('customer');
         });
@@ -150,21 +155,8 @@ class DebtController extends Controller
 
         $debt->status = 'written_off';
         $debt->save();
-        $this->recomputeCustomerDebt($debt->customer);
+        CustomerDebt::recomputeOpenBalance($debt->customer);
 
         return response()->json($debt->fresh('customer')->toApiArray());
-    }
-
-    private function recomputeCustomerDebt(?Customer $customer): void
-    {
-        if (! $customer) {
-            return;
-        }
-        $open = CustomerDebt::where('customer_id', $customer->id)
-            ->where('status', 'open')
-            ->get()
-            ->sum(fn (CustomerDebt $d) => $d->balance());
-        $customer->open_debt_balance = $open;
-        $customer->save();
     }
 }
