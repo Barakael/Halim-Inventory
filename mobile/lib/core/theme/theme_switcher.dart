@@ -1,20 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../features/shops/domain/repositories/shop_repository.dart';
+import '../di/injection_container.dart';
 import '../l10n/app_strings.dart';
 import 'brand_palette.dart';
 import 'theme_cubit.dart';
 
-/// Compact Classic / Warm / Grove theme picker.
+/// Classic / Coral / Slate theme picker (shop-wide).
 class ThemeSwitcherTile extends StatelessWidget {
   const ThemeSwitcherTile({
     super.key,
     this.dense = false,
     this.tileColor,
+    this.persistToShop = true,
   });
 
   final bool dense;
   final Color? tileColor;
+  /// When true, also PUT `theme_id` on the shop so cashiers inherit it.
+  final bool persistToShop;
+
+  Future<void> _onSelect(BuildContext context, String id) async {
+    await context.read<ThemeCubit>().setTheme(id);
+    if (!persistToShop) return;
+    try {
+      await sl<ShopRepository>().updateCurrentShop(themeId: id);
+    } catch (_) {
+      // Offline / unauthorized: local cache still applied.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,12 +72,12 @@ class ThemeSwitcherTile extends StatelessWidget {
                     child: _ThemeSwatch(
                       palette: p,
                       label: switch (p.id) {
-                        'warm' => t.themeWarm,
-                        'grove' => t.themeGrove,
+                        'coral' => t.themeCoral,
+                        'indigo' => t.themeSlate,
                         _ => t.themeClassic,
                       },
                       selected: selected.id == p.id,
-                      onTap: () => context.read<ThemeCubit>().setTheme(p.id),
+                      onTap: () => _onSelect(context, p.id),
                     ),
                   ),
                   if (p != BrandPalette.all.last) const SizedBox(width: 8),
@@ -125,7 +140,7 @@ class _ThemeSwatch extends StatelessWidget {
                     width: 22,
                     height: 22,
                     decoration: BoxDecoration(
-                      color: palette.accent,
+                      color: palette.cta,
                       borderRadius: BorderRadius.circular(5),
                     ),
                   ),
