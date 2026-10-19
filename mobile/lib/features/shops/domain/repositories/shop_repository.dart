@@ -40,5 +40,6 @@ abstract class ShopRepository {
     String? mobile,
     String? location,
     String? taxOffice,
+    String? themeId,
   });
 }
