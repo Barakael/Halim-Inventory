@@ -16,6 +16,7 @@ class ShopModel extends ShopEntity {
     super.taxOffice = '',
     super.serialPrefix = 'DEM',
     super.status = 'active',
+    super.themeId = 'classic',
     super.manager,
     super.ownerName,
     super.ownerEmail,
@@ -81,6 +82,7 @@ class ShopModel extends ShopEntity {
       serialPrefix:
           raw['serial_prefix']?.toString() ?? raw['serialPrefix']?.toString() ?? 'DEM',
       status: raw['status']?.toString() ?? 'active',
+      themeId: (raw['theme_id'] ?? raw['themeId'] ?? 'classic').toString(),
       manager: ownerName,
       ownerName: ownerName,
       ownerEmail: ownerEmail,
@@ -112,6 +114,7 @@ class ShopModel extends ShopEntity {
         'tax_office': taxOffice,
         'serial_prefix': serialPrefix,
         'status': status,
+        'theme_id': themeId,
         'manager_name': manager,
         'owner_name': ownerName,
         'owner_email': ownerEmail,
