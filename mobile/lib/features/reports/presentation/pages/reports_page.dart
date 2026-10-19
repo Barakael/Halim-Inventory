@@ -5,9 +5,14 @@ import '../../../../core/theme/brand_palette.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 
+import '../../../../core/di/injection_container.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/widgets/app_page_scaffold.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../customers/domain/entities/customer_entity.dart';
+import '../../../customers/domain/repositories/customers_repository.dart';
 import '../../../sales/domain/entities/sale_entity.dart';
 import '../../../sales/presentation/bloc/sales_bloc.dart';
 import '../../../sales/presentation/bloc/sales_event.dart';
@@ -52,12 +57,72 @@ class _R {
 class _ReportsPageState extends State<ReportsPage> {
   _Period _period = _Period.daily;
   bool _exporting = false;
+  DebtSummaryEntity? _debtSummary;
 
   @override
   void initState() {
     super.initState();
-    context.read<SalesBloc>().add(const SalesFetchRequested());       
+    context.read<SalesBloc>().add(const SalesFetchRequested());
+    // Shop-wide open deni is for owners/admins only — not cashiers.
+    if (!_isCashier) {
+      _loadDebtSummary();
+    }
   }
+
+  bool get _isCashier {
+    final auth = context.read<AuthBloc>().state;
+    if (auth is! AuthAuthenticated) return false;
+    return auth.user.roleName.toLowerCase().trim() == 'cashier';
+  }
+
+  String? get _cashierUserId {
+    final auth = context.read<AuthBloc>().state;
+    if (auth is! AuthAuthenticated) return null;
+    return auth.user.id;
+  }
+
+  /// Cashiers only see sales they rang; owners see the full shop.
+  List<SaleEntity> _scopeSales(List<SaleEntity> sales) {
+    if (!_isCashier) return sales;
+    final uid = _cashierUserId;
+    if (uid == null || uid.isEmpty) return sales;
+    return sales
+        .where((s) => s.cashierId.toString() == uid.toString())
+        .toList();
+  }
+
+  Future<void> _loadDebtSummary() async {
+    if (_isCashier) return;
+    try {
+      final summary = await sl<CustomersRepository>().getDebtSummary();
+      if (!mounted) return;
+      setState(() => _debtSummary = summary);
+    } catch (_) {
+      // Reports still work from sales alone.
+    }
+  }
+
+  bool _isCreditMethod(String raw) {
+    final key = raw.toLowerCase().trim();
+    return key == 'credit' || key.contains('deni');
+  }
+
+  bool _isCashLikeMethod(String raw) {
+    final key = raw.toLowerCase().trim();
+    if (_isCreditMethod(key)) return false;
+    return key == 'cash' ||
+        key == 'card' ||
+        key.contains('mobile') ||
+        key == 'bank';
+  }
+
+  double _sumCash(List<SaleEntity> sales) => sales
+      .where((s) => _isCashLikeMethod(s.paymentMethod))
+      .fold(0.0, (a, s) => a + s.total);
+
+  double _sumDebts(List<SaleEntity> sales) => sales
+      .where((s) => _isCreditMethod(s.paymentMethod))
+      .fold(0.0, (a, s) => a + s.total);
 
   String _periodLabel(AppStrings t) {
     switch (_period) {
@@ -139,7 +204,9 @@ class _ReportsPageState extends State<ReportsPage> {
     if (_exporting) return;
     final t = AppStrings.read(context);
     final state = context.read<SalesBloc>().state;
-    final allSales = state is SalesLoaded ? state.sales : <SaleEntity>[];
+    final allSales = _scopeSales(
+      state is SalesLoaded ? state.sales : <SaleEntity>[],
+    );
     final current = _filter(allSales);
     final revenue = current.fold(0.0, (a, s) => a + s.total);
     final txCount = current.length;
@@ -214,6 +281,7 @@ class _ReportsPageState extends State<ReportsPage> {
         color: _R.primary,
         onRefresh: () async {
           context.read<SalesBloc>().add(const SalesFetchRequested());
+          if (!_isCashier) await _loadDebtSummary();
         },
         child: BlocBuilder<SalesBloc, SalesState>(
           builder: (context, state) {
@@ -270,10 +338,14 @@ class _ReportsPageState extends State<ReportsPage> {
               );
             }
 
-            final allSales =
-                state is SalesLoaded ? state.sales : <SaleEntity>[];
+            final isCashier = _isCashier;
+            final allSales = _scopeSales(
+              state is SalesLoaded ? state.sales : <SaleEntity>[],
+            );
             final current = _filter(allSales);
             final revenue = current.fold(0.0, (a, s) => a + s.total);
+            final totalCash = _sumCash(current);
+            final totalDebts = _sumDebts(current);
             final txCount = current.length;
             final avg = txCount > 0 ? revenue / txCount : 0.0;
             final today = allSales
@@ -287,6 +359,9 @@ class _ReportsPageState extends State<ReportsPage> {
                     .map((d) => _ChartPoint(d.label, d.total))
                     .toList();
             final payData = _payments(current);
+            // Shop-wide open deni — owners/admins only.
+            final openDeni =
+                isCashier ? 0.0 : (_debtSummary?.openBalance ?? 0.0);
 
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(
@@ -299,15 +374,50 @@ class _ReportsPageState extends State<ReportsPage> {
                   onChanged: (p) => setState(() => _period = p),
                 ),
                 const SizedBox(height: 14),
-                _HeroStat(
-                  label: t.totalRevenue,
-                  value: CurrencyFormatter.format(revenue),
-                  icon: Icons.payments_rounded,
-                  color: _R.accent,
+                Row(
+                  children: [
+                    Expanded(
+                      child: _HeroStat(
+                        label: t.totalCash,
+                        value: CurrencyFormatter.format(totalCash),
+                        icon: Icons.payments_rounded,
+                        color: _R.accent,
+                        subtitle: t.cashCollectedHint,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _HeroStat(
+                        label: t.totalDebts,
+                        value: CurrencyFormatter.format(totalDebts),
+                        icon: Icons.menu_book_rounded,
+                        color: _R.primary,
+                        subtitle: t.debtsPeriodHint,
+                      ),
+                    ),
+                  ],
                 ),
+                if (!isCashier && openDeni > 0) ...[
+                  const SizedBox(height: 10),
+                  _StatCard(
+                    label: t.openDebtsBalance,
+                    value: CurrencyFormatter.format(openDeni),
+                    icon: Icons.account_balance_wallet_rounded,
+                    color: _R.danger,
+                  ),
+                ],
                 const SizedBox(height: 10),
                 Row(
                   children: [
+                    Expanded(
+                      child: _StatCard(
+                        label: t.totalRevenue,
+                        value: CurrencyFormatter.format(revenue),
+                        icon: Icons.insights_rounded,
+                        color: _R.primaryLt,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: _StatCard(
                         label: t.transactions,
@@ -316,16 +426,14 @@ class _ReportsPageState extends State<ReportsPage> {
                         color: _R.info,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _StatCard(
-                        label: t.avgTransaction,
-                        value: CurrencyFormatter.format(avg),
-                        icon: Icons.trending_up_rounded,
-                        color: _R.primaryLt,
-                      ),
-                    ),
                   ],
+                ),
+                const SizedBox(height: 10),
+                _StatCard(
+                  label: t.avgTransaction,
+                  value: CurrencyFormatter.format(avg),
+                  icon: Icons.trending_up_rounded,
+                  color: _R.primaryLt,
                 ),
                 const SizedBox(height: 16),
                 _Card(
@@ -611,55 +719,57 @@ class _HeroStat extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
+    this.subtitle,
   });
 
   final String label;
   final String value;
   final IconData icon;
   final Color color;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
       decoration: BoxDecoration(
         color: _R.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _R.border),
         boxShadow: _R.cardShadow,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: TextStyle(fontSize: 12, color: _R.inkMid)),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: _R.ink,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 10),
+          Text(label, style: TextStyle(fontSize: 11, color: _R.inkMid)),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: _R.ink,
+              letterSpacing: -0.3,
             ),
           ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle!,
+              style: TextStyle(fontSize: 10, color: _R.inkMid, height: 1.25),
+            ),
+          ],
         ],
       ),
     );
