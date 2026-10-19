@@ -1,0 +1,23 @@
+Subject: Please purge unreachable commits that still show cursoragent as a contributor
+
+Repo: https://github.com/Barakael/Halim-Inventory
+
+I force-pushed rewritten history that removed all
+`Co-authored-by: Cursor <cursoragent@cursor.com>` trailers from every
+reachable commit on `main`. Author name/email and author dates were kept
+so my contribution graph / streak should stay intact.
+
+GitHub is still serving the old SHAs (examples still return HTTP 200 with
+the Cursor trailer in the message):
+
+- c5af5502df358b3ac0f8a6b1ad5b0f68944acbab
+- 8181d0891ba41bdb13f6bbcea4fbdb1da5bb5d5a
+
+Those unreachable objects are still making `cursoragent` appear under
+Contributors on the repo page. The contributors API already only lists me.
+
+Please permanently delete those unreachable commits / rebuild the
+contributors list for this repository. I do not want to delete and
+recreate the repo (I need my existing commit dates and streak preserved).
+
+Thank you.
