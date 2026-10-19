@@ -127,6 +127,7 @@ class CustomersRepositoryImpl implements CustomersRepository {
     return DebtSummaryEntity(
       openCount: _asInt(map['open_count']),
       openBalance: _asDouble(map['open_balance']),
+      collectedTotal: _asDouble(map['collected_total']),
       topDebtors: debtors,
     );
   }
