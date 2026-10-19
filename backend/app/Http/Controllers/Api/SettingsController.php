@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Shop;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SettingsController extends Controller
 {
@@ -30,7 +32,16 @@ class SettingsController extends Controller
             'mobile' => 'nullable|string|max:50',
             'location' => 'nullable|string|max:255',
             'tax_office' => 'nullable|string|max:255',
+            'theme_id' => [
+                'sometimes',
+                'string',
+                Rule::in(['classic', 'coral', 'indigo', 'warm', 'grove']),
+            ],
         ]);
+
+        if (array_key_exists('theme_id', $data)) {
+            $data['theme_id'] = Shop::normalizeThemeId($data['theme_id']);
+        }
 
         $shop->update($data);
 
