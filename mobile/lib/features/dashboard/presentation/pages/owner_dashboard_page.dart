@@ -36,9 +36,9 @@ class _D {
   static Color get dangerSoft => _p.dangerSoft;
   static Color get info => _p.info;
   static Color get infoSoft => _p.info.withValues(alpha: 0.1);
-  static Color get ink => _p.ink;
-  static Color get inkMid => _p.inkMid;
-  static Color get inkLight => const Color(0xFFCBD5E1);
+  static const Color ink = Color(0xFF000000);
+  static const Color inkMid = Color(0xFF1A1A1A);
+  static const Color inkLight = Color(0xFF4A4A4A);
   static Color get border => _p.border;
 
   static TextStyle ts(
@@ -48,11 +48,13 @@ class _D {
     double? height,
     double? letterSpacing,
   }) =>
-      _p.ts(size,
-          weight: weight,
-          color: color,
-          height: height,
-          letterSpacing: letterSpacing);
+      TextStyle(
+        fontSize: size,
+        fontWeight: weight,
+        color: color ?? ink,
+        height: height,
+        letterSpacing: letterSpacing,
+      );
 
   static List<BoxShadow> get cardShadow => _p.cardShadow;
 }
@@ -374,7 +376,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           children: [
             Text(
               'Weekly Sales',
-              style: _D.ts(16, weight: FontWeight.bold, color: _D.primary),
+              style: _D.ts(16, weight: FontWeight.bold, color: _D.ink),
             ),
             const SizedBox(height: 16),
             SizedBox(height: 200, child: SalesChartWidget()),
@@ -395,7 +397,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           children: [
             Text(
               'Revenue Trend',
-              style: _D.ts(16, weight: FontWeight.bold, color: _D.primary),
+              style: _D.ts(16, weight: FontWeight.bold, color: _D.ink),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -433,7 +435,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           children: [
             Text(
               'Sales by Category',
-              style: _D.ts(16, weight: FontWeight.bold, color: _D.primary),
+              style: _D.ts(16, weight: FontWeight.bold, color: _D.ink),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -459,7 +461,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage>
           children: [
             Text(
               'Top Products',
-              style: _D.ts(16, weight: FontWeight.bold, color: _D.primary),
+              style: _D.ts(16, weight: FontWeight.bold, color: _D.ink),
             ),
             const SizedBox(height: 16),
             const Text('Top products will be displayed here'),
@@ -640,7 +642,7 @@ class _SaleRow extends StatelessWidget {
                 children: [
                   Text(
                     CurrencyFormatter.format(sale.total),
-                    style: _D.ts(16, weight: FontWeight.w700, color: _D.primary),
+                    style: _D.ts(16, weight: FontWeight.w700, color: _D.ink),
                   ),
                   const SizedBox(height: 4),
                   Text(
