@@ -76,11 +76,13 @@ class CustomerDebtEntity extends Equatable {
 class DebtSummaryEntity {
   final int openCount;
   final double openBalance;
+  final double collectedTotal;
   final List<CustomerEntity> topDebtors;
 
   const DebtSummaryEntity({
     required this.openCount,
     required this.openBalance,
+    this.collectedTotal = 0,
     this.topDebtors = const [],
   });
 }
