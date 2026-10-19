@@ -2900,14 +2900,24 @@ async function loadSalesReport() {
     
     const data = result.data;
     
-    // Update summary
+    // Update summary — cash vs madeni from Laravel SoT
+    const cashEl = document.getElementById('reportTotalCash');
+    const debtsEl = document.getElementById('reportTotalDebts');
     const revenueEl = document.getElementById('reportTotalRevenue');
     const transactionsEl = document.getElementById('reportTotalTransactions');
     const avgTransactionEl = document.getElementById('reportAvgTransaction');
-    
-    if (revenueEl) revenueEl.textContent = formatCurrency(data.summary.totalRevenue);
-    if (transactionsEl) transactionsEl.textContent = data.summary.totalTransactions;
-    if (avgTransactionEl) avgTransactionEl.textContent = formatCurrency(data.summary.averageTransaction);
+
+    const summary = data.summary || {};
+    const totalCash = summary.totalCash != null
+        ? summary.totalCash
+        : (summary.totalRevenue || 0);
+    const totalDebts = summary.totalDebts != null ? summary.totalDebts : 0;
+
+    if (cashEl) cashEl.textContent = formatCurrency(totalCash);
+    if (debtsEl) debtsEl.textContent = formatCurrency(totalDebts);
+    if (revenueEl) revenueEl.textContent = formatCurrency(summary.totalRevenue || 0);
+    if (transactionsEl) transactionsEl.textContent = summary.totalTransactions || 0;
+    if (avgTransactionEl) avgTransactionEl.textContent = formatCurrency(summary.averageTransaction || 0);
 }
 
 async function loadPurchaseReport() {
