@@ -19,7 +19,7 @@ import '../../../sales/presentation/bloc/sales_event.dart';
 import '../../../sales/presentation/bloc/sales_state.dart';
 import '../utils/reports_pdf.dart';
 
-/// Mobile Reports — period filter, revenue stats, charts, payment methods,
+/// Mobile Reports — period filter, revenue stats, payment methods,
 /// transaction history, and PDF export from sales API.
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
@@ -43,12 +43,6 @@ class _R {
   static Color get ink => _p.ink;
   static Color get inkMid => _p.inkMid;
   static Color get border => _p.border;
-
-  static LinearGradient get chartGradient => LinearGradient(
-        colors: [primaryLt, accent],
-        begin: Alignment.bottomCenter,
-        end: Alignment.topCenter,
-      );
 
   static List<BoxShadow> get cardShadow => _p.cardShadow;
 }
@@ -116,13 +110,24 @@ class _ReportsPageState extends State<ReportsPage> {
         key == 'bank';
   }
 
-  double _sumCash(List<SaleEntity> sales) => sales
-      .where((s) => _isCashLikeMethod(s.paymentMethod))
-      .fold(0.0, (a, s) => a + s.total);
+  double _cashReceived(SaleEntity s) {
+    if (!_isCashLikeMethod(s.paymentMethod)) return 0;
+    final tendered = s.amountTendered;
+    return tendered < s.total ? tendered.clamp(0, s.total) : s.total;
+  }
 
-  double _sumDebts(List<SaleEntity> sales) => sales
-      .where((s) => _isCreditMethod(s.paymentMethod))
-      .fold(0.0, (a, s) => a + s.total);
+  double _creditRemainder(SaleEntity s) {
+    if (_isCreditMethod(s.paymentMethod)) return s.total;
+    if (!_isCashLikeMethod(s.paymentMethod)) return 0;
+    final rem = s.total - s.amountTendered;
+    return rem > 0 ? rem : 0;
+  }
+
+  double _sumCash(List<SaleEntity> sales) =>
+      sales.fold(0.0, (a, s) => a + _cashReceived(s));
+
+  double _sumDebts(List<SaleEntity> sales) =>
+      sales.fold(0.0, (a, s) => a + _creditRemainder(s));
 
   String _periodLabel(AppStrings t) {
     switch (_period) {
@@ -164,29 +169,6 @@ class _ReportsPageState extends State<ReportsPage> {
                 s.createdAt.year == now.year)
             .toList();
     }
-  }
-
-  List<_HourPoint> _hourly(List<SaleEntity> todaySales) {
-    return List.generate(24, (hour) {
-      final hourSales =
-          todaySales.where((s) => s.createdAt.hour == hour).toList();
-      return _HourPoint(
-        label: '$hour:00',
-        total: hourSales.fold(0.0, (a, s) => a + s.total),
-        count: hourSales.length,
-      );
-    }).where((h) => h.total > 0 || h.count > 0).toList();
-  }
-
-  List<_DayPoint> _weeklyTrend(List<SaleEntity> sales) {
-    return List.generate(7, (i) {
-      final d = DateTime.now().subtract(Duration(days: 6 - i));
-      final daySales = sales.where((s) => _sameDay(s.createdAt, d)).toList();
-      return _DayPoint(
-        label: DateFormat('MMM d').format(d),
-        total: daySales.fold(0.0, (a, s) => a + s.total),
-      );
-    });
   }
 
   List<_PayPoint> _payments(List<SaleEntity> sales) {
@@ -348,16 +330,6 @@ class _ReportsPageState extends State<ReportsPage> {
             final totalDebts = _sumDebts(current);
             final txCount = current.length;
             final avg = txCount > 0 ? revenue / txCount : 0.0;
-            final today = allSales
-                .where((s) => _sameDay(s.createdAt, DateTime.now()))
-                .toList();
-            final chartPoints = _period == _Period.daily
-                ? _hourly(today)
-                    .map((h) => _ChartPoint(h.label, h.total))
-                    .toList()
-                : _weeklyTrend(allSales)
-                    .map((d) => _ChartPoint(d.label, d.total))
-                    .toList();
             final payData = _payments(current);
             // Shop-wide open deni — owners/admins only.
             final openDeni =
@@ -434,37 +406,6 @@ class _ReportsPageState extends State<ReportsPage> {
                   value: CurrencyFormatter.format(avg),
                   icon: Icons.trending_up_rounded,
                   color: _R.primaryLt,
-                ),
-                const SizedBox(height: 16),
-                _Card(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _period == _Period.daily
-                            ? t.hourlySales
-                            : t.salesTrend,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: _R.ink,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 170,
-                        child: chartPoints.every((p) => p.value == 0)
-                            ? Center(
-                                child: Text(
-                                  t.noSalesDataPeriod,
-                                  style: TextStyle(
-                                      fontSize: 13, color: _R.inkMid),
-                                ),
-                              )
-                            : _BarChart(points: chartPoints),
-                      ),
-                    ],
-                  ),
                 ),
                 const SizedBox(height: 14),
                 _Card(
@@ -631,30 +572,10 @@ class _ReportsPageState extends State<ReportsPage> {
   }
 }
 
-class _HourPoint {
-  final String label;
-  final double total;
-  final int count;
-  const _HourPoint(
-      {required this.label, required this.total, required this.count});
-}
-
-class _DayPoint {
-  final String label;
-  final double total;
-  const _DayPoint({required this.label, required this.total});
-}
-
 class _PayPoint {
   final String method;
   final double total;
   const _PayPoint({required this.method, required this.total});
-}
-
-class _ChartPoint {
-  final String label;
-  final double value;
-  const _ChartPoint(this.label, this.value);
 }
 
 class _PeriodSelector extends StatelessWidget {
@@ -853,74 +774,6 @@ class _Card extends StatelessWidget {
         boxShadow: _R.cardShadow,
       ),
       child: child,
-    );
-  }
-}
-
-class _BarChart extends StatelessWidget {
-  const _BarChart({required this.points});
-  final List<_ChartPoint> points;
-
-  @override
-  Widget build(BuildContext context) {
-    final maxV =
-        points.map((p) => p.value).fold<double>(0, (a, b) => a > b ? a : b);
-    final peak = maxV > 0 ? maxV : 1.0;
-
-    return LayoutBuilder(
-      builder: (_, constraints) {
-        final barW =
-            (constraints.maxWidth - (points.length - 1) * 5) / points.length;
-        return Column(
-          children: [
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: points.map((p) {
-                  final h = (p.value / peak) * (constraints.maxHeight - 26);
-                  return Padding(
-                    padding:
-                        EdgeInsets.only(right: p == points.last ? 0 : 5),
-                    child: SizedBox(
-                      width: barW.clamp(7, 44),
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 280),
-                          height: h.clamp(2, constraints.maxHeight - 26),
-                          decoration: BoxDecoration(
-                            gradient: _R.chartGradient,
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(4),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: points.map((p) {
-                return Expanded(
-                  child: Text(
-                    p.label,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 8.5,
-                      color: _R.inkMid,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        );
-      },
     );
   }
 }
