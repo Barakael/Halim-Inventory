@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/api/products_api.dart';
@@ -43,12 +47,14 @@ class PurchaseEditorSheet extends StatefulWidget {
 class _PurchaseEditorSheetState extends State<PurchaseEditorSheet> {
   final _referenceCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
+  final _amountPaidCtrl = TextEditingController();
   int? _supplierId;
   DateTime _purchasedAt = DateTime.now();
   final List<_DraftLine> _lines = [];
   bool _saving = false;
   List<Map<String, dynamic>> _products = [];
   bool _loadingProducts = true;
+  File? _receiptFile;
 
   BrandPalette get _p => BrandTokens.current;
   bool get _isEdit => widget.purchase != null;
@@ -98,7 +104,17 @@ class _PurchaseEditorSheetState extends State<PurchaseEditorSheet> {
   void dispose() {
     _referenceCtrl.dispose();
     _notesCtrl.dispose();
+    _amountPaidCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickReceipt() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _receiptFile = File(picked.path));
   }
 
   Future<void> _pickDate() async {
@@ -242,14 +258,22 @@ class _PurchaseEditorSheetState extends State<PurchaseEditorSheet> {
     });
   }
 
-  Map<String, dynamic> _payload({required bool receiveNow}) {
-    return {
+  Future<Map<String, dynamic>> _payload({required bool receiveNow}) async {
+    final amountPaid =
+        double.tryParse(_amountPaidCtrl.text.replaceAll(',', '')) ?? 0;
+    final paymentType = amountPaid <= 0
+        ? 'credit'
+        : (amountPaid >= _subtotal - 0.009 ? 'cash' : 'partial');
+    final payload = <String, dynamic>{
       'supplier_id': _supplierId,
       'reference':
           _referenceCtrl.text.trim().isEmpty ? null : _referenceCtrl.text.trim(),
       'notes': _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       'purchased_at': DateFormat('yyyy-MM-dd').format(_purchasedAt),
       'receive_now': receiveNow,
+      'payment_type': paymentType,
+      'amount_paid': amountPaid < 0 ? 0 : amountPaid,
+      'payment_method': amountPaid > 0 ? 'cash' : null,
       'items': _lines
           .map((l) => {
                 'product_id': l.productId,
@@ -258,6 +282,16 @@ class _PurchaseEditorSheetState extends State<PurchaseEditorSheet> {
               })
           .toList(),
     };
+    if (!_isEdit &&
+        amountPaid > 0 &&
+        _receiptFile != null &&
+        await _receiptFile!.exists()) {
+      final bytes = await _receiptFile!.readAsBytes();
+      payload['receipt_base64'] = base64Encode(bytes);
+      payload['receipt_filename'] =
+          _receiptFile!.path.split(RegExp(r'[/\\]')).last;
+    }
+    return payload;
   }
 
   Future<void> _submit({required bool receiveNow}) async {
@@ -272,7 +306,8 @@ class _PurchaseEditorSheetState extends State<PurchaseEditorSheet> {
     try {
       final api = sl<PurchasesApi>();
       if (_isEdit) {
-        await api.update(widget.purchase!.id, _payload(receiveNow: false));
+        await api.update(
+            widget.purchase!.id, await _payload(receiveNow: false));
         if (receiveNow) {
           await api.receive(widget.purchase!.id);
           if (!mounted) return;
@@ -282,7 +317,8 @@ class _PurchaseEditorSheetState extends State<PurchaseEditorSheet> {
         if (!mounted) return;
         Navigator.pop(context, 'saved');
       } else {
-        final created = await api.create(_payload(receiveNow: receiveNow));
+        final created =
+            await api.create(await _payload(receiveNow: receiveNow));
         if (!mounted) return;
         Navigator.pop(context, created.isReceived ? 'received' : 'saved');
       }
@@ -390,6 +426,27 @@ class _PurchaseEditorSheetState extends State<PurchaseEditorSheet> {
                     maxLines: 2,
                     decoration: InputDecoration(labelText: t.purchaseNotes),
                   ),
+                  if (!_isEdit) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _amountPaidCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: t.amountPaidLabel,
+                        hintText: '0',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _pickReceipt,
+                      icon: const Icon(Icons.attach_file_rounded, size: 18),
+                      label: Text(_receiptFile == null
+                          ? t.attachReceipt
+                          : _receiptFile!.path.split(RegExp(r'[/\\]')).last),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   Row(
                     children: [
