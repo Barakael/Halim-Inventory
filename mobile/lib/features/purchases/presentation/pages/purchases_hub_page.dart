@@ -1,12 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/api/purchases_api.dart';
 import '../../../../core/api/suppliers_api.dart';
+import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/brand_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/utils/media_url.dart';
 import '../../../../shared/widgets/app_page_scaffold.dart';
 import '../widgets/purchase_editor_sheet.dart';
 import '../widgets/supplier_editor_sheet.dart';
@@ -223,8 +229,300 @@ class _PurchasesHubPageState extends State<PurchasesHubPage>
             _toast(e.toString().replaceFirst('Exception: ', ''), error: true);
           }
         },
+        onLipa: fresh.canLipa
+            ? () {
+                Navigator.pop(context);
+                _openLipa(fresh);
+              }
+            : null,
+        onReceipts: () {
+          Navigator.pop(context);
+          _openReceipts(fresh);
+        },
       ),
     );
+  }
+
+  Future<void> _openLipa(PurchaseModel purchase) async {
+    final t = context.t;
+    final amountCtrl =
+        TextEditingController(text: purchase.remaining.round().toString());
+    final notesCtrl = TextEditingController();
+    File? receipt;
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.viewInsetsOf(ctx).bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(t.lipaTitle,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${purchase.supplierName ?? t.walkInSupplier} · ${t.remainingLabel}: ${CurrencyFormatter.format(purchase.remaining)}',
+                    style: TextStyle(color: BrandTokens.current.inkMid),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amountCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(labelText: t.amountPaidLabel),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: notesCtrl,
+                    decoration: InputDecoration(labelText: t.purchaseNotes),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final picked = await ImagePicker()
+                          .pickImage(source: ImageSource.gallery);
+                      if (picked != null) {
+                        setModal(() => receipt = File(picked.path));
+                      }
+                    },
+                    icon: const Icon(Icons.attach_file),
+                    label: Text(receipt == null
+                        ? t.attachReceipt
+                        : receipt!.path.split(RegExp(r'[/\\]')).last),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: Text(t.lipa),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+    if (ok != true || !mounted) return;
+    final amount = double.tryParse(amountCtrl.text.trim()) ?? 0;
+    if (amount <= 0) {
+      _toast(t.atLeastOneItem, error: true);
+      return;
+    }
+    try {
+      await _purchasesApi.pay(
+        purchaseId: purchase.id,
+        amount: amount,
+        notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+        receiptFile: receipt,
+      );
+      _toast(t.lipaSuccess);
+      await _loadPurchases();
+    } catch (e) {
+      _toast(e.toString().replaceFirst('Exception: ', ''), error: true);
+    }
+  }
+
+  Future<void> _openReceipts(PurchaseModel purchase) async {
+    final t = context.t;
+    List<PurchasePaymentModel> payments = [];
+    try {
+      payments = await _purchasesApi.listPayments(purchase.id);
+    } catch (e) {
+      if (!mounted) return;
+      _toast(e.toString().replaceFirst('Exception: ', ''), error: true);
+      return;
+    }
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) {
+        final p = BrandTokens.current;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(t.viewReceipts,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              if (payments.isEmpty)
+                Text(t.noPaymentsYet, style: TextStyle(color: p.inkMid))
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: payments.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (_, i) {
+                      final pay = payments[i];
+                      final url = resolveMediaUrl(pay.receiptUrl);
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: p.border),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(CurrencyFormatter.format(pay.amount),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700)),
+                            Text(
+                              [
+                                if (pay.paidAt != null)
+                                  DateFormat('dd MMM yyyy')
+                                      .format(pay.paidAt!.toLocal()),
+                                pay.paymentMethod,
+                              ].whereType<String>().join(' · '),
+                              style: TextStyle(fontSize: 12, color: p.inkMid),
+                            ),
+                            if (url != null)
+                              TextButton(
+                                onPressed: () => launchUrl(Uri.parse(url),
+                                    mode: LaunchMode.externalApplication),
+                                child: Text(t.viewReceipts),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openSupplierStatement(SupplierModel supplier) async {
+    final t = context.t;
+    try {
+      final statement = await _purchasesApi.supplierStatement(
+        supplierId: supplier.id,
+        preset: 'month',
+      );
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (ctx) {
+          final p = BrandTokens.current;
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.85,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder: (_, scrollCtrl) {
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${t.supplierStatement}\n${supplier.name}',
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'PDF',
+                          onPressed: () {
+                            final origin = mediaOrigin();
+                            final url =
+                                '$origin/api${ApiEndpoints.supplierStatementPdf(supplier.id)}?preset=month';
+                            launchUrl(Uri.parse(url),
+                                mode: LaunchMode.externalApplication);
+                          },
+                          icon: const Icon(Icons.picture_as_pdf_outlined),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      '${statement.from} — ${statement.to}\n'
+                      '${t.remainingLabel}: ${CurrencyFormatter.format(statement.remaining)}',
+                      style: TextStyle(fontSize: 12, color: p.inkMid),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollCtrl,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      itemCount: statement.rows.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (_, i) {
+                        final row = statement.rows[i];
+                        final jumla = row.jumla ?? row.debit;
+                        final malipo = row.malipo ?? row.credit;
+                        return ListTile(
+                          dense: true,
+                          title: Text(row.titleLine,
+                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                          subtitle: Text(row.subtitleLine),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              if (jumla > 0)
+                                Text('+${CurrencyFormatter.format(jumla)}',
+                                    style: TextStyle(color: p.danger)),
+                              if (malipo > 0)
+                                Text('-${CurrencyFormatter.format(malipo)}',
+                                    style: TextStyle(color: p.accent)),
+                              Text(CurrencyFormatter.format(row.balance),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12)),
+                            ],
+                          ),
+                          onTap: row.receiptUrl == null
+                              ? null
+                              : () {
+                                  final url = resolveMediaUrl(row.receiptUrl);
+                                  if (url != null) {
+                                    launchUrl(Uri.parse(url),
+                                        mode: LaunchMode.externalApplication);
+                                  }
+                                },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } catch (e) {
+      _toast(e.toString().replaceFirst('Exception: ', ''), error: true);
+    }
   }
 
   Future<bool> _confirmReceive() async {
@@ -451,6 +749,8 @@ class _PurchasesHubPageState extends State<PurchasesHubPage>
           return _PurchaseCard(
             purchase: p,
             onTap: () => _showPurchaseDetail(p),
+            onLipa: p.canLipa ? () => _openLipa(p) : null,
+            onReceipts: () => _openReceipts(p),
           );
         },
       ),
@@ -551,6 +851,12 @@ class _PurchasesHubPageState extends State<PurchasesHubPage>
                             ),
                         ],
                       ),
+                    ),
+                    IconButton(
+                      tooltip: t.supplierStatement,
+                      onPressed: () => _openSupplierStatement(s),
+                      icon: Icon(Icons.account_balance_outlined,
+                          color: _p.primary, size: 20),
                     ),
                     IconButton(
                       tooltip: t.delete,
@@ -703,10 +1009,17 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _PurchaseCard extends StatelessWidget {
-  const _PurchaseCard({required this.purchase, required this.onTap});
+  const _PurchaseCard({
+    required this.purchase,
+    required this.onTap,
+    this.onLipa,
+    this.onReceipts,
+  });
 
   final PurchaseModel purchase;
   final VoidCallback onTap;
+  final VoidCallback? onLipa;
+  final VoidCallback? onReceipts;
 
   Color _statusColor(BrandPalette p) {
     if (purchase.isDraft) return p.warn;
@@ -797,7 +1110,9 @@ class _PurchaseCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    t.itemsCount(purchase.items.length),
+                    t.itemsCount(purchase.items.isNotEmpty
+                        ? purchase.items.length
+                        : purchase.productNames.length),
                     style: TextStyle(fontSize: 12, color: p.inkMid),
                   ),
                   const Spacer(),
@@ -811,6 +1126,42 @@ class _PurchaseCard extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${t.amountPaidLabel}: ${CurrencyFormatter.format(purchase.amountPaid)}',
+                      style: TextStyle(fontSize: 11, color: p.inkMid),
+                    ),
+                  ),
+                  Text(
+                    '${t.remainingLabel}: ${CurrencyFormatter.format(purchase.remaining)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: purchase.remaining > 0 ? p.danger : p.accent,
+                    ),
+                  ),
+                ],
+              ),
+              if (onLipa != null || onReceipts != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    if (onLipa != null)
+                      TextButton(
+                        onPressed: onLipa,
+                        child: Text(t.lipa),
+                      ),
+                    if (onReceipts != null)
+                      TextButton(
+                        onPressed: onReceipts,
+                        child: Text(t.viewReceipts),
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -895,12 +1246,16 @@ class _PurchaseDetailSheet extends StatelessWidget {
     required this.onEdit,
     required this.onReceive,
     required this.onCancel,
+    this.onLipa,
+    this.onReceipts,
   });
 
   final PurchaseModel purchase;
   final VoidCallback onEdit;
   final VoidCallback onReceive;
   final VoidCallback onCancel;
+  final VoidCallback? onLipa;
+  final VoidCallback? onReceipts;
 
   @override
   Widget build(BuildContext context) {
@@ -1019,16 +1374,46 @@ class _PurchaseDetailSheet extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 6),
+                _detailRow(t.amountPaidLabel,
+                    CurrencyFormatter.format(purchase.amountPaid), p),
+                _detailRow(t.remainingLabel,
+                    CurrencyFormatter.format(purchase.remaining), p),
               ],
             ),
           ),
-          if (purchase.isDraft)
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  children: [
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                children: [
+                  if (onLipa != null || onReceipts != null) ...[
+                    Row(
+                      children: [
+                        if (onLipa != null)
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: onLipa,
+                              icon: const Icon(Icons.payments_outlined),
+                              label: Text(t.lipa),
+                            ),
+                          ),
+                        if (onLipa != null && onReceipts != null)
+                          const SizedBox(width: 8),
+                        if (onReceipts != null)
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: onReceipts,
+                              icon: const Icon(Icons.receipt_long_outlined),
+                              label: Text(t.viewReceipts),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  if (purchase.isDraft) ...[
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
@@ -1059,9 +1444,10 @@ class _PurchaseDetailSheet extends StatelessWidget {
                       ],
                     ),
                   ],
-                ),
+                ],
               ),
             ),
+          ),
         ],
       ),
     );
