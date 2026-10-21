@@ -12,6 +12,7 @@ class PaymentSelection {
   const PaymentSelection({
     required this.method,
     required this.amountTendered,
+    this.creditRemainder = 0,
     this.customerName,
     this.customerPhone,
     this.shopCustomerId,
@@ -22,7 +23,10 @@ class PaymentSelection {
   });
 
   final String method;
+  /// Cash/mobile amount received (or full total for pure credit).
   final double amountTendered;
+  /// Unpaid balance recorded as customer debt (0 if fully paid / overpay).
+  final double creditRemainder;
   final String? customerName;
   final String? customerPhone;
   final String? shopCustomerId;
@@ -258,10 +262,39 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
     super.dispose();
   }
 
+  double get _amountReceived {
+    final parsed =
+        double.tryParse(_cashAmountCtrl.text.replaceAll(',', '').trim());
+    return parsed ?? _payable;
+  }
+
+  double get _creditRemainder {
+    if (_selected == 'credit') return _payable;
+    if (_selected == 'cash' || _selected == 'mobile') {
+      return (_payable - _amountReceived).clamp(0, double.infinity);
+    }
+    return 0;
+  }
+
+  double get _changeDue {
+    if (_selected == 'cash' || _selected == 'mobile') {
+      return (_amountReceived - _payable).clamp(0, double.infinity);
+    }
+    return 0;
+  }
+
+  bool get _needsCustomerForBalance =>
+      _selected == 'credit' || _creditRemainder > 0.009;
+
   void _select(String method) {
     HapticFeedback.selectionClick();
-    setState(() => _selected = method);
-    if (method == 'cash') {
+    setState(() {
+      _selected = method;
+      if (method == 'cash' || method == 'mobile') {
+        _syncCashToPayable();
+      }
+    });
+    if (method == 'cash' || method == 'mobile') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _cashFocus.requestFocus();
       });
@@ -285,20 +318,8 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
     setState(() => _step = 1);
   }
 
-  void _confirm() {
+  Future<void> _confirm() async {
     if (_selected == null) return;
-    // Credit requires a named purchaser
-    if (_selected == 'credit' &&
-        _selectedCustomer == null &&
-        _customerNameCtrl.text.trim().isEmpty &&
-        _customerPhoneCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.t.creditNeedsCustomer),
-        ),
-      );
-      return;
-    }
 
     if (_discountMode == 'percent') {
       final p = int.tryParse(_manualPercentCtrl.text.trim());
@@ -321,36 +342,106 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
       }
     }
 
-    HapticFeedback.mediumImpact();
-
     final due = _payable;
     double amount = due;
-    if (_selected == 'cash') {
+    var creditRemainder = 0.0;
+
+    if (_selected == 'cash' || _selected == 'mobile') {
       final parsed =
           double.tryParse(_cashAmountCtrl.text.replaceAll(',', '').trim());
       if (parsed == null || parsed < 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enter a valid amount tendered')),
-        );
-        return;
-      }
-      if (parsed < due) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Amount must be at least ${CurrencyFormatter.format(due)}',
-            ),
-          ),
+          SnackBar(content: Text(context.t.enterValidAmountReceived)),
         );
         return;
       }
       amount = parsed;
+      creditRemainder = (due - amount).clamp(0, double.infinity);
+    } else if (_selected == 'credit') {
+      amount = 0;
+      creditRemainder = due;
+    }
+
+    if (_needsCustomerForBalance &&
+        _selectedCustomer == null &&
+        _customerNameCtrl.text.trim().isEmpty &&
+        _customerPhoneCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            creditRemainder > 0 && _selected != 'credit'
+                ? context.t.partialPayNeedsCustomer
+                : context.t.creditNeedsCustomer,
+          ),
+        ),
+      );
+      return;
     }
 
     FocusScope.of(context).unfocus();
+    final t = context.t;
+    final methodLabel = switch (_selected!) {
+      'cash' => t.cash,
+      'mobile' => t.mobileMoney,
+      'credit' => t.creditDebtBook,
+      _ => _selected!,
+    };
+    final customerLabel = _customerNameCtrl.text.trim().isNotEmpty
+        ? _customerNameCtrl.text.trim()
+        : (_selectedCustomer?.name ?? '—');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.confirmPaymentTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t.confirmPaymentHint,
+                style: _ts(12.5, color: _C.inkMid)),
+            const SizedBox(height: 14),
+            _ConfirmRow(t.paymentMethod, methodLabel),
+            _ConfirmRow(t.saleTotal, CurrencyFormatter.format(due)),
+            if (_selected == 'cash' || _selected == 'mobile')
+              _ConfirmRow(
+                t.amountReceived,
+                CurrencyFormatter.format(amount),
+              ),
+            if (creditRemainder > 0.009) ...[
+              _ConfirmRow(
+                t.creditOnThisSale,
+                CurrencyFormatter.format(creditRemainder),
+                emphasize: true,
+              ),
+              _ConfirmRow(t.customerName, customerLabel),
+            ],
+            if (_changeDue > 0.009)
+              _ConfirmRow(
+                t.changeDue,
+                CurrencyFormatter.format(_changeDue),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(t.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(t.confirmWithAmount),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    HapticFeedback.mediumImpact();
     widget.onConfirm(PaymentSelection(
       method: _selected!,
       amountTendered: amount,
+      creditRemainder: creditRemainder,
       shopCustomerId: _selectedCustomer?.id,
       customerName: _customerNameCtrl.text.trim().isEmpty
           ? null
@@ -808,25 +899,20 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
           ),
           if (_selected == 'cash') ...[
             const SizedBox(height: 10),
-            TextField(
+            _AmountReceivedField(
               controller: _cashAmountCtrl,
               focusNode: _cashFocus,
-              style: _ts(14, color: _C.ink, weight: FontWeight.w600),
-              cursorColor: _C.primary,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(
-                  RegExp(r'[\d.,]'),
-                ),
-              ],
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _confirm(),
-              decoration: _fieldDecoration(
-                t.amountTendered,
-                hint: CurrencyFormatter.format(_payable),
-              ),
+              payable: _payable,
+              label: t.amountReceived,
+              onChanged: (_) => setState(() {}),
+              onSubmitted: _confirm,
+            ),
+            const SizedBox(height: 8),
+            _PaymentSplitPreview(
+              payable: _payable,
+              received: _amountReceived,
+              credit: _creditRemainder,
+              change: _changeDue,
             ),
           ],
           const SizedBox(height: 10),
@@ -838,6 +924,24 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
             selected: _selected == 'mobile',
             onTap: () => _select('mobile'),
           ),
+          if (_selected == 'mobile') ...[
+            const SizedBox(height: 10),
+            _AmountReceivedField(
+              controller: _cashAmountCtrl,
+              focusNode: _cashFocus,
+              payable: _payable,
+              label: t.amountReceived,
+              onChanged: (_) => setState(() {}),
+              onSubmitted: _confirm,
+            ),
+            const SizedBox(height: 8),
+            _PaymentSplitPreview(
+              payable: _payable,
+              received: _amountReceived,
+              credit: _creditRemainder,
+              change: _changeDue,
+            ),
+          ],
           const SizedBox(height: 10),
           _PayOption(
             icon: Icons.menu_book_rounded,
@@ -944,6 +1048,136 @@ class _PaymentMethodDialogState extends State<PaymentMethodDialog> {
   }
 }
 
+
+class _ConfirmRow extends StatelessWidget {
+  const _ConfirmRow(this.label, this.value, {this.emphasize = false});
+
+  final String label;
+  final String value;
+  final bool emphasize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: _ts(13, color: _C.inkMid)),
+          ),
+          Text(
+            value,
+            style: _ts(
+              13.5,
+              weight: FontWeight.w700,
+              color: emphasize ? _C.primary : _C.ink,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AmountReceivedField extends StatelessWidget {
+  const _AmountReceivedField({
+    required this.controller,
+    required this.focusNode,
+    required this.payable,
+    required this.label,
+    required this.onChanged,
+    required this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final double payable;
+  final String label;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      style: _ts(14, color: _C.ink, weight: FontWeight.w600),
+      cursorColor: _C.primary,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+      ],
+      textInputAction: TextInputAction.done,
+      onChanged: onChanged,
+      onSubmitted: (_) => onSubmitted(),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: CurrencyFormatter.format(payable),
+        labelStyle: _ts(13, color: _C.inkMid, weight: FontWeight.w500),
+        floatingLabelStyle: _ts(13, color: _C.primary, weight: FontWeight.w600),
+        hintStyle: _ts(14, color: _C.inkLight),
+        filled: true,
+        fillColor: _C.bg,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _C.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _C.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _C.primary, width: 1.5),
+        ),
+      ),
+    );
+  }
+}
+
+class _PaymentSplitPreview extends StatelessWidget {
+  const _PaymentSplitPreview({
+    required this.payable,
+    required this.received,
+    required this.credit,
+    required this.change,
+  });
+
+  final double payable;
+  final double received;
+  final double credit;
+  final double change;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _C.colorOp(_C.accent, 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _C.colorOp(_C.accent, 0.25)),
+      ),
+      child: Column(
+        children: [
+          _ConfirmRow(t.saleTotal, CurrencyFormatter.format(payable)),
+          _ConfirmRow(t.amountReceived, CurrencyFormatter.format(received)),
+          if (credit > 0.009)
+            _ConfirmRow(
+              t.creditOnThisSale,
+              CurrencyFormatter.format(credit),
+              emphasize: true,
+            ),
+          if (change > 0.009)
+            _ConfirmRow(t.changeDue, CurrencyFormatter.format(change)),
+        ],
+      ),
+    );
+  }
+}
 
 class _DiscountModeChip extends StatelessWidget {
   const _DiscountModeChip({
