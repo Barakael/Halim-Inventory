@@ -6,21 +6,30 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
+use App\Models\PurchasePayment;
 use App\Models\StockMovement;
 use App\Models\Supplier;
+use App\Services\PurchasePaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PurchaseController extends Controller
 {
+    public function __construct(private PurchasePaymentService $payments) {}
+
     public function index(Request $request)
     {
         $query = Purchase::forShop($request->user()->shop_id)
             ->with(['items', 'supplier', 'creator'])
-            ->orderByDesc('created_at');
+            ->orderByDesc('purchased_at')
+            ->orderByDesc('id');
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
         }
         if ($request->filled('supplier_id')) {
             $query->where('supplier_id', $request->supplier_id);
@@ -28,25 +37,30 @@ class PurchaseController extends Controller
         if ($request->filled('search')) {
             $s = '%'.$request->search.'%';
             $query->where(function ($q) use ($s) {
-                $q->where('reference', 'like', $s)->orWhere('notes', 'like', $s);
+                $q->where('reference', 'like', $s)
+                    ->orWhere('notes', 'like', $s)
+                    ->orWhere('delivered_by_name', 'like', $s)
+                    ->orWhere('delivered_by_phone', 'like', $s)
+                    ->orWhereHas('supplier', fn ($sq) => $sq->where('name', 'like', $s))
+                    ->orWhereHas('items', fn ($iq) => $iq->where('product_name', 'like', $s));
             });
         }
-        if ($request->filled('from')) {
-            $query->whereDate('purchased_at', '>=', $request->from);
+        if ($request->filled('from') || $request->filled('startDate')) {
+            $query->whereDate('purchased_at', '>=', $request->input('from', $request->input('startDate')));
         }
-        if ($request->filled('to')) {
-            $query->whereDate('purchased_at', '<=', $request->to);
+        if ($request->filled('to') || $request->filled('endDate')) {
+            $query->whereDate('purchased_at', '<=', $request->input('to', $request->input('endDate')));
         }
 
         return response()->json([
-            'data' => $query->limit(200)->get()->map->toApiArray(),
+            'data' => $query->limit(500)->get()->map->toApiArray(),
         ]);
     }
 
     public function show(Request $request, string $id)
     {
         $purchase = Purchase::forShop($request->user()->shop_id)
-            ->with(['items', 'supplier', 'creator'])
+            ->with(['items', 'supplier', 'creator', 'payments.creator'])
             ->where('id', $id)
             ->firstOrFail();
 
@@ -59,17 +73,29 @@ class PurchaseController extends Controller
         $user = $request->user();
         $shopId = $user->shop_id;
 
-        $purchase = DB::transaction(function () use ($data, $user, $shopId) {
+        $purchase = DB::transaction(function () use ($data, $user, $shopId, $request) {
             $supplierId = $this->resolveSupplierId($shopId, $data['supplier_id'] ?? null);
             [$subtotal, $lines] = $this->buildLines($shopId, $data['items']);
+
+            $paymentType = $data['payment_type'] ?? 'credit';
+            $initialPaid = isset($data['amount_paid']) ? (float) $data['amount_paid'] : null;
+            if ($initialPaid === null) {
+                $initialPaid = $paymentType === 'cash' ? $subtotal : 0.0;
+            }
+            $initialPaid = max(0, min($subtotal, $initialPaid));
 
             $purchase = Purchase::create([
                 'shop_id' => $shopId,
                 'supplier_id' => $supplierId,
                 'created_by' => $user->id,
                 'status' => ! empty($data['receive_now']) ? 'received' : 'draft',
+                'payment_type' => $paymentType,
+                'amount_paid' => 0,
+                'payment_status' => 'unpaid',
                 'reference' => $data['reference'] ?? null,
                 'notes' => $data['notes'] ?? null,
+                'delivered_by_name' => $data['delivered_by_name'] ?? null,
+                'delivered_by_phone' => $data['delivered_by_phone'] ?? null,
                 'subtotal' => $subtotal,
                 'purchased_at' => $data['purchased_at'] ?? now()->toDateString(),
                 'received_at' => ! empty($data['receive_now']) ? now() : null,
@@ -82,11 +108,28 @@ class PurchaseController extends Controller
                 ]);
             }
 
+            if ($initialPaid > 0) {
+                PurchasePayment::create([
+                    'shop_id' => $shopId,
+                    'purchase_id' => $purchase->id,
+                    'supplier_id' => $supplierId,
+                    'amount' => $initialPaid,
+                    'paid_at' => $data['purchased_at'] ?? now(),
+                    'payment_method' => $data['payment_method'] ?? 'cash',
+                    'reference' => $data['reference'] ?? null,
+                    'notes' => $data['payment_notes'] ?? 'Malipo ya awali',
+                    'receipt_path' => $this->storeInitialReceipt($request, $data, $shopId),
+                    'created_by' => $user->id,
+                ]);
+            }
+
+            $this->payments->recalculate($purchase);
+
             if ($purchase->status === 'received') {
                 $this->applyStockIn($purchase->fresh(['items']), $user);
             }
 
-            return $purchase->load(['items', 'supplier', 'creator']);
+            return $purchase->fresh(['items', 'supplier', 'creator', 'payments']);
         });
 
         return response()->json($purchase->toApiArray(), 201);
@@ -119,6 +162,15 @@ class PurchaseController extends Controller
             if (array_key_exists('purchased_at', $data)) {
                 $purchase->purchased_at = $data['purchased_at'];
             }
+            if (array_key_exists('delivered_by_name', $data)) {
+                $purchase->delivered_by_name = $data['delivered_by_name'];
+            }
+            if (array_key_exists('delivered_by_phone', $data)) {
+                $purchase->delivered_by_phone = $data['delivered_by_phone'];
+            }
+            if (array_key_exists('payment_type', $data)) {
+                $purchase->payment_type = $data['payment_type'];
+            }
 
             if (! empty($data['items'])) {
                 $purchase->items()->delete();
@@ -138,7 +190,9 @@ class PurchaseController extends Controller
                 $purchase->save();
             }
 
-            return $purchase->load(['items', 'supplier', 'creator']);
+            $this->payments->recalculate($purchase);
+
+            return $purchase->fresh(['items', 'supplier', 'creator', 'payments']);
         });
 
         return response()->json($purchase->toApiArray());
@@ -162,7 +216,7 @@ class PurchaseController extends Controller
             $this->applyStockIn($purchase, $request->user());
         });
 
-        return response()->json($purchase->fresh(['items', 'supplier', 'creator'])->toApiArray());
+        return response()->json($purchase->fresh(['items', 'supplier', 'creator', 'payments'])->toApiArray());
     }
 
     public function cancel(Request $request, string $id)
@@ -176,22 +230,70 @@ class PurchaseController extends Controller
         $purchase->status = 'cancelled';
         $purchase->save();
 
-        return response()->json($purchase->load(['items', 'supplier', 'creator'])->toApiArray());
+        return response()->json($purchase->load(['items', 'supplier', 'creator', 'payments'])->toApiArray());
     }
 
     private function validated(Request $request, bool $updating = false): array
     {
+        // Multipart FormData may send items as a JSON string
+        if (is_string($request->input('items'))) {
+            $decoded = json_decode($request->input('items'), true);
+            if (is_array($decoded)) {
+                $request->merge(['items' => $decoded]);
+            }
+        }
+        foreach (['receive_now'] as $boolKey) {
+            if ($request->has($boolKey) && is_string($request->input($boolKey))) {
+                $request->merge([
+                    $boolKey => filter_var($request->input($boolKey), FILTER_VALIDATE_BOOLEAN),
+                ]);
+            }
+        }
+
         return $request->validate([
             'supplier_id' => 'nullable',
             'reference' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
             'purchased_at' => 'nullable|date',
             'receive_now' => 'nullable|boolean',
+            'payment_type' => 'nullable|in:cash,credit,partial',
+            'payment_method' => 'nullable|string|max:100',
+            'amount_paid' => 'nullable|numeric|min:0',
+            'payment_notes' => 'nullable|string',
+            'delivered_by_name' => 'nullable|string|max:255',
+            'delivered_by_phone' => 'nullable|string|max:50',
+            'receipt' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:10240',
+            'receipt_base64' => 'nullable|string',
+            'receipt_filename' => 'nullable|string|max:255',
             'items' => ($updating ? 'sometimes|' : '').'required|array|min:1',
             'items.*.product_id' => 'required',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_cost' => 'nullable|numeric|min:0',
         ]);
+    }
+
+    private function storeInitialReceipt(Request $request, array $data, int $shopId): ?string
+    {
+        if ($request->hasFile('receipt')) {
+            return $request->file('receipt')->store('purchase-payments/'.$shopId, 'public');
+        }
+        if (! empty($data['receipt_base64'])) {
+            $raw = $data['receipt_base64'];
+            if (str_contains($raw, ',')) {
+                $raw = explode(',', $raw, 2)[1];
+            }
+            $bytes = base64_decode($raw, true);
+            if ($bytes !== false && strlen($bytes) > 0 && strlen($bytes) <= 10 * 1024 * 1024) {
+                $name = $data['receipt_filename'] ?? ('receipt-'.uniqid().'.jpg');
+                $name = basename(preg_replace('/[^a-zA-Z0-9._-]/', '_', $name));
+                $path = 'purchase-payments/'.$shopId.'/'.$name;
+                Storage::disk('public')->put($path, $bytes);
+
+                return $path;
+            }
+        }
+
+        return null;
     }
 
     private function resolveSupplierId(int $shopId, mixed $id): ?int
