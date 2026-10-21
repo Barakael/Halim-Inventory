@@ -378,6 +378,17 @@ class AppStrings {
         'Lipa baadaye — itawekwa kama deni lililo wazi',
       );
   String get amountTendered => _t('Amount tendered', 'Kiasi kilichotolewa');
+  String get amountReceived => _t('Amount received', 'Kiasi kilichopokelewa');
+  String get creditOnThisSale =>
+      _t('Credit on this sale', 'Deni kwenye mauzo haya');
+  String get changeDue => _t('Change', 'Chenji');
+  String get saleTotal => _t('Sale total', 'Jumla ya mauzo');
+  String get confirmPaymentTitle =>
+      _t('Confirm payment', 'Thibitisha malipo');
+  String get confirmPaymentHint => _t(
+        'Check cash/mobile received and any credit before saving.',
+        'Hakikisha kiasi kilichopokelewa na deni lolote kabla ya kuhifadhi.',
+      );
   String get selectMethod => _t('Select method', 'Chagua njia');
   String get confirmPayment => _t('Confirm Payment', 'Thibitisha malipo');
   String get confirmWithAmount => _t('Confirm', 'Thibitisha');
@@ -386,6 +397,14 @@ class AppStrings {
   String get creditNeedsCustomer => _t(
         'Credit sale needs a customer — who owes the shop?',
         'Uuzaji wa mkopo unahitaji mteja — nani anadaiwa na duka?',
+      );
+  String get partialPayNeedsCustomer => _t(
+        'Partial payment needs a customer for the remaining credit.',
+        'Malipo ya sehemu yanahitaji mteja kwa deni lililobaki.',
+      );
+  String get enterValidAmountReceived => _t(
+        'Enter a valid amount received',
+        'Weka kiasi sahihi kilichopokelewa',
       );
   String get addItemsFirst =>
       _t('Add items to cart first', 'Weka bidhaa kwenye kikapu kwanza');
@@ -840,6 +859,22 @@ class AppStrings {
   String get lastCost => _t('Last cost', 'Gharama ya mwisho');
   String get lineItems => _t('Line items', 'Bidhaa');
   String get receivedOn => _t('Received', 'Imepokelewa');
+  String get amountPaidLabel => _t('Amount paid', 'Tulicholipa');
+  String get remainingLabel => _t('Remaining', 'Kilichobaki');
+  String get lipa => _t('Pay', 'Lipa');
+  String get viewReceipts => _t('Receipts', 'Risiti');
+  String get supplierStatement =>
+      _t('Supplier statement', 'Taarifa ya msambazaji');
+  String get lipaTitle => _t('Pay purchase debt', 'Lipa deni la manunuzi');
+  String get lipaSuccess => _t('Payment saved', 'Malipo yamehifadhiwa');
+  String get noPaymentsYet =>
+      _t('No payments recorded yet', 'Bado hakuna malipo yaliyorekodiwa');
+  String get attachReceipt => _t('Attach receipt', 'Ambatanisha risiti');
+  String get deliveredBy => _t('Delivered by', 'Aliyeleta');
+  String get paymentTypeLabel => _t('Payment type', 'Aina ya malipo');
+  String get paidInFull => _t('Paid', 'Imelipwa');
+  String get partialPaid => _t('Partial', 'Sehemu');
+  String get unpaidDebt => _t('Debt', 'Deni');
 
   String weekdayShort(int weekday) {
     const en = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
