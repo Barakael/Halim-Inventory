@@ -55,6 +55,10 @@ class ApiEndpoints {
   static String purchaseById(int id) => '/purchases/$id';
   static String purchaseReceive(int id) => '/purchases/$id/receive';
   static String purchaseCancel(int id) => '/purchases/$id/cancel';
+  static String purchasePayments(int id) => '/purchases/$id/payments';
+  static String supplierStatement(int id) => '/suppliers/$id/statement';
+  static String supplierStatementPdf(int id) => '/suppliers/$id/statement.pdf';
+  static const String cashflowSummary = '/cashflow/summary';
 
   // Sales
   static const String sales = '/sales';
