@@ -18,12 +18,19 @@ void main() {
 
       await Hive.initFlutter();
 
-      // Local Laravel SaaS API. Override with:
-      // --dart-define=API_BASE_URL=http://<LAN_IP>:8000/api
+      // Bake production/LAN API at build time:
+      // flutter build apk --dart-define=API_BASE_URL=https://haslim.co.tz/api
       const String baseUrl = String.fromEnvironment(
         'API_BASE_URL',
-        defaultValue: 'http://127.0.0.1:8000/api',
+        defaultValue: 'https://haslim.co.tz/api',
       );
+
+      final normalized = normalizeApiBaseUrl(baseUrl);
+      assert(() {
+        // ignore: avoid_print
+        print('API_BASE_URL=$normalized');
+        return true;
+      }());
 
       try {
         await PosDeviceService.instance.initialize();
@@ -31,7 +38,7 @@ void main() {
         debugPrint('PosDeviceService init failed: $e\n$st');
       }
 
-      await setupDependencies(baseUrl: normalizeApiBaseUrl(baseUrl));
+      await setupDependencies(baseUrl: normalized);
       runApp(const App());
     },
     (error, stack) => debugPrint('Uncaught error: $error\n$stack'),
