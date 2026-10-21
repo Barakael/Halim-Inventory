@@ -598,7 +598,7 @@
                     <div class="mb-2">
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" class="form-control" id="suppliersSearchInput" placeholder="Tafuta msambazaji kwa jina, simu, au email..." oninput="filterSuppliersTable()">
+                            <input type="text" class="form-control" id="suppliersSearchInput" placeholder="Tafuta msambazaji kwa jina, simu, au maelezo..." oninput="filterSuppliersTable()">
                         </div>
                         <small class="text-muted"><i class="bi bi-hand-index me-1"></i>Bofya msambazaji kuona stock aliyowasilisha na kupakua ripoti</small>
                     </div>
@@ -607,11 +607,13 @@
                             <thead>
                                 <tr>
                                     <th>Jina</th>
-                                    <th>Mwasiliano</th>
                                     <th>Simu</th>
-                                    <th>Email</th>
+                                    <th>Maelezo</th>
+                                    <th>Manunuzi</th>
+                                    <th>Jumla</th>
+                                    <th>Tulicholipa</th>
                                     <th>Deni</th>
-                                    <th>Hali</th>
+                                    <th>Mwisho</th>
                                     <th>Vitendo</th>
                                 </tr>
                             </thead>
@@ -661,16 +663,17 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table">
+                        <table class="table align-middle">
                             <thead>
                                 <tr>
-                                    <th>Invoice</th>
-                                    <th>Tarehe</th>
+                                    <th>S/N</th>
                                     <th>Msambazaji</th>
-                                    <th>Jumla</th>
-                                    <th>Aina ya Malipo</th>
-                                    <th>Njia ya Malipo</th>
-                                    <th>Hali</th>
+                                    <th>Personnel</th>
+                                    <th>Bidhaa</th>
+                                    <th>Idadi</th>
+                                    <th>Bei ya jumla</th>
+                                    <th>Tulicholipa</th>
+                                    <th>Kilichobaki</th>
                                     <th>Vitendo</th>
                                 </tr>
                             </thead>
@@ -678,6 +681,70 @@
                         </table>
                     </div>
                     <div id="purchasesPagination" class="mt-2 px-3 pb-2"></div>
+                </div>
+            </section>
+
+            <!-- Supplier Statement Page -->
+            <section class="page-section" id="page-supplier-statement">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h5><i class="bi bi-bank me-2"></i>Taarifa ya Msambazaji</h5>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="navigateTo('suppliers', true)">
+                                <i class="bi bi-arrow-left me-1"></i>Rudi
+                            </button>
+                            <button class="btn btn-primary btn-sm" id="supplierStatementPrintBtn" onclick="printSupplierStatement()">
+                                <i class="bi bi-printer me-1"></i>Chapisha PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="px-3 pt-3 pb-2 border-bottom">
+                        <div class="mb-2">
+                            <strong id="supplierStatementName">—</strong>
+                            <span class="text-muted ms-2" id="supplierStatementPhone"></span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mb-2" id="supplierStatementPresets">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-preset="day" onclick="loadSupplierStatementPreset('day')">Leo</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-preset="week" onclick="loadSupplierStatementPreset('week')">Wiki</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary active" data-preset="month" onclick="loadSupplierStatementPreset('month')">Mwezi</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-preset="3m" onclick="loadSupplierStatementPreset('3m')">Miezi 3</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-preset="6m" onclick="loadSupplierStatementPreset('6m')">Miezi 6</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-preset="12m" onclick="loadSupplierStatementPreset('12m')">Miezi 12</button>
+                        </div>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-auto">
+                                <label class="form-label mb-1 small text-muted">Kuanzia</label>
+                                <input type="date" class="form-control form-control-sm" id="supplierStatementFrom">
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label mb-1 small text-muted">Hadi</label>
+                                <input type="date" class="form-control form-control-sm" id="supplierStatementTo">
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-sm btn-primary" onclick="loadSupplierStatementCustom()">Filter</button>
+                            </div>
+                        </div>
+                        <div class="mt-2 small text-muted" id="supplierStatementOpening">Salio la mwanzo: —</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Tarehe</th>
+                                    <th>Aliyeleta</th>
+                                    <th>Simu</th>
+                                    <th>Bidhaa</th>
+                                    <th class="text-end">Idadi</th>
+                                    <th class="text-end">Jumla</th>
+                                    <th class="text-end">Malipo</th>
+                                    <th class="text-end">Deni</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="supplierStatementBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="px-3 py-3 border-top" id="supplierStatementTotals"></div>
                 </div>
             </section>
             
@@ -908,6 +975,27 @@
                                         <div class="stat-card">
                                             <div class="label">Transactions</div>
                                             <div class="value" id="reportTotalTransactions">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-4" id="cashflowBalanceRow">
+                                    <div class="col-sm-4">
+                                        <div class="stat-card">
+                                            <div class="label">Mapato (Cash in)</div>
+                                            <div class="value text-primary" id="cashflowMapato">0 TZS</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="stat-card">
+                                            <div class="label">Matumizi (Cash out)</div>
+                                            <div class="value text-warning" id="cashflowMatumizi">0 TZS</div>
+                                            <div class="small text-muted" id="cashflowMatumiziDetail"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="stat-card">
+                                            <div class="label">Net (Mapato − Matumizi)</div>
+                                            <div class="value" id="cashflowNet">0 TZS</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1684,10 +1772,82 @@
                         <label class="form-label">Reference</label>
                         <input type="text" class="form-control" id="paymentReference">
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Maelezo</label>
+                        <textarea class="form-control" id="paymentNote" rows="2"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Risiti (picha / PDF)</label>
+                        <input type="file" class="form-control" id="paymentReceipt" accept="image/*,application/pdf">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
                     <button type="button" class="btn btn-success" onclick="savePayment()">Pokea Malipo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debt payment receipts / edit -->
+    <div class="modal fade" id="debtReceiptsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Historia ya malipo & risiti (madeni)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="debtReceiptsBody">
+                    <p class="text-muted mb-0">Inapakia...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editDebtPaymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hariri malipo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editDebtId">
+                    <input type="hidden" id="editDebtPaymentId">
+                    <div class="mb-3">
+                        <label class="form-label">Kiasi (TZS) *</label>
+                        <input type="number" class="form-control" id="editDebtAmount" min="0.01" step="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Njia ya Malipo</label>
+                        <select class="form-select" id="editDebtMethod">
+                            <option value="cash">Cash</option>
+                            <option value="mpesa">M-Pesa</option>
+                            <option value="airtel">Airtel Money</option>
+                            <option value="tigo">Tigo Pesa</option>
+                            <option value="bank">Bank Transfer</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reference</label>
+                        <input type="text" class="form-control" id="editDebtReference">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tarehe</label>
+                        <input type="date" class="form-control" id="editDebtPaidAt">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Maelezo</label>
+                        <textarea class="form-control" id="editDebtNote" rows="2"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Badilisha risiti (hiari)</label>
+                        <input type="file" class="form-control" id="editDebtReceipt" accept="image/*,application/pdf">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-primary" onclick="submitEditDebtPayment()">Hifadhi</button>
                 </div>
             </div>
         </div>
@@ -1774,14 +1934,26 @@
                     
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
+                            <label class="form-label">Aliyeleta (jina)</label>
+                            <input type="text" class="form-control" id="purchaseDeliveredByName" placeholder="Jina la personnel">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Simu ya aliyeleta</label>
+                            <input type="text" class="form-control" id="purchaseDeliveredByPhone" placeholder="07xxxxxxxx">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
                             <label class="form-label">Aina ya Malipo *</label>
                             <select class="form-select" id="purchasePaymentType" required onchange="updatePurchasePaymentMethodVisibility()">
-                                <option value="cash">Cash (Nimelipa)</option>
-                                <option value="credit">Mkopo (Nimechukua kwa mkopo)</option>
+                                <option value="cash">Cash (Nimelipa kamili)</option>
+                                <option value="credit">Mkopo (deni kamili)</option>
+                                <option value="partial">Sehemu (nimeipa kidogo)</option>
                             </select>
                         </div>
-                        <div class="col-md-6" id="purchasePaymentMethodContainer">
-                            <label class="form-label">Njia ya Malipo *</label>
+                        <div class="col-md-4" id="purchasePaymentMethodContainer">
+                            <label class="form-label">Njia ya Malipo</label>
                             <select class="form-select" id="purchasePaymentMethod" onchange="handlePaymentMethodChange()">
                                 <option value="cash">Cash (Pesa taslimu)</option>
                                 <option value="bank">Bank Transfer</option>
@@ -1797,6 +1969,16 @@
                                    placeholder="Andika njia ya malipo..." 
                                    style="display: none;">
                         </div>
+                        <div class="col-md-4" id="purchaseAmountPaidContainer" style="display:none;">
+                            <label class="form-label">Kiasi tulicholipa sasa</label>
+                            <input type="number" class="form-control" id="purchaseAmountPaid" min="0" step="1" placeholder="0">
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="purchaseReceiptContainer">
+                        <label class="form-label">Risiti (picha / PDF)</label>
+                        <input type="file" class="form-control" id="purchaseReceipt" accept="image/*,application/pdf">
+                        <div class="form-text">Hiari — ambatanisha risiti wakati unalipa cash au sehemu</div>
                     </div>
                     
                     <div class="mb-3">
@@ -1806,12 +1988,75 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
-                    <button type="button" class="btn btn-primary" onclick="savePurchase()">Hifadhi Purchase</button>
+                    <button type="button" class="btn btn-primary" onclick="savePurchase()">Hifadhi Manunuzi</button>
                 </div>
             </div>
         </div>
     </div>
     
+    <!-- Lipa Manunuzi Modal -->
+    <div class="modal fade" id="lipaPurchaseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Lipa deni la manunuzi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="lipaPurchaseId">
+                    <p class="mb-1"><strong id="lipaPurchaseSupplier">—</strong></p>
+                    <p class="text-muted small mb-3">Kilichobaki: <strong class="text-danger" id="lipaPurchaseRemaining">0</strong></p>
+                    <div class="mb-3">
+                        <label class="form-label">Kiasi *</label>
+                        <input type="number" class="form-control" id="lipaAmount" min="0.01" step="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tarehe</label>
+                        <input type="date" class="form-control" id="lipaPaidAt">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Njia ya malipo</label>
+                        <select class="form-select" id="lipaMethod">
+                            <option value="cash">Cash</option>
+                            <option value="bank">Bank</option>
+                            <option value="mpesa">M-Pesa</option>
+                            <option value="airtel">Airtel Money</option>
+                            <option value="tigo">Tigo Pesa</option>
+                            <option value="halopesa">Halo Pesa</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Maelezo</label>
+                        <textarea class="form-control" id="lipaNotes" rows="2"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Risiti (picha / PDF)</label>
+                        <input type="file" class="form-control" id="lipaReceipt" accept="image/*,application/pdf">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ghairi</button>
+                    <button type="button" class="btn btn-success" onclick="submitLipaPurchase()">Thibitisha Lipa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risiti za Malipo Modal -->
+    <div class="modal fade" id="purchaseReceiptsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Historia ya malipo & risiti</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="purchaseReceiptsBody">
+                    <p class="text-muted">Inapakia...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Verify Order Modal (Cashier) -->
     <div class="modal fade" id="verifyOrderModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
