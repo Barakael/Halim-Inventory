@@ -1,6 +1,6 @@
 const _apiBase = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'http://127.0.0.1:8000/api',
+  defaultValue: 'https://haslim.co.tz/api',
 );
 
 String mediaOrigin() {
@@ -12,9 +12,9 @@ String mediaOrigin() {
   return '${parsed.scheme}://${parsed.host}$port';
 }
 
-/// Turns API `image` / `image_url` values into an absolute URL the image
-/// widgets can load. `/storage/...` is rewritten to `/api/media/...` because
-/// the public site serves the PWA HTML for `/storage` paths.
+/// Turns API `image` / `image_url` / receipt values into an absolute URL.
+/// `/storage/...` is rewritten to `/api/media/...` because the public site
+/// serves the PWA HTML for `/storage` paths.
 String? resolveMediaUrl(String? path) {
   if (path == null) return null;
   var p = path.trim();
@@ -32,7 +32,15 @@ String? resolveMediaUrl(String? path) {
     if (uri.host == 'localhost' || uri.host == '127.0.0.1' || uri.host == '::1') {
       return '$origin${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}';
     }
+    // Absolute /api/media already on another host — rewrite to API origin
+    if (uri.path.startsWith('/api/media/')) {
+      return '$origin${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}';
+    }
     return p;
+  }
+
+  if (p.startsWith('/api/media/')) {
+    return '$origin$p';
   }
 
   p = p.replaceFirst(RegExp(r'^/+'), '');
@@ -40,18 +48,45 @@ String? resolveMediaUrl(String? path) {
   if (rewritten != null) return '$origin$rewritten';
 
   if (!p.startsWith('storage/')) p = 'storage/$p';
+  final fromStorage = _toApiMediaPath('/$p');
+  if (fromStorage != null) return '$origin$fromStorage';
   return '$origin/$p';
 }
 
 String? _toApiMediaPath(String path) {
-  final match = RegExp(r'/storage/products/([^/?#]+)').firstMatch(path);
-  if (match != null) {
-    return '/api/media/products/${match.group(1)}';
+  // Already API media
+  final already = RegExp(r'^/api/media/(products|purchase-payments|debt-payments)/(.+)$')
+      .firstMatch(path);
+  if (already != null) {
+    return '/api/media/${already.group(1)}/${already.group(2)}';
   }
-  final apiMatch = RegExp(r'/api/media/products/([^/?#]+)').firstMatch(path);
-  if (apiMatch != null) {
-    return '/api/media/products/${apiMatch.group(1)}';
+
+  // /storage/purchase-payments/{shop}/{file}
+  final purchasePay = RegExp(
+    r'/storage/purchase-payments/(\d+)/([^/?#]+)',
+  ).firstMatch(path);
+  if (purchasePay != null) {
+    return '/api/media/purchase-payments/${purchasePay.group(1)}/${purchasePay.group(2)}';
   }
+
+  // /storage/debt-payments/{shop}/{file}
+  final debtPay = RegExp(
+    r'/storage/debt-payments/(\d+)/([^/?#]+)',
+  ).firstMatch(path);
+  if (debtPay != null) {
+    return '/api/media/debt-payments/${debtPay.group(1)}/${debtPay.group(2)}';
+  }
+
+  // /storage/products/{shop}/{file} or /storage/products/{file}
+  final productShop = RegExp(r'/storage/products/(\d+)/([^/?#]+)').firstMatch(path);
+  if (productShop != null) {
+    return '/api/media/products/${productShop.group(1)}/${productShop.group(2)}';
+  }
+  final product = RegExp(r'/storage/products/([^/?#]+)').firstMatch(path);
+  if (product != null) {
+    return '/api/media/products/${product.group(1)}';
+  }
+
   final fileOnly = RegExp(r'^/?products/([^/?#]+)$').firstMatch(path);
   if (fileOnly != null) {
     return '/api/media/products/${fileOnly.group(1)}';
