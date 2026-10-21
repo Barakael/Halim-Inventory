@@ -1521,7 +1521,7 @@ class _CartFAB extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: _T.ts(15,
-                          weight: FontWeight.w800, color: _T.accent),
+                          weight: FontWeight.w800, color: Colors.white),
                     ),
                     Text(context.t.inclVat,
                         style: _T.ts(10, color: Colors.white38)),
