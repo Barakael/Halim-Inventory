@@ -103,11 +103,12 @@ let pendingDeleteAction = null;
 // API Helper
 async function api(endpoint, options = {}) {
     try {
+        const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
         const response = await fetch(endpoint, {
             credentials: 'same-origin',
             ...options,
             headers: {
-                'Content-Type': 'application/json',
+                ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
                 'Accept': 'application/json',
                 ...options.headers
             }
@@ -467,6 +468,7 @@ function navigateTo(page, updateUrl = true) {
         sales: 'Mauzo',
         purchases: 'Manunuzi',
         suppliers: 'Wasambazaji',
+        'supplier-statement': 'Taarifa ya Msambazaji',
         customers: 'Wateja',
         credits: 'Madeni',
         expenses: 'Matumizi',
@@ -530,6 +532,11 @@ async function loadPageData(page) {
             break;
         case 'suppliers':
             await loadSuppliers();
+            break;
+        case 'supplier-statement':
+            if (currentSupplierStatementId) {
+                await loadSupplierStatement(currentSupplierStatementId, currentSupplierStatementPreset || 'month');
+            }
             break;
         case 'customers':
             await loadCustomers();
@@ -1394,17 +1401,7 @@ async function loadSuppliers() {
     
     // Otherwise, show all suppliers
     suppliers = [...suppliersData];
-    
-    // Load debt balances for each supplier
-    const debtsResult = await api('/api/supplier-debts');
-    const supplierDebts = {};
-    if (debtsResult.success && debtsResult.data && debtsResult.data.suppliers) {
-        debtsResult.data.suppliers.forEach(s => {
-            supplierDebts[s.supplierId] = s.balance;
-        });
-    }
-    
-    renderSuppliersTable(supplierDebts);
+    renderSuppliersTable();
 }
 
 function filterSuppliersTable() {
@@ -1417,60 +1414,53 @@ function filterSuppliersTable() {
         suppliers = [...allSuppliers];
     } else {
         suppliers = allSuppliers.filter(s => {
-            const searchText = `${s.name || ''} ${s.phone || ''} ${s.email || ''} ${s.contactPerson || ''}`.toLowerCase();
+            const searchText = `${s.name || ''} ${s.phone || ''} ${s.email || ''} ${s.maelezo || ''} ${s.address || ''} ${s.notes || ''}`.toLowerCase();
             return searchText.includes(searchTerm);
         });
     }
     
-    // Load debt balances and render with filtered suppliers
-    loadSuppliersDebtsAndRender();
+    renderSuppliersTable();
 }
 
-async function loadSuppliersDebtsAndRender() {
-    const debtsResult = await api('/api/supplier-debts');
-    const supplierDebts = {};
-    if (debtsResult.success && debtsResult.data && debtsResult.data.suppliers) {
-        debtsResult.data.suppliers.forEach(s => {
-            supplierDebts[s.supplierId] = s.balance;
-        });
-    }
-    renderSuppliersTable(supplierDebts);
-}
-
-function renderSuppliersTable(supplierDebts = {}) {
+function renderSuppliersTable() {
     const tbody = document.getElementById('suppliersTableBody');
     if (!tbody) return;
     
     if (suppliers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Hakuna matokeo yaliyopatikana</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Hakuna matokeo yaliyopatikana</td></tr>';
         return;
     }
     
     tbody.innerHTML = suppliers.map(s => {
-        const debtBalance = supplierDebts[s.id] || 0;
+        const debtBalance = Number(s.openDebt ?? s.open_debt ?? 0) || 0;
         const hasDebt = debtBalance > 0;
         const supplierNameEscaped = (s.name || '').replace(/'/g, "\\'");
+        const maelezo = s.maelezo || s.address || s.notes || '—';
+        const purchasesCount = s.purchasesCount ?? s.purchases_count ?? 0;
+        const jumla = Number(s.purchasesTotal ?? s.purchases_total ?? 0) || 0;
+        const paid = Number(s.paymentsTotal ?? s.payments_total ?? 0) || 0;
+        const lastAt = s.lastPurchasedAt || s.last_purchased_at;
         
         return `
         <tr class="supplier-row-clickable align-middle" data-supplier-id="${s.id}" role="button" tabindex="0" title="Bofya kuona stock aliyowasilisha">
-            <td><span class="supplier-name-link">${s.name}</span></td>
-            <td>${s.contactPerson || '-'}</td>
-            <td>${s.phone || '-'}</td>
-            <td>${s.email || '-'}</td>
+            <td><span class="supplier-name-link">${escapeHtml(s.name || '')}</span></td>
+            <td>${escapeHtml(s.phone || '—')}</td>
+            <td class="small text-muted" style="max-width:180px;">${escapeHtml(maelezo)}</td>
+            <td>${purchasesCount}</td>
+            <td>${formatCurrency(jumla)}</td>
+            <td>${formatCurrency(paid)}</td>
             <td>
                 ${hasDebt ? `<span class="badge bg-warning">${formatCurrency(debtBalance)}</span>` : '<span class="badge bg-success">Hakuna Deni</span>'}
             </td>
-            <td>
-                <span class="status-dot ${s.status === 'active' ? 'active' : 'inactive'}"></span>
-                ${s.status === 'active' ? 'Active' : 'Inactive'}
-            </td>
+            <td class="small">${lastAt ? formatDate(lastAt) : '—'}</td>
             <td onclick="event.stopPropagation()">
                 <div class="dropdown dropup">
                     <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-display="static" aria-expanded="false" title="Vitendo" onclick="event.stopPropagation()">
                         <i class="bi bi-three-dots-vertical"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        ${hasDebt ? `<li><a class="dropdown-item text-success" href="#" onclick="event.preventDefault();event.stopPropagation();showSupplierPaymentModal('${s.id}','${supplierNameEscaped}',${debtBalance})"><i class="bi bi-cash-coin me-2"></i>Lipia Deni</a></li>` : ''}
+                        <li><a class="dropdown-item" href="#" onclick="event.preventDefault();event.stopPropagation();openSupplierStatement('${s.id}')"><i class="bi bi-bank me-2"></i>Taarifa</a></li>
+                        ${hasDebt ? `<li><a class="dropdown-item text-success" href="#" onclick="event.preventDefault();event.stopPropagation();showSupplierPaymentModal('${s.id}','${supplierNameEscaped}',${debtBalance})"><i class="bi bi-cash-coin me-2"></i>Lipa</a></li>` : ''}
                         <li><a class="dropdown-item" href="#" onclick="event.preventDefault();event.stopPropagation();editSupplier('${s.id}')"><i class="bi bi-pencil me-2"></i>Hariri</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="event.preventDefault();event.stopPropagation();deleteSupplier('${s.id}')"><i class="bi bi-trash me-2"></i>Futa</a></li>
@@ -1479,7 +1469,7 @@ function renderSuppliersTable(supplierDebts = {}) {
             </td>
         </tr>
         `;
-    }).join('') || '<tr><td colspan="7" class="text-center text-muted">Hakuna wasambazaji</td></tr>';
+    }).join('') || '<tr><td colspan="9" class="text-center text-muted">Hakuna wasambazaji</td></tr>';
 
     setupSuppliersTableClick();
 }
@@ -2376,6 +2366,9 @@ async function loadCredits() {
                 </span>
             </td>
             <td>
+                <button class="btn btn-sm btn-outline-secondary btn-icon" onclick="openDebtReceipts('${c.id}')" title="Risiti">
+                    <i class="bi bi-receipt"></i>
+                </button>
                 ${c.status !== 'paid' ? `
                     <button class="btn btn-sm btn-success btn-icon" onclick="showPaymentModal('${c.id}')" title="Lipa">
                         <i class="bi bi-cash"></i>
@@ -2391,25 +2384,143 @@ function showPaymentModal(creditId) {
     document.getElementById('paymentAmount').value = '';
     document.getElementById('paymentMethod').value = 'cash';
     document.getElementById('paymentReference').value = '';
+    const noteEl = document.getElementById('paymentNote');
+    if (noteEl) noteEl.value = '';
+    const receiptEl = document.getElementById('paymentReceipt');
+    if (receiptEl) receiptEl.value = '';
     new bootstrap.Modal(document.getElementById('paymentModal')).show();
 }
 
 async function savePayment() {
     const creditId = document.getElementById('paymentCreditId').value;
-    const data = {
-        amount: document.getElementById('paymentAmount').value,
-        paymentMethod: document.getElementById('paymentMethod').value,
-        reference: document.getElementById('paymentReference').value
-    };
-    
-    const result = await api(`/api/credit-sales/${creditId}/pay`, { 
-        method: 'POST', 
-        body: JSON.stringify(data) 
+    const amount = parseFloat(document.getElementById('paymentAmount').value || '0');
+    if (!creditId || !(amount > 0)) {
+        showToast('Weka kiasi sahihi', 'danger');
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append('amount', String(amount));
+    fd.append('payment_method', document.getElementById('paymentMethod').value || 'cash');
+    const reference = document.getElementById('paymentReference').value.trim();
+    if (reference) fd.append('reference', reference);
+    const note = document.getElementById('paymentNote')?.value?.trim();
+    if (note) fd.append('note', note);
+    const file = document.getElementById('paymentReceipt')?.files?.[0];
+    if (file) fd.append('receipt', file);
+
+    const result = await api(`/api/credit-sales/${creditId}/pay`, {
+        method: 'POST',
+        body: fd,
     });
-    
+
     if (result.success) {
-        showToast(result.message);
+        showToast(result.message || 'Malipo yamepokelewa');
         bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+        await loadCredits();
+    } else {
+        showToast(result.message, 'danger');
+    }
+}
+
+let currentDebtPaymentsCache = [];
+
+async function openDebtReceipts(debtId) {
+    const body = document.getElementById('debtReceiptsBody');
+    if (!body) return;
+    body.innerHTML = '<p class="text-muted">Inapakia...</p>';
+    new bootstrap.Modal(document.getElementById('debtReceiptsModal')).show();
+
+    const result = await api(`/api/credit-sales/${debtId}/payments`);
+    if (!result.success) {
+        body.innerHTML = `<p class="text-danger">${escapeHtml(result.message || 'Imeshindikana')}</p>`;
+        return;
+    }
+    const payments = result.data || [];
+    currentDebtPaymentsCache = payments;
+    if (!payments.length) {
+        body.innerHTML = '<p class="text-muted mb-0">Bado hakuna malipo yaliyorekodiwa</p>';
+        return;
+    }
+
+    body.innerHTML = payments.map((pay) => {
+        const receipt = pay.receiptUrl || pay.receipt_url;
+        const isPdf = receipt && String(receipt).toLowerCase().includes('.pdf');
+        const media = receipt
+            ? (isPdf
+                ? `<a href="${escapeHtml(receipt)}" target="_blank" class="btn btn-sm btn-outline-secondary mt-2"><i class="bi bi-file-earmark-pdf"></i> Fungua PDF</a>`
+                : `<div class="mt-2"><a href="${escapeHtml(receipt)}" target="_blank"><img src="${escapeHtml(receipt)}" alt="Risiti" style="max-width:100%;max-height:220px;border:1px solid #ddd;border-radius:4px;"></a></div>`)
+            : '<div class="small text-muted mt-1">Hakuna faili la risiti</div>';
+        const paidAt = pay.paidAt || pay.paid_at || pay.createdAt;
+        return `
+            <div class="border rounded p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                        <div class="fw-semibold">${formatCurrency(pay.amount)}</div>
+                        <div class="small text-muted">${formatDateTime(paidAt)} · ${escapeHtml(pay.paymentMethod || pay.payment_method || '—')}</div>
+                        ${pay.reference ? `<div class="small">Ref: ${escapeHtml(pay.reference)}</div>` : ''}
+                        ${pay.note || pay.notes ? `<div class="small mt-1">${escapeHtml(pay.note || pay.notes)}</div>` : ''}
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="openEditDebtPayment('${debtId}', '${pay.id}')" title="Hariri">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </div>
+                ${media}
+            </div>
+        `;
+    }).join('');
+}
+
+function openEditDebtPayment(debtId, paymentId) {
+    const payment = currentDebtPaymentsCache.find((p) => String(p.id) === String(paymentId));
+    if (!payment) {
+        showToast('Malipo hayapatikani', 'danger');
+        return;
+    }
+    document.getElementById('editDebtId').value = debtId;
+    document.getElementById('editDebtPaymentId').value = payment.id;
+    document.getElementById('editDebtAmount').value = payment.amount ?? '';
+    document.getElementById('editDebtMethod').value = payment.paymentMethod || payment.payment_method || 'cash';
+    document.getElementById('editDebtReference').value = payment.reference || '';
+    document.getElementById('editDebtNote').value = payment.note || payment.notes || '';
+    const paidAt = payment.paidAt || payment.paid_at;
+    document.getElementById('editDebtPaidAt').value = paidAt
+        ? String(paidAt).slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+    document.getElementById('editDebtReceipt').value = '';
+    new bootstrap.Modal(document.getElementById('editDebtPaymentModal')).show();
+}
+
+async function submitEditDebtPayment() {
+    const debtId = document.getElementById('editDebtId').value;
+    const paymentId = document.getElementById('editDebtPaymentId').value;
+    const amount = parseFloat(document.getElementById('editDebtAmount').value || '0');
+    if (!debtId || !paymentId || !(amount > 0)) {
+        showToast('Weka kiasi sahihi', 'danger');
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append('amount', String(amount));
+    fd.append('payment_method', document.getElementById('editDebtMethod').value || 'cash');
+    const reference = document.getElementById('editDebtReference').value.trim();
+    if (reference) fd.append('reference', reference);
+    const note = document.getElementById('editDebtNote').value.trim();
+    if (note) fd.append('note', note);
+    const paidAt = document.getElementById('editDebtPaidAt').value;
+    if (paidAt) fd.append('paid_at', paidAt);
+    const file = document.getElementById('editDebtReceipt').files?.[0];
+    if (file) fd.append('receipt', file);
+
+    const result = await api(`/api/credit-sales/${debtId}/payments/${paymentId}`, {
+        method: 'PUT',
+        body: fd,
+    });
+
+    if (result.success) {
+        showToast(result.message || 'Malipo yamehaririwa');
+        bootstrap.Modal.getInstance(document.getElementById('editDebtPaymentModal'))?.hide();
+        await openDebtReceipts(debtId);
         await loadCredits();
     } else {
         showToast(result.message, 'danger');
@@ -2918,6 +3029,39 @@ async function loadSalesReport() {
     if (revenueEl) revenueEl.textContent = formatCurrency(summary.totalRevenue || 0);
     if (transactionsEl) transactionsEl.textContent = summary.totalTransactions || 0;
     if (avgTransactionEl) avgTransactionEl.textContent = formatCurrency(summary.averageTransaction || 0);
+
+    await loadCashflowBalance(startDate, endDate);
+}
+
+async function loadCashflowBalance(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.set('from', startDate);
+    if (endDate) params.set('to', endDate);
+    const qs = params.toString() ? `?${params}` : '';
+    const result = await api(`/api/cashflow/summary${qs}`);
+    const mapatoEl = document.getElementById('cashflowMapato');
+    const matumiziEl = document.getElementById('cashflowMatumizi');
+    const netEl = document.getElementById('cashflowNet');
+    const detailEl = document.getElementById('cashflowMatumiziDetail');
+    if (!result.success) {
+        if (mapatoEl) mapatoEl.textContent = '—';
+        if (matumiziEl) matumiziEl.textContent = '—';
+        if (netEl) netEl.textContent = '—';
+        return;
+    }
+    const d = result.data || {};
+    if (mapatoEl) mapatoEl.textContent = formatCurrency(d.mapato || 0);
+    if (matumiziEl) matumiziEl.textContent = formatCurrency(d.matumizi || 0);
+    if (netEl) {
+        const net = Number(d.net || 0);
+        netEl.textContent = formatCurrency(net);
+        netEl.classList.toggle('text-success', net >= 0);
+        netEl.classList.toggle('text-danger', net < 0);
+    }
+    if (detailEl) {
+        const b = d.matumizi_breakdown || {};
+        detailEl.textContent = `Manunuzi: ${formatCurrency(b.purchase_payments || 0)} · Matumizi: ${formatCurrency(b.expenses || 0)}`;
+    }
 }
 
 async function loadPurchaseReport() {
@@ -3206,13 +3350,25 @@ async function loadProfitLossReport() {
     const data = result.data;
     const container = document.getElementById('profitLossReport');
     if (!container) return;
+
+    await loadCashflowBalance(startDate, endDate);
+    const cashflow = await api(`/api/cashflow/summary?${new URLSearchParams({
+        ...(startDate ? { from: startDate } : {}),
+        ...(endDate ? { to: endDate } : {}),
+    })}`);
+    const cf = cashflow.success ? (cashflow.data || {}) : {};
+    const matumiziTotal = cf.matumizi != null
+        ? Number(cf.matumizi)
+        : Number(data.totalExpenses || 0);
+    const mapato = cf.mapato != null ? Number(cf.mapato) : Number(data.revenue || 0);
+    const netBalanced = cf.net != null ? Number(cf.net) : (mapato - matumiziTotal);
     
     container.innerHTML = `
         <div class="row g-4">
             <div class="col-md-4">
                 <div class="stat-card">
                     <div class="label">Mapato</div>
-                    <div class="value text-primary">${formatCurrency(data.revenue)}</div>
+                    <div class="value text-primary">${formatCurrency(mapato)}</div>
                 </div>
             </div>
             <div class="col-md-4">
@@ -3230,15 +3386,24 @@ async function loadProfitLossReport() {
                     <div class="small text-muted">${data.grossProfitMargin}%</div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="stat-card">
-                    <div class="label">Matumizi</div>
-                    <div class="value text-warning">${formatCurrency(data.totalExpenses)}</div>
+                    <div class="label">Matumizi (expenses + manunuzi lipa)</div>
+                    <div class="value text-warning">${formatCurrency(matumiziTotal)}</div>
+                    <div class="small text-muted">Manunuzi: ${formatCurrency(cf.matumizi_breakdown?.purchase_payments || 0)}</div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="stat-card">
-                    <div class="label">Faida Halisi</div>
+                    <div class="label">Net (Mapato − Matumizi)</div>
+                    <div class="value ${netBalanced >= 0 ? 'text-success' : 'text-danger'}">
+                        ${formatCurrency(netBalanced)}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="label">Faida Halisi (P&amp;L)</div>
                     <div class="value ${data.netProfit >= 0 ? 'text-success' : 'text-danger'}">
                         ${formatCurrency(data.netProfit)}
                     </div>
@@ -3672,49 +3837,58 @@ function renderPurchasesTableWithData(purchases) {
     if (!tbody) return;
     
     if (!purchases || purchases.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Hakuna matokeo yaliyopatikana</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Hakuna matokeo yaliyopatikana</td></tr>';
         return;
     }
-    
-    const paymentTypeLabels = {
-        'cash': 'Cash',
-        'credit': 'Mkopo'
-    };
-    
-    const paymentMethodLabels = {
-        'cash': 'Cash',
-        'bank': 'Bank Transfer',
-        'mpesa': 'M-Pesa',
-        'airtel': 'Airtel Money',
-        'tigo': 'Tigo Pesa',
-        'halopesa': 'Halo Pesa'
-    };
-    
-    // Helper function to format payment method name
-    function formatPaymentMethod(method) {
-        if (paymentMethodLabels[method]) {
-            return paymentMethodLabels[method];
+
+    tbody.innerHTML = purchases.map((p, index) => {
+        const paid = Number(p.totalPaid ?? p.amountPaid ?? 0) || 0;
+        const total = Number(p.totalAmount ?? p.subtotal ?? 0) || 0;
+        const remaining = Number(p.remainingBalance ?? p.remaining ?? Math.max(0, total - paid)) || 0;
+        const names = Array.isArray(p.productNames) && p.productNames.length
+            ? p.productNames
+            : (p.items || []).map((it) => it.productName).filter(Boolean);
+        const bidhaa = names.slice(0, 2).join(', ')
+            + (names.length > 2 ? ` <span class="text-muted">+${names.length - 2}</span>` : '');
+        const qty = p.totalQty != null
+            ? p.totalQty
+            : (p.items || []).reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+        const personnel = p.deliveredByName
+            ? `<div>${escapeHtml(p.deliveredByName)}</div>${p.deliveredByPhone ? `<div class="small text-muted">${escapeHtml(p.deliveredByPhone)}</div>` : ''}`
+            : '<span class="text-muted">—</span>';
+        let statusChip = 'bg-secondary';
+        let statusLabel = 'Deni';
+        if (remaining <= 0 && total > 0) {
+            statusChip = 'bg-success';
+            statusLabel = 'Imelipwa';
+        } else if (paid > 0) {
+            statusChip = 'bg-warning text-dark';
+            statusLabel = 'Sehemu';
         }
-        // Convert snake_case or lowercase to Title Case
-        return method.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-    }
-    
-    tbody.innerHTML = purchases.map(p => {
-        const paymentType = p.paymentType || 'cash';
-        const paymentMethod = p.paymentMethod || 'cash';
-        const paymentTypeBadge = paymentType === 'credit' ? 'warning' : 'success';
-        
+        const canLipa = remaining > 0.009;
+
         return `
         <tr>
-            <td>${p.invoiceNumber}</td>
-            <td>${formatDateTime(p.createdAt)}</td>
-            <td>${p.supplierName}</td>
-            <td>${formatCurrency(p.totalAmount)}</td>
-            <td><span class="badge bg-${paymentTypeBadge}">${paymentTypeLabels[paymentType] || paymentType}</span></td>
-            <td>${paymentType === 'cash' ? formatPaymentMethod(paymentMethod) : '-'}</td>
-            <td><span class="badge bg-success">${p.status}</span></td>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(p.supplierName || '—')}</td>
+            <td>${personnel}</td>
+            <td>${bidhaa || '—'}</td>
+            <td>${qty}</td>
+            <td>${formatCurrency(total)}</td>
+            <td>${formatCurrency(paid)}</td>
             <td>
-                <button class="btn btn-sm btn-info btn-icon" onclick="viewPurchaseDetails('${p.id}')" title="Angalia Maelezo">
+                <span class="${remaining > 0 ? 'text-danger fw-semibold' : ''}">${formatCurrency(remaining)}</span>
+                <div><span class="badge ${statusChip}">${statusLabel}</span></div>
+            </td>
+            <td class="text-nowrap">
+                <button class="btn btn-sm btn-success ${canLipa ? '' : 'disabled'}" ${canLipa ? '' : 'disabled'}
+                    onclick="openLipaPurchase('${p.id}')" title="Lipa">
+                    <i class="bi bi-cash-coin"></i> Lipa
+                </button>
+                <button class="btn btn-sm btn-outline-primary" onclick="openPurchaseReceipts('${p.id}')" title="Risiti">
+                    <i class="bi bi-receipt"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="viewPurchaseDetails('${p.id}')" title="Maelezo">
                     <i class="bi bi-eye"></i>
                 </button>
             </td>
@@ -3903,6 +4077,14 @@ async function showPurchaseModal() {
         document.getElementById('purchaseInvoice').value = '';
         document.getElementById('purchaseNotes').value = '';
         document.getElementById('purchasePaymentType').value = 'cash';
+        const receiptEl = document.getElementById('purchaseReceipt');
+        if (receiptEl) receiptEl.value = '';
+        const deliveredName = document.getElementById('purchaseDeliveredByName');
+        if (deliveredName) deliveredName.value = '';
+        const deliveredPhone = document.getElementById('purchaseDeliveredByPhone');
+        if (deliveredPhone) deliveredPhone.value = '';
+        const amountPaid = document.getElementById('purchaseAmountPaid');
+        if (amountPaid) amountPaid.value = '';
         updatePurchasePaymentMethodVisibility();
         
         // Load dropdowns and payment methods before showing modal
@@ -3937,15 +4119,20 @@ async function showPurchaseModal() {
 }
 
 function updatePurchasePaymentMethodVisibility() {
-    const paymentType = document.getElementById('purchasePaymentType').value;
+    const paymentType = document.getElementById('purchasePaymentType')?.value;
     const paymentMethodContainer = document.getElementById('purchasePaymentMethodContainer');
     const paymentMethod = document.getElementById('purchasePaymentMethod');
     const paymentMethodOther = document.getElementById('purchasePaymentMethodOther');
+    const amountPaidContainer = document.getElementById('purchaseAmountPaidContainer');
+    const receiptContainer = document.getElementById('purchaseReceiptContainer');
     
-    if (paymentType === 'cash') {
+    if (!paymentMethodContainer || !paymentMethod) return;
+
+    if (paymentType === 'cash' || paymentType === 'partial') {
         paymentMethodContainer.style.display = 'block';
-        paymentMethod.required = true;
+        paymentMethod.required = paymentType === 'cash';
         handlePaymentMethodChange();
+        if (receiptContainer) receiptContainer.style.display = 'block';
     } else {
         paymentMethodContainer.style.display = 'none';
         paymentMethod.required = false;
@@ -3954,6 +4141,13 @@ function updatePurchasePaymentMethodVisibility() {
             paymentMethodOther.style.display = 'none';
             paymentMethodOther.value = '';
         }
+        // Credit deposit may still attach a receipt if they pay later via Lipa;
+        // keep optional for credit in case of advance — plan: optional for credit deposit
+        if (receiptContainer) receiptContainer.style.display = 'block';
+    }
+
+    if (amountPaidContainer) {
+        amountPaidContainer.style.display = paymentType === 'partial' ? 'block' : 'none';
     }
 }
 
@@ -4220,9 +4414,9 @@ async function savePurchase() {
     }
     
     let paymentMethod = null;
-    if (paymentType === 'cash') {
+    if (paymentType === 'cash' || paymentType === 'partial') {
         const selectedMethod = document.getElementById('purchasePaymentMethod').value;
-        if (!selectedMethod) {
+        if (paymentType === 'cash' && !selectedMethod) {
             showToast('Chagua njia ya malipo', 'danger');
             return;
         }
@@ -4233,42 +4427,272 @@ async function savePurchase() {
                 showToast('Andika njia ya malipo', 'danger');
                 return;
             }
-            paymentMethod = otherMethod.toLowerCase().replace(/\s+/g, '_'); // Normalize: lowercase with underscores
+            paymentMethod = otherMethod.toLowerCase().replace(/\s+/g, '_');
         } else {
-            paymentMethod = selectedMethod;
+            paymentMethod = selectedMethod || 'cash';
         }
     }
-    
-    const data = {
-        supplierId,
-        items: purchaseItems.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            costPrice: item.costPrice,
-            batchNumber: item.batchNumber,
-            expiryDate: item.expiryDate
-        })),
-        invoiceNumber: document.getElementById('purchaseInvoice').value,
-        notes: document.getElementById('purchaseNotes').value,
-        paymentType: paymentType,
-        paymentMethod: paymentMethod,
-        paymentMethodCustom: paymentMethod && document.getElementById('purchasePaymentMethod').value === 'other' ? document.getElementById('purchasePaymentMethodOther').value.trim() : null
-    };
-    
-    const result = await api('/api/purchases', { 
-        method: 'POST', 
-        body: JSON.stringify(data) 
+
+    const total = purchaseItems.reduce((sum, item) => sum + item.total, 0);
+    let amountPaid = null;
+    if (paymentType === 'cash') {
+        amountPaid = total;
+    } else if (paymentType === 'partial') {
+        amountPaid = parseFloat(document.getElementById('purchaseAmountPaid')?.value || '0') || 0;
+        if (amountPaid <= 0) {
+            showToast('Weka kiasi tulicholipa', 'danger');
+            return;
+        }
+        if (amountPaid >= total) {
+            showToast('Kwa malipo kamili chagua Cash', 'warning');
+            return;
+        }
+    } else {
+        amountPaid = 0;
+    }
+
+    const fd = new FormData();
+    fd.append('supplierId', supplierId);
+    fd.append('paymentType', paymentType);
+    if (paymentMethod) fd.append('paymentMethod', paymentMethod);
+    fd.append('amountPaid', String(amountPaid));
+    const invoice = document.getElementById('purchaseInvoice').value.trim();
+    if (invoice) fd.append('invoiceNumber', invoice);
+    const notes = document.getElementById('purchaseNotes').value.trim();
+    if (notes) fd.append('notes', notes);
+    const deliveredByName = document.getElementById('purchaseDeliveredByName')?.value?.trim();
+    if (deliveredByName) fd.append('deliveredByName', deliveredByName);
+    const deliveredByPhone = document.getElementById('purchaseDeliveredByPhone')?.value?.trim();
+    if (deliveredByPhone) fd.append('deliveredByPhone', deliveredByPhone);
+    fd.append('items', JSON.stringify(purchaseItems.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        costPrice: item.costPrice,
+        batchNumber: item.batchNumber,
+        expiryDate: item.expiryDate
+    }))));
+    const receiptFile = document.getElementById('purchaseReceipt')?.files?.[0];
+    if (receiptFile && amountPaid > 0) {
+        fd.append('receipt', receiptFile);
+    }
+
+    const result = await api('/api/purchases', {
+        method: 'POST',
+        body: fd,
     });
     
     if (result.success) {
-        showToast(result.message);
+        showToast(result.message || 'Manunuzi yamehifadhiwa');
         bootstrap.Modal.getInstance(document.getElementById('purchaseModal')).hide();
         purchaseItems = [];
+        const receiptEl = document.getElementById('purchaseReceipt');
+        if (receiptEl) receiptEl.value = '';
         await loadPurchases();
         await loadProducts();
     } else {
         showToast(result.message, 'danger');
     }
+}
+
+// =========================
+// MANUNUZI LIPA + RISITI + STATEMENT
+// =========================
+let currentSupplierStatementId = null;
+let currentSupplierStatementPreset = 'month';
+
+async function openLipaPurchase(purchaseId) {
+    const result = await api(`/api/purchases/${purchaseId}`);
+    if (!result.success) {
+        showToast(result.message || 'Imeshindikana', 'danger');
+        return;
+    }
+    const p = result.data;
+    const remaining = Number(p.remainingBalance ?? p.remaining ?? 0) || 0;
+    document.getElementById('lipaPurchaseId').value = purchaseId;
+    document.getElementById('lipaPurchaseSupplier').textContent = p.supplierName || 'Msambazaji';
+    document.getElementById('lipaPurchaseRemaining').textContent = formatCurrency(remaining);
+    document.getElementById('lipaAmount').value = remaining > 0 ? String(Math.round(remaining)) : '';
+    document.getElementById('lipaAmount').max = remaining;
+    document.getElementById('lipaPaidAt').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('lipaNotes').value = '';
+    document.getElementById('lipaReceipt').value = '';
+    document.getElementById('lipaMethod').value = 'cash';
+    new bootstrap.Modal(document.getElementById('lipaPurchaseModal')).show();
+}
+
+async function submitLipaPurchase() {
+    const id = document.getElementById('lipaPurchaseId').value;
+    const amount = parseFloat(document.getElementById('lipaAmount').value || '0');
+    if (!id || !(amount > 0)) {
+        showToast('Weka kiasi sahihi', 'danger');
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append('amount', String(amount));
+    fd.append('paid_at', document.getElementById('lipaPaidAt').value || new Date().toISOString().slice(0, 10));
+    fd.append('payment_method', document.getElementById('lipaMethod').value || 'cash');
+    const notes = document.getElementById('lipaNotes').value.trim();
+    if (notes) fd.append('notes', notes);
+    const file = document.getElementById('lipaReceipt').files?.[0];
+    if (file) fd.append('receipt', file);
+
+    try {
+        const res = await fetch(`/api/purchases/${id}/payments`, {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin',
+        });
+        const json = await res.json();
+        if (!res.ok || json.success === false) {
+            showToast(json.message || 'Lipa imeshindikana', 'danger');
+            return;
+        }
+        showToast('Malipo yamehifadhiwa');
+        bootstrap.Modal.getInstance(document.getElementById('lipaPurchaseModal'))?.hide();
+        await loadPurchases();
+    } catch (e) {
+        showToast('Hitilafu ya mtandao', 'danger');
+    }
+}
+
+async function openPurchaseReceipts(purchaseId) {
+    const body = document.getElementById('purchaseReceiptsBody');
+    body.innerHTML = '<p class="text-muted">Inapakia...</p>';
+    new bootstrap.Modal(document.getElementById('purchaseReceiptsModal')).show();
+
+    const result = await api(`/api/purchases/${purchaseId}/payments`);
+    if (!result.success) {
+        body.innerHTML = `<p class="text-danger">${escapeHtml(result.message || 'Imeshindikana')}</p>`;
+        return;
+    }
+    const payments = result.data || [];
+    if (!payments.length) {
+        body.innerHTML = '<p class="text-muted mb-0">Bado hakuna malipo yaliyorekodiwa</p>';
+        return;
+    }
+
+    body.innerHTML = payments.map((pay) => {
+        const receipt = pay.receiptUrl || pay.receipt_url;
+        const isPdf = receipt && String(receipt).toLowerCase().includes('.pdf');
+        const media = receipt
+            ? (isPdf
+                ? `<a href="${escapeHtml(receipt)}" target="_blank" class="btn btn-sm btn-outline-secondary mt-2"><i class="bi bi-file-earmark-pdf"></i> Fungua PDF</a>`
+                : `<div class="mt-2"><a href="${escapeHtml(receipt)}" target="_blank"><img src="${escapeHtml(receipt)}" alt="Risiti" style="max-width:100%;max-height:220px;border:1px solid #ddd;border-radius:4px;"></a></div>`)
+            : '<div class="small text-muted mt-1">Hakuna faili la risiti</div>';
+        return `
+            <div class="border rounded p-3 mb-3">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="fw-semibold">${formatCurrency(pay.amount)}</div>
+                        <div class="small text-muted">${formatDateTime(pay.paidAt || pay.createdAt)} · ${escapeHtml(pay.paymentMethod || '—')}</div>
+                    </div>
+                </div>
+                ${pay.notes ? `<div class="small mt-1">${escapeHtml(pay.notes)}</div>` : ''}
+                ${media}
+            </div>
+        `;
+    }).join('');
+}
+
+function openSupplierStatement(supplierId) {
+    currentSupplierStatementId = supplierId;
+    currentSupplierStatementPreset = 'month';
+    navigateTo('supplier-statement', true);
+}
+
+async function loadSupplierStatementPreset(preset) {
+    currentSupplierStatementPreset = preset;
+    document.querySelectorAll('#supplierStatementPresets [data-preset]').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.preset === preset);
+    });
+    if (currentSupplierStatementId) {
+        await loadSupplierStatement(currentSupplierStatementId, preset);
+    }
+}
+
+async function loadSupplierStatementCustom() {
+    const from = document.getElementById('supplierStatementFrom')?.value;
+    const to = document.getElementById('supplierStatementTo')?.value;
+    if (!from || !to || !currentSupplierStatementId) {
+        showToast('Chagua tarehe zote mbili', 'warning');
+        return;
+    }
+    currentSupplierStatementPreset = 'custom';
+    await loadSupplierStatement(currentSupplierStatementId, 'custom', from, to);
+}
+
+async function loadSupplierStatement(supplierId, preset = 'month', from, to) {
+    const params = new URLSearchParams();
+    if (preset === 'custom' && from && to) {
+        params.set('from', from);
+        params.set('to', to);
+    } else {
+        params.set('preset', preset || 'month');
+    }
+    const result = await api(`/api/suppliers/${supplierId}/statement?${params}`);
+    if (!result.success) {
+        showToast(result.message || 'Imeshindikana kupata taarifa', 'danger');
+        return;
+    }
+    // proxyJson may wrap bare object as data
+    const data = result.data || result;
+    const supplier = data.supplier || {};
+    document.getElementById('supplierStatementName').textContent = supplier.name || 'Msambazaji';
+    document.getElementById('supplierStatementPhone').textContent = supplier.phone || '';
+    document.getElementById('supplierStatementOpening').textContent =
+        `Salio la mwanzo (deni): ${formatCurrency(data.opening_balance || 0)} · Kipindi: ${data.from} — ${data.to}`;
+    if (data.from) document.getElementById('supplierStatementFrom').value = data.from;
+    if (data.to) document.getElementById('supplierStatementTo').value = data.to;
+
+    const tbody = document.getElementById('supplierStatementBody');
+    const rows = data.rows || [];
+    tbody.innerHTML = rows.length
+        ? rows.map((row) => {
+            const jumla = Number(row.jumla ?? row.debit ?? 0) || 0;
+            const malipo = Number(row.malipo ?? row.credit ?? 0) || 0;
+            const qty = row.quantity;
+            return `
+            <tr>
+                <td>${escapeHtml(row.date || '')}</td>
+                <td>${escapeHtml(row.delivered_by_name || '—')}</td>
+                <td>${escapeHtml(row.delivered_by_phone || '—')}</td>
+                <td>${escapeHtml(row.products || (row.type === 'payment' ? (row.description || 'Malipo') : '—'))}</td>
+                <td class="text-end">${qty != null && qty > 0 ? qty : '—'}</td>
+                <td class="text-end">${jumla > 0 ? formatCurrency(jumla) : '—'}</td>
+                <td class="text-end">${malipo > 0 ? formatCurrency(malipo) : '—'}</td>
+                <td class="text-end fw-semibold">${formatCurrency(row.deni ?? row.balance)}</td>
+                <td>
+                    ${row.receipt_url
+                        ? `<a class="btn btn-sm btn-outline-secondary" href="${escapeHtml(row.receipt_url)}" target="_blank" title="Risiti"><i class="bi bi-receipt"></i></a>`
+                        : ''}
+                </td>
+            </tr>`;
+        }).join('')
+        : '<tr><td colspan="9" class="text-center text-muted">Hakuna miamala</td></tr>';
+
+    const t = data.totals || {};
+    document.getElementById('supplierStatementTotals').innerHTML = `
+        <div class="row text-end">
+            <div class="col-md-4"><span class="text-muted">Uwasilishaji:</span> <strong>${formatCurrency(t.deliveries || 0)}</strong></div>
+            <div class="col-md-4"><span class="text-muted">Kilicholipwa:</span> <strong>${formatCurrency(t.paid || 0)}</strong></div>
+            <div class="col-md-4"><span class="text-muted">Deni lililobaki:</span> <strong class="text-danger">${formatCurrency(t.remaining || 0)}</strong></div>
+        </div>
+    `;
+}
+
+function printSupplierStatement() {
+    if (!currentSupplierStatementId) return;
+    const params = new URLSearchParams();
+    const from = document.getElementById('supplierStatementFrom')?.value;
+    const to = document.getElementById('supplierStatementTo')?.value;
+    if (currentSupplierStatementPreset === 'custom' && from && to) {
+        params.set('from', from);
+        params.set('to', to);
+    } else {
+        params.set('preset', currentSupplierStatementPreset || 'month');
+    }
+    window.open(`/api/suppliers/${currentSupplierStatementId}/statement.pdf?${params}`, '_blank');
 }
 
 // =========================
