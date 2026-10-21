@@ -2,24 +2,43 @@
  * Laravel MySQL single-source-of-truth bridge.
  * Express keeps cookie sessions; core inventory/sales go to Laravel Sanctum API.
  */
+const multer = require('multer');
+
 const LARAVEL_URL = (process.env.LARAVEL_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+const uploadPurchaseReceipt = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 function enabled() {
     return process.env.LARAVEL_SOT !== '0' && Boolean(LARAVEL_URL);
 }
 
-async function laravelFetch(path, { method = 'GET', token, body, headers = {} } = {}) {
+/** Attach receipt_base64 from multer memory file (avoids broken Node FormData→PHP). */
+function withReceiptBase64(body, file) {
+    const out = { ...body };
+    if (file && file.buffer && file.buffer.length) {
+        out.receipt_base64 = file.buffer.toString('base64');
+        out.receipt_filename = file.originalname || 'receipt.bin';
+    }
+    return out;
+}
+
+async function laravelFetch(path, { method = 'GET', token, body, headers = {}, formData } = {}) {
     const url = `${LARAVEL_URL}/api${path.startsWith('/') ? path : `/${path}`}`;
     const opts = {
         method,
         headers: {
             Accept: 'application/json',
-            ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...headers,
         },
     };
-    if (body !== undefined) {
+    if (formData) {
+        opts.body = formData;
+        // Let fetch set multipart boundary — do not set Content-Type
+    } else if (body !== undefined) {
+        opts.headers['Content-Type'] = 'application/json';
         opts.body = typeof body === 'string' ? body : JSON.stringify(body);
     }
     const res = await fetch(url, opts);
@@ -190,25 +209,85 @@ function adaptSupplier(s) {
         email: s.email,
         address: s.address,
         notes: s.notes,
+        maelezo: s.maelezo || s.address || s.notes || null,
         status: 'active',
+        purchasesCount: s.purchases_count ?? s.purchasesCount ?? 0,
+        purchasesTotal: s.purchases_total ?? s.purchasesTotal ?? 0,
+        paymentsTotal: s.payments_total ?? s.paymentsTotal ?? 0,
+        openDebt: s.open_debt ?? s.openDebt ?? 0,
+        lastPurchasedAt: s.last_purchased_at ?? s.lastPurchasedAt ?? null,
+        lastPaidAt: s.last_paid_at ?? s.lastPaidAt ?? null,
+    };
+}
+
+function adaptDebtPayment(pay) {
+    if (!pay || typeof pay !== 'object') return pay;
+    return {
+        id: pay.id,
+        debtId: pay.customer_debt_id,
+        amount: pay.amount,
+        paymentMethod: pay.payment_method,
+        reference: pay.reference,
+        note: pay.note,
+        notes: pay.note,
+        receiptUrl: pay.receipt_url,
+        receiptPath: pay.receipt_path,
+        paidAt: pay.paid_at,
+        createdAt: pay.paid_at || pay.created_at,
+        creator: pay.creator,
+    };
+}
+
+function adaptPurchasePayment(pay) {
+    if (!pay || typeof pay !== 'object') return pay;
+    return {
+        id: pay.id,
+        purchaseId: pay.purchase_id,
+        supplierId: pay.supplier_id,
+        amount: pay.amount,
+        paidAt: pay.paid_at,
+        createdAt: pay.paid_at || pay.created_at,
+        paymentMethod: pay.payment_method,
+        reference: pay.reference,
+        notes: pay.notes,
+        receiptUrl: pay.receipt_url,
+        receiptPath: pay.receipt_path,
+        creator: pay.creator,
     };
 }
 
 function adaptPurchase(p) {
     if (!p || typeof p !== 'object') return p;
+    const amountPaid = Number(p.amount_paid ?? 0) || 0;
+    const totalAmount = Number(p.subtotal ?? p.totalAmount ?? 0) || 0;
+    const remaining = p.remaining != null
+        ? Number(p.remaining)
+        : Math.max(0, totalAmount - amountPaid);
     return {
         id: p.id,
         status: p.status,
+        paymentType: p.payment_type || 'credit',
+        paymentStatus: p.payment_status || 'unpaid',
         supplierId: p.supplier_id,
         supplierName: p.supplier_name || (p.supplier && p.supplier.name) || null,
+        supplierDetails: p.supplier || null,
         reference: p.reference,
         invoiceNumber: p.reference,
         notes: p.notes,
-        totalAmount: p.subtotal,
-        subtotal: p.subtotal,
+        deliveredByName: p.delivered_by_name || null,
+        deliveredByPhone: p.delivered_by_phone || null,
+        totalAmount,
+        subtotal: totalAmount,
+        totalPaid: amountPaid,
+        amountPaid,
+        remainingBalance: remaining,
+        remaining,
+        productNames: p.product_names || [],
+        totalQty: p.total_qty ?? 0,
         purchasedAt: p.purchased_at,
         receivedAt: p.received_at,
         createdAt: p.purchased_at || p.received_at,
+        paymentHistory: (p.payments || []).map(adaptPurchasePayment),
         items: (p.items || []).map((it) => ({
             productId: it.product_id,
             productName: it.product_name,
@@ -324,6 +403,116 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
         return;
     }
     console.log('[laravel-sot] enabled →', LARAVEL_URL);
+
+    // ── Authenticated media stream (receipts / product images) ─────────
+    // Explicit 3-segment path (Express 4); must run before Bearer JSON catch-all.
+    app.get('/api/media/:folder/:shopId/:filename', async (req, res) => {
+        const auth = req.headers.authorization || '';
+        let token = null;
+        if (auth.startsWith('Bearer ')) {
+            token = auth.slice(7).trim();
+        } else if (req.session && req.session.laravelToken) {
+            token = req.session.laravelToken;
+        }
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+        try {
+            const folder = encodeURIComponent(req.params.folder);
+            const shopId = encodeURIComponent(req.params.shopId);
+            const filename = encodeURIComponent(req.params.filename);
+            const url = `${LARAVEL_URL}/api/media/${folder}/${shopId}/${filename}`;
+            const upstream = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: '*/*',
+                },
+            });
+            const ct = upstream.headers.get('content-type') || 'application/octet-stream';
+            const cd = upstream.headers.get('content-disposition');
+            res.status(upstream.status);
+            res.setHeader('Content-Type', ct);
+            if (cd) res.setHeader('Content-Disposition', cd);
+            const buf = Buffer.from(await upstream.arrayBuffer());
+            return res.send(buf);
+        } catch (err) {
+            console.error('Laravel media proxy error:', err.message);
+            return res.status(502).json({ success: false, message: 'Cannot reach media' });
+        }
+    });
+
+    // products/{filename} under caller's shop (2-segment)
+    app.get('/api/media/:folder/:filename', async (req, res) => {
+        if (req.params.folder !== 'products') {
+            return res.status(404).json({ success: false, message: 'API haipatikani' });
+        }
+        const auth = req.headers.authorization || '';
+        let token = null;
+        if (auth.startsWith('Bearer ')) {
+            token = auth.slice(7).trim();
+        } else if (req.session && req.session.laravelToken) {
+            token = req.session.laravelToken;
+        }
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+        try {
+            const url = `${LARAVEL_URL}/api/media/${encodeURIComponent(req.params.folder)}/${encodeURIComponent(req.params.filename)}`;
+            const upstream = await fetch(url, {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}`, Accept: '*/*' },
+            });
+            const ct = upstream.headers.get('content-type') || 'application/octet-stream';
+            res.status(upstream.status);
+            res.setHeader('Content-Type', ct);
+            return res.send(Buffer.from(await upstream.arrayBuffer()));
+        } catch (err) {
+            return res.status(502).json({ success: false, message: 'Cannot reach media' });
+        }
+    });
+
+    // ── Mobile Sanctum pass-through (Bearer /api/login) ───────────────
+    // Flutter talks Laravel shape directly; web keeps cookie session below.
+    app.post('/api/login', async (req, res) => {
+        try {
+            const { status, json } = await laravelFetch('/login', {
+                method: 'POST',
+                body: req.body,
+            });
+            return res.status(status).json(json);
+        } catch (err) {
+            console.error('Laravel /api/login proxy error:', err.message);
+            return res.status(502).json({
+                message: 'Cannot reach Laravel API at ' + LARAVEL_URL,
+            });
+        }
+    });
+
+    app.use('/api', async (req, res, next) => {
+        const auth = req.headers.authorization || '';
+        if (!auth.startsWith('Bearer ')) {
+            return next();
+        }
+        // Binary media is handled by the dedicated GET /api/media route above
+        if (req.method === 'GET' && (req.path || '').startsWith('/media')) {
+            return next();
+        }
+        try {
+            const rawPath = (req.originalUrl || req.url || '/').replace(/^\/api/, '') || '/';
+            const { status, json } = await laravelFetch(rawPath, {
+                method: req.method,
+                token: auth.slice(7).trim(),
+                body: ['GET', 'HEAD'].includes(req.method) ? undefined : req.body,
+            });
+            return res.status(status).json(json);
+        } catch (err) {
+            console.error('Laravel Bearer proxy error:', err.message);
+            return res.status(502).json({
+                message: 'Cannot reach Laravel API at ' + LARAVEL_URL,
+            });
+        }
+    });
 
     // ── Auth ──────────────────────────────────────────────────────────
     app.post('/api/auth/login', async (req, res) => {
@@ -507,18 +696,114 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
         return proxyJson(req, res, { path: `/debts${qs}`, adapt: adaptCreditDebt });
     });
 
-    app.post('/api/credit-sales/:id/pay', isAuthenticated, hasRole('admin', 'cashier', 'storekeeper'), (req, res) => {
-        const b = req.body || {};
-        return proxyJson(req, res, {
-            path: `/debts/${req.params.id}/payments`,
-            method: 'POST',
-            body: {
-                amount: b.amount,
-                note: b.note || b.reference || null,
-            },
-            adapt: adaptCreditDebt,
-        });
+    app.get('/api/credit-sales/:id/payments', isAuthenticated, hasRole('admin', 'cashier', 'storekeeper'), async (req, res) => {
+        const token = requireLaravelToken(req, res);
+        if (!token) return;
+        try {
+            const { status, json, ok } = await laravelFetch(`/debts/${req.params.id}/payments`, { token });
+            if (!ok) {
+                return res.status(status).json({ success: false, message: json?.message || 'Failed' });
+            }
+            const list = (json?.data || []).map(adaptDebtPayment);
+            const debt = json?.debt ? adaptCreditDebt(json.debt) : null;
+            return res.json({ success: true, data: list, debt });
+        } catch (err) {
+            return res.status(502).json({ success: false, message: err.message });
+        }
     });
+
+    app.post(
+        '/api/credit-sales/:id/pay',
+        isAuthenticated,
+        hasRole('admin', 'cashier', 'storekeeper'),
+        (req, res, next) => {
+            const ct = req.headers['content-type'] || '';
+            if (ct.includes('multipart/form-data')) {
+                return uploadPurchaseReceipt.single('receipt')(req, res, next);
+            }
+            return next();
+        },
+        async (req, res) => {
+            const token = requireLaravelToken(req, res);
+            if (!token) return;
+            try {
+                const b = req.body || {};
+                const body = withReceiptBase64({
+                    amount: b.amount,
+                    note: b.note || b.notes || null,
+                    payment_method: b.paymentMethod || b.payment_method || 'cash',
+                    reference: b.reference || null,
+                    paid_at: b.paidAt || b.paid_at || null,
+                    receipt_base64: b.receipt_base64 || b.receiptBase64 || null,
+                    receipt_filename: b.receipt_filename || b.receiptFilename || null,
+                }, req.file);
+                const { status, json, ok } = await laravelFetch(`/debts/${req.params.id}/payments`, {
+                    method: 'POST',
+                    token,
+                    body,
+                });
+                if (!ok) {
+                    return res.status(status).json({
+                        success: false,
+                        message: json?.message || 'Lipa imeshindikana',
+                    });
+                }
+                return res.json({
+                    success: true,
+                    data: json?.debt ? adaptCreditDebt(json.debt) : adaptDebtPayment(json?.data || json),
+                    payment: json?.data ? adaptDebtPayment(json.data) : null,
+                    message: 'Malipo yamepokelewa',
+                });
+            } catch (err) {
+                return res.status(502).json({ success: false, message: err.message });
+            }
+        }
+    );
+
+    app.put(
+        '/api/credit-sales/:id/payments/:paymentId',
+        isAuthenticated,
+        hasRole('admin', 'cashier', 'storekeeper'),
+        (req, res, next) => {
+            const ct = req.headers['content-type'] || '';
+            if (ct.includes('multipart/form-data')) {
+                return uploadPurchaseReceipt.single('receipt')(req, res, next);
+            }
+            return next();
+        },
+        async (req, res) => {
+            const token = requireLaravelToken(req, res);
+            if (!token) return;
+            try {
+                const b = req.body || {};
+                const body = withReceiptBase64({
+                    amount: b.amount,
+                    payment_method: b.paymentMethod || b.payment_method || 'cash',
+                    reference: b.reference != null ? b.reference : null,
+                    note: b.note != null || b.notes != null ? (b.note || b.notes || '') : null,
+                    paid_at: b.paidAt || b.paid_at || null,
+                }, req.file);
+                const { status, json, ok } = await laravelFetch(
+                    `/debts/${req.params.id}/payments/${req.params.paymentId}`,
+                    { method: 'POST', token, body }
+                );
+                if (!ok) {
+                    return res.status(status).json({
+                        success: false,
+                        message: json?.message || 'Hariri imeshindikana',
+                    });
+                }
+                return res.json({
+                    success: true,
+                    data: json?.data ? adaptDebtPayment(json.data) : null,
+                    debt: json?.debt ? adaptCreditDebt(json.debt) : null,
+                    message: 'Malipo yamehaririwa',
+                });
+            } catch (err) {
+                return res.status(502).json({ success: false, message: err.message });
+            }
+        }
+    );
 
     // Ripoti — aggregate Laravel sales (cash vs credit)
     app.get('/api/reports/sales', isAuthenticated, async (req, res) => {
@@ -545,15 +830,25 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
             for (const s of sales) {
                 const amount = Number(s.totalAmount) || 0;
                 const discount = Number(s.discount) || 0;
+                const tenderedRaw = Number(s.amountTendered);
+                // null/NaN → legacy full pay; explicit 0 → zero received
+                const tendered = Number.isFinite(tenderedRaw)
+                    ? Math.max(0, tenderedRaw)
+                    : amount;
+                let cashPart = 0;
+                let debtPart = 0;
+                if (isCreditPaymentMethod(s.paymentMethod)) {
+                    debtPart = amount;
+                } else if (isCashLikePaymentMethod(s.paymentMethod)) {
+                    cashPart = Math.min(tendered, amount);
+                    debtPart = Math.max(0, amount - tendered);
+                } else {
+                    cashPart = amount;
+                }
                 totalRevenue += amount;
                 totalDiscount += discount;
-                if (isCreditPaymentMethod(s.paymentMethod)) {
-                    totalDebts += amount;
-                } else if (isCashLikePaymentMethod(s.paymentMethod)) {
-                    totalCash += amount;
-                } else {
-                    totalCash += amount;
-                }
+                totalCash += cashPart;
+                totalDebts += debtPart;
 
                 const key = (s.createdAt || '').slice(0, 10) || 'unknown';
                 if (!groupedData[key]) {
@@ -562,11 +857,8 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
                 groupedData[key].revenue += amount;
                 groupedData[key].transactions += 1;
                 groupedData[key].items += (s.items || []).reduce((sum, i) => sum + (i.quantity || 0), 0);
-                if (isCreditPaymentMethod(s.paymentMethod)) {
-                    groupedData[key].debts += amount;
-                } else {
-                    groupedData[key].cash += amount;
-                }
+                groupedData[key].cash += cashPart;
+                groupedData[key].debts += debtPart;
             }
 
             const totalTransactions = sales.length;
@@ -594,17 +886,117 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
     app.get('/api/suppliers', isAuthenticated, (req, res) =>
         proxyJson(req, res, { path: '/suppliers', adapt: adaptSupplier }));
 
+    app.get('/api/suppliers/:id/statement', isAuthenticated, async (req, res) => {
+        const q = new URLSearchParams();
+        ['from', 'to', 'preset'].forEach((k) => {
+            if (req.query[k]) q.set(k, req.query[k]);
+        });
+        const qs = q.toString() ? `?${q}` : '';
+        return proxyJson(req, res, { path: `/suppliers/${req.params.id}/statement${qs}` });
+    });
+
+    app.get('/api/suppliers/:id/statement.pdf', isAuthenticated, async (req, res) => {
+        const token = requireLaravelToken(req, res);
+        if (!token) return;
+        try {
+            const q = new URLSearchParams();
+            ['from', 'to', 'preset'].forEach((k) => {
+                if (req.query[k]) q.set(k, req.query[k]);
+            });
+            const qs = q.toString() ? `?${q}` : '';
+            const url = `${LARAVEL_URL}/api/suppliers/${req.params.id}/statement.pdf${qs}`;
+            const upstream = await fetch(url, {
+                headers: { Authorization: `Bearer ${token}`, Accept: 'text/html' },
+            });
+            const html = await upstream.text();
+            res.status(upstream.status).set('Content-Type', 'text/html; charset=UTF-8').send(html);
+        } catch (err) {
+            res.status(502).json({ success: false, message: err.message });
+        }
+    });
+
+    app.get('/api/cashflow/summary', isAuthenticated, async (req, res) => {
+        const q = new URLSearchParams();
+        if (req.query.from || req.query.startDate) q.set('from', req.query.from || req.query.startDate);
+        if (req.query.to || req.query.endDate) q.set('to', req.query.to || req.query.endDate);
+        const qs = q.toString() ? `?${q}` : '';
+        return proxyJson(req, res, { path: `/cashflow/summary${qs}` });
+    });
+
     app.get('/api/purchases', isAuthenticated, (req, res) => {
         const q = new URLSearchParams();
         if (req.query.startDate) q.set('from', req.query.startDate);
         if (req.query.endDate) q.set('to', req.query.endDate);
+        if (req.query.from) q.set('from', req.query.from);
+        if (req.query.to) q.set('to', req.query.to);
         if (req.query.supplierId) q.set('supplier_id', req.query.supplierId);
+        if (req.query.supplier_id) q.set('supplier_id', req.query.supplier_id);
+        if (req.query.search) q.set('search', req.query.search);
+        if (req.query.payment_status) q.set('payment_status', req.query.payment_status);
         const qs = q.toString() ? `?${q}` : '';
         return proxyJson(req, res, { path: `/purchases${qs}`, adapt: adaptPurchase });
     });
 
     app.get('/api/purchases/:id', isAuthenticated, (req, res) =>
         proxyJson(req, res, { path: `/purchases/${req.params.id}`, adapt: adaptPurchase }));
+
+    app.get('/api/purchases/:id/payments', isAuthenticated, async (req, res) => {
+        const token = requireLaravelToken(req, res);
+        if (!token) return;
+        try {
+            const { status, json, ok } = await laravelFetch(`/purchases/${req.params.id}/payments`, { token });
+            if (!ok) {
+                return res.status(status).json({ success: false, message: json?.message || 'Failed' });
+            }
+            const list = (json?.data || []).map(adaptPurchasePayment);
+            const purchase = json?.purchase ? adaptPurchase(json.purchase) : null;
+            return res.json({ success: true, data: list, purchase });
+        } catch (err) {
+            return res.status(502).json({ success: false, message: err.message });
+        }
+    });
+
+    app.post(
+        '/api/purchases/:id/payments',
+        isAuthenticated,
+        hasRole('admin', 'storekeeper'),
+        uploadPurchaseReceipt.single('receipt'),
+        async (req, res) => {
+            const token = requireLaravelToken(req, res);
+            if (!token) return;
+            try {
+                const b = req.body || {};
+                const body = withReceiptBase64({
+                    amount: b.amount,
+                    paid_at: b.paid_at || b.paidAt || null,
+                    payment_method: b.payment_method || b.paymentMethod || 'cash',
+                    reference: b.reference || null,
+                    notes: b.notes || null,
+                }, req.file);
+
+                const { status, json, ok } = await laravelFetch(`/purchases/${req.params.id}/payments`, {
+                    method: 'POST',
+                    token,
+                    body,
+                });
+                if (!ok) {
+                    return res.status(status).json({
+                        success: false,
+                        message: json?.message || 'Lipa imeshindikana',
+                        remaining: json?.remaining,
+                        errors: json?.errors,
+                    });
+                }
+                return res.status(201).json({
+                    success: true,
+                    data: adaptPurchasePayment(json?.data || json),
+                    purchase: json?.purchase ? adaptPurchase(json.purchase) : null,
+                });
+            } catch (err) {
+                return res.status(502).json({ success: false, message: err.message });
+            }
+        }
+    );
 
     app.get('/api/users', isAuthenticated, hasRole('admin'), (req, res) =>
         proxyJson(req, res, { path: '/staff', adapt: adaptStaff }));
@@ -830,28 +1222,80 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
     app.delete('/api/suppliers/:id', isAuthenticated, hasRole('admin'), (req, res) =>
         proxyJson(req, res, { path: `/suppliers/${req.params.id}`, method: 'DELETE' }));
 
-    app.post('/api/purchases', isAuthenticated, hasRole('admin', 'storekeeper'), (req, res) => {
-        const b = req.body || {};
-        const items = (b.items || []).map((it) => ({
-            product_id: it.productId ?? it.product_id,
-            quantity: it.quantity,
-            unit_cost: it.costPrice ?? it.unit_cost ?? it.unitCost,
-        }));
-        return proxyJson(req, res, {
-            path: '/purchases',
-            method: 'POST',
-            body: {
-                supplier_id: b.supplierId ?? b.supplier_id,
-                reference: b.invoiceNumber ?? b.reference,
-                notes: b.notes,
-                purchased_at: b.purchasedAt || new Date().toISOString().slice(0, 10),
-                receive_now: true,
-                items,
-            },
-            adapt: adaptPurchase,
-            successStatus: 201,
-        });
-    });
+    app.post(
+        '/api/purchases',
+        isAuthenticated,
+        hasRole('admin', 'storekeeper'),
+        (req, res, next) => {
+            const ct = req.headers['content-type'] || '';
+            if (ct.includes('multipart/form-data')) {
+                return uploadPurchaseReceipt.single('receipt')(req, res, next);
+            }
+            return next();
+        },
+        async (req, res) => {
+            const token = requireLaravelToken(req, res);
+            if (!token) return;
+            try {
+                const b = req.body || {};
+                let rawItems = b.items;
+                if (typeof rawItems === 'string') {
+                    try {
+                        rawItems = JSON.parse(rawItems);
+                    } catch {
+                        rawItems = [];
+                    }
+                }
+                const items = (Array.isArray(rawItems) ? rawItems : []).map((it) => ({
+                    product_id: it.productId ?? it.product_id,
+                    quantity: it.quantity,
+                    unit_cost: it.costPrice ?? it.unit_cost ?? it.unitCost,
+                }));
+                let amountPaid = b.amountPaid ?? b.amount_paid;
+                const paymentType = b.paymentType || b.payment_type || 'credit';
+                if (amountPaid == null && paymentType === 'cash') {
+                    amountPaid = undefined;
+                }
+                const receiveNow = b.receive_now !== false && b.receiveNow !== false
+                    && b.receive_now !== 'false' && b.receiveNow !== 'false';
+                const body = withReceiptBase64({
+                    supplier_id: b.supplierId ?? b.supplier_id,
+                    reference: b.invoiceNumber ?? b.reference,
+                    notes: b.notes,
+                    purchased_at: b.purchasedAt || b.purchased_at || new Date().toISOString().slice(0, 10),
+                    receive_now: receiveNow,
+                    payment_type: paymentType,
+                    payment_method: b.paymentMethod || b.payment_method || 'cash',
+                    amount_paid: amountPaid,
+                    delivered_by_name: b.deliveredByName || b.delivered_by_name,
+                    delivered_by_phone: b.deliveredByPhone || b.delivered_by_phone,
+                    receipt_base64: b.receipt_base64 || b.receiptBase64 || null,
+                    receipt_filename: b.receipt_filename || b.receiptFilename || null,
+                    items,
+                }, req.file);
+
+                const { status, json, ok } = await laravelFetch('/purchases', {
+                    method: 'POST',
+                    token,
+                    body,
+                });
+                if (!ok) {
+                    return res.status(status).json({
+                        success: false,
+                        message: json?.message || 'Imeshindikana kuhifadhi manunuzi',
+                        errors: json?.errors,
+                    });
+                }
+                return res.status(201).json({
+                    success: true,
+                    data: adaptPurchase(json?.data || json),
+                    message: 'Manunuzi yamehifadhiwa',
+                });
+            } catch (err) {
+                return res.status(502).json({ success: false, message: err.message });
+            }
+        }
+    );
 
     app.put('/api/settings', isAuthenticated, hasRole('admin'), (req, res) => {
         const b = req.body || {};
