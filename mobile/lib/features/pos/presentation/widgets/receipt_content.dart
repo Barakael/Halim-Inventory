@@ -59,11 +59,20 @@ class ReceiptContent {
         sale.serialNumber.isNotEmpty ? sale.serialNumber : 'RCP-${sale.id}';
     final when = sale.createdAt.toLocal();
 
-    final tendered =
-        sale.amountTendered > 0 ? sale.amountTendered : sale.total;
-    final change = sale.cashChange >= 0
+    final method = sale.paymentMethod.toLowerCase().trim();
+    final isCredit = method == 'credit' || method.contains('deni');
+    final isCashLike = !isCredit &&
+        (method == 'cash' ||
+            method.contains('mobile') ||
+            method == 'bank' ||
+            method == 'card' ||
+            method.isEmpty);
+    final received = isCredit ? 0.0 : sale.amountTendered.clamp(0.0, double.infinity);
+    final creditRemainder =
+        isCredit ? sale.total : (sale.total - received).clamp(0.0, sale.total);
+    final change = sale.cashChange > 0
         ? sale.cashChange
-        : (tendered - sale.total).clamp(0, double.infinity);
+        : (received - sale.total).clamp(0.0, double.infinity);
 
     final letterhead = <String>[];
     if (!_blank(shop.address)) letterhead.add(shop.address.trim());
@@ -119,8 +128,17 @@ class ReceiptContent {
       totals: totals,
       grandTotal: dec(sale.total),
       payment: [
-        ReceiptKv(_payLabel(sale.paymentMethod), dec(tendered)),
-        ReceiptKv('Change', dec(change)),
+        if (isCashLike) ...[
+          ReceiptKv(_payLabel(sale.paymentMethod), dec(received)),
+          if (creditRemainder > 0.009)
+            ReceiptKv('Credit on account', dec(creditRemainder)),
+          if (change > 0.009) ReceiptKv('Change', dec(change)),
+        ] else if (isCredit) ...[
+          ReceiptKv('Credit / debt', dec(sale.total)),
+        ] else ...[
+          ReceiptKv(_payLabel(sale.paymentMethod), dec(received)),
+          if (change > 0.009) ReceiptKv('Change', dec(change)),
+        ],
       ],
       receiptNo: receiptNo,
     );
