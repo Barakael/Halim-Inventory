@@ -192,8 +192,12 @@ class SaleModel {
       verificationCode: json['verification_code']?.toString() ?? '',
       totalExclTax: toDouble(json['total_excl_tax']),
       totalTax: toDouble(json['total_tax'] ?? json['tax']),
-      amountTendered: toDouble(json['amount_tendered']),
-      cashChange: toDouble(json['change'] ?? json['cash_change']),
+      // Missing tendered (legacy) → assume fully paid; explicit 0 → zero received.
+      amountTendered: (json.containsKey('amount_tendered') ||
+              json.containsKey('amountTendered'))
+          ? toDouble(json['amount_tendered'] ?? json['amountTendered'])
+          : toDouble(json['total']),
+      cashChange: toDouble(json['change'] ?? json['change_amount'] ?? json['cash_change']),
       cashierId: json['cashier_id']?.toString() ?? '',
       companyId: json['shop_id']?.toString() ?? '',
       items: items,
