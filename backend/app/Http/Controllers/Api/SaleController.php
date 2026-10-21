@@ -148,14 +148,25 @@ class SaleController extends Controller
                 $tax = (float) ($data['tax'] ?? 0);
                 $discount = (float) ($data['discount'] ?? 0);
                 $total = isset($data['total']) ? (float) $data['total'] : max(0, $subtotal + $tax - $discount);
-                $tendered = isset($data['amount_tendered']) ? (float) $data['amount_tendered'] : null;
-                $change = $tendered !== null ? max(0, $tendered - $total) : null;
 
                 $paymentMethod = strtolower(trim((string) ($data['payment_method'] ?? 'cash')));
                 if ($paymentMethod === '') {
                     $paymentMethod = 'cash';
                 }
                 $isCredit = $paymentMethod === 'credit';
+                $isCashLike = in_array($paymentMethod, ['cash', 'mobile', 'mobile_money', 'mpesa', 'bank', 'card'], true);
+
+                $tendered = isset($data['amount_tendered']) ? (float) $data['amount_tendered'] : null;
+                if ($isCredit) {
+                    $tendered = $tendered ?? 0.0;
+                } elseif ($isCashLike && $tendered === null) {
+                    $tendered = $total;
+                }
+                $received = $tendered !== null ? max(0, $tendered) : $total;
+                $creditRemainder = $isCredit
+                    ? $total
+                    : ($isCashLike ? max(0, $total - $received) : 0.0);
+                $change = $isCashLike ? max(0, $received - $total) : null;
 
                 $customer = null;
                 if (! empty($data['shop_customer_id'])) {
@@ -168,11 +179,14 @@ class SaleController extends Controller
                         ->first();
                 }
 
-                if (! $customer && $isCredit) {
+                $needsCustomer = $isCredit || $creditRemainder > 0.009;
+                if (! $customer && $needsCustomer) {
                     $name = trim((string) ($data['customer_name'] ?? ''));
                     $phone = trim((string) ($data['customer_phone'] ?? ''));
                     if ($name === '' && $phone === '') {
-                        abort(422, 'Credit sale needs a customer — who owes the shop?');
+                        abort(422, $isCredit
+                            ? 'Credit sale needs a customer — who owes the shop?'
+                            : 'Partial payment needs a customer for the remaining credit.');
                     }
                     if ($name === '') {
                         $name = $phone;
@@ -200,7 +214,7 @@ class SaleController extends Controller
                     'tax' => $tax,
                     'discount' => $discount,
                     'total' => $total,
-                    'amount_tendered' => $tendered,
+                    'amount_tendered' => $isCredit ? 0 : $received,
                     'change_amount' => $change,
                     'customer_name' => $data['customer_name'] ?? $customer?->name,
                     'customer_phone' => $data['customer_phone'] ?? $customer?->phone,
@@ -250,16 +264,19 @@ class SaleController extends Controller
                     }
                 }
 
-                if ($isCredit && $customer && $total > 0) {
+                if ($customer && $creditRemainder > 0.009) {
+                    $debtNote = $isCredit
+                        ? 'POS sale '.$serial
+                        : 'Partial pay on POS sale '.$serial;
                     CustomerDebt::firstOrCreate(
                         ['sale_id' => $sale->id],
                         [
                             'shop_id' => $shopId,
                             'customer_id' => $customer->id,
-                            'amount' => $total,
+                            'amount' => $creditRemainder,
                             'amount_paid' => 0,
                             'status' => 'open',
-                            'note' => 'POS sale '.$serial,
+                            'note' => $debtNote,
                         ]
                     );
                     CustomerDebt::recomputeOpenBalance($customer->fresh());
