@@ -7,13 +7,17 @@ use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DebtController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\CashflowController;
+use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\PurchaseController;
+use App\Http\Controllers\Api\PurchasePaymentController;
 use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\StockController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\SupplierController;
+use App\Http\Controllers\Api\SupplierStatementController;
 use App\Http\Middleware\EnsureShopActive;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +36,9 @@ Route::middleware(['auth:sanctum', EnsureShopActive::class])->group(function () 
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
     Route::post('/products/{id}/image', [ProductController::class, 'uploadImage']);
 
+    Route::get('/media/{folder}/{a}/{b?}', [MediaController::class, 'show'])
+        ->where('folder', 'products|purchase-payments|debt-payments');
+
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
@@ -46,7 +53,10 @@ Route::middleware(['auth:sanctum', EnsureShopActive::class])->group(function () 
     Route::get('/debts', [DebtController::class, 'index']);
     Route::get('/debts/summary', [DebtController::class, 'summary']);
     Route::post('/debts', [DebtController::class, 'store']);
+    Route::get('/debts/{id}/payments', [DebtController::class, 'payments']);
     Route::post('/debts/{id}/payments', [DebtController::class, 'pay']);
+    // POST accepted for multipart receipt replace (PHP often skips multipart on PUT)
+    Route::match(['put', 'post'], '/debts/{id}/payments/{paymentId}', [DebtController::class, 'updatePayment']);
     Route::post('/debts/{id}/write-off', [DebtController::class, 'writeOff']);
 
     Route::get('/sales', [SaleController::class, 'index']);
@@ -61,6 +71,8 @@ Route::middleware(['auth:sanctum', EnsureShopActive::class])->group(function () 
     Route::post('/suppliers', [SupplierController::class, 'store']);
     Route::put('/suppliers/{id}', [SupplierController::class, 'update']);
     Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy']);
+    Route::get('/suppliers/{id}/statement', [SupplierStatementController::class, 'show']);
+    Route::get('/suppliers/{id}/statement.pdf', [SupplierStatementController::class, 'pdf']);
 
     Route::get('/purchases', [PurchaseController::class, 'index']);
     Route::post('/purchases', [PurchaseController::class, 'store']);
@@ -68,6 +80,10 @@ Route::middleware(['auth:sanctum', EnsureShopActive::class])->group(function () 
     Route::put('/purchases/{id}', [PurchaseController::class, 'update']);
     Route::post('/purchases/{id}/receive', [PurchaseController::class, 'receive']);
     Route::post('/purchases/{id}/cancel', [PurchaseController::class, 'cancel']);
+    Route::get('/purchases/{id}/payments', [PurchasePaymentController::class, 'index']);
+    Route::post('/purchases/{id}/payments', [PurchasePaymentController::class, 'store']);
+
+    Route::get('/cashflow/summary', [CashflowController::class, 'summary']);
 
     Route::get('/branches', [BranchController::class, 'index']);
     Route::post('/branches', [BranchController::class, 'store']);
