@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/services/pos_device_service.dart';
 import '../../../../core/services/shop_profile_service.dart';
+import '../../../../core/theme/brand_palette.dart';
 import '../../../sales/domain/entities/sale_entity.dart';
 import '../../../shops/domain/entities/shop_entity.dart';
 import 'receipt_content.dart';
@@ -18,15 +19,18 @@ import 'receipt_ticket.dart';
 import 'tra_receipt_formatter.dart';
 
 class _C {
-  static const white = Color(0xFFFFFFFF);
-  static const bg = Color(0xFFF8FAFC);
-  static const primary = Color(0xFF1E3A5F);
-  static const primaryLt = Color(0xFF2B527A);
-  static const accent = Color(0xFF00C896);
-  static const ink = Color(0xFF1A2332);
-  static const inkMid = Color(0xFF64748B);
-  static const inkLight = Color(0xFF94A3B8);
-  static const border = Color(0xFFE8EDF5);
+  static BrandPalette get _p => BrandTokens.current;
+  static Color get white => _p.white;
+  static Color get bg => _p.bg;
+  static Color get primary => _p.primary;
+  static Color get primaryLt => _p.primaryLt;
+  static Color get accent => _p.accent;
+  static Color get cta => _p.cta;
+  static Color get ctaInk => _p.ctaInk;
+  static Color get ink => _p.ink;
+  static Color get inkMid => _p.inkMid;
+  static Color get inkLight => Color.lerp(_p.ink, _p.inkMid, 0.45)!;
+  static Color get border => _p.border;
 
   static Color primaryOp(double o) => primary.withValues(alpha: o);
   static Color whiteOp(double o) => Colors.white.withValues(alpha: o);
@@ -35,14 +39,14 @@ class _C {
 TextStyle _ts(
   double size, {
   FontWeight weight = FontWeight.w400,
-  Color color = _C.ink,
+  Color? color,
   double? height,
   double? letterSpacing,
 }) =>
     TextStyle(
       fontSize: size,
       fontWeight: weight,
-      color: color,
+      color: color ?? _C.ink,
       height: height,
       letterSpacing: letterSpacing,
     );
@@ -187,7 +191,7 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                             color: _C.primaryOp(0.08),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.print_rounded,
+                          child: Icon(Icons.print_rounded,
                               color: _C.primary, size: 20),
                         ),
                         title: Text(
@@ -357,7 +361,7 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 28,
                 height: 28,
                 child: CircularProgressIndicator(
@@ -490,7 +494,7 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                             ),
                             child: SelectableText(
                               receiptLines.join('\n'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: 10.5,
                                 height: 1.35,
@@ -538,13 +542,13 @@ class _Header extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [_C.primary, _C.primaryLt],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -596,7 +600,7 @@ class _RawReceiptToggle extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             children: [
-              const Icon(Icons.receipt_long_rounded,
+              Icon(Icons.receipt_long_rounded,
                   size: 15, color: _C.inkMid),
               const SizedBox(width: 8),
               Text(
@@ -644,10 +648,10 @@ class _ActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: _C.white,
         border: Border(top: BorderSide(color: _C.border)),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -657,7 +661,7 @@ class _ActionBar extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(
                 children: [
-                  const Icon(Icons.bluetooth_connected_rounded,
+                  Icon(Icons.bluetooth_connected_rounded,
                       size: 16, color: _C.accent),
                   const SizedBox(width: 6),
                   Expanded(
@@ -701,18 +705,18 @@ class _ActionBar extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: isPrinting ? null : onPrint,
               icon: isPrinting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2, color: _C.ctaInk),
                     )
-                  : const Icon(Icons.print_rounded, size: 18),
+                  : Icon(Icons.print_rounded, size: 18, color: _C.ctaInk),
               label: Text(isPrinting ? 'Printing…' : 'Print Receipt'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                backgroundColor: _C.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: _C.cta,
+                foregroundColor: _C.ctaInk,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -730,7 +734,7 @@ class _ActionBar extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     foregroundColor: _C.primary,
-                    side: BorderSide(color: _C.primaryOp(0.3)),
+                    side: BorderSide(color: _C.primaryOp(0.35)),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
@@ -745,7 +749,7 @@ class _ActionBar extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     foregroundColor: _C.inkMid,
-                    side: const BorderSide(color: _C.border),
+                    side: BorderSide(color: _C.border),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
