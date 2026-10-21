@@ -6,11 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerDebt;
 use App\Models\DebtPayment;
+use App\Services\DebtPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class DebtController extends Controller
 {
+    public function __construct(private DebtPaymentService $payments) {}
+
     public function index(Request $request)
     {
         $query = CustomerDebt::forShop($request->user()->shop_id)
@@ -108,11 +112,38 @@ class DebtController extends Controller
         return response()->json($debt->toApiArray(), 201);
     }
 
+    public function payments(Request $request, string $id)
+    {
+        $debt = CustomerDebt::forShop($request->user()->shop_id)
+            ->with('customer')
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $rows = DebtPayment::query()
+            ->with('creator')
+            ->where('customer_debt_id', $debt->id)
+            ->orderByDesc('paid_at')
+            ->orderByDesc('id')
+            ->get()
+            ->map->toApiArray();
+
+        return response()->json([
+            'data' => $rows,
+            'debt' => $debt->toApiArray(),
+        ]);
+    }
+
     public function pay(Request $request, string $id)
     {
         $data = $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'note' => 'nullable|string',
+            'payment_method' => 'nullable|string|max:100',
+            'reference' => 'nullable|string|max:255',
+            'paid_at' => 'nullable|date',
+            'receipt' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:10240',
+            'receipt_base64' => 'nullable|string',
+            'receipt_filename' => 'nullable|string|max:255',
         ]);
 
         $debt = CustomerDebt::forShop($request->user()->shop_id)
@@ -124,26 +155,104 @@ class DebtController extends Controller
             return response()->json(['message' => 'Debt is not open.'], 422);
         }
 
-        $debt = DB::transaction(function () use ($debt, $data, $request) {
+        $result = DB::transaction(function () use ($debt, $data, $request) {
             $pay = min((float) $data['amount'], $debt->balance());
-            DebtPayment::create([
+            $path = $this->storeReceipt($request, $data, $debt->shop_id);
+
+            $payment = DebtPayment::create([
+                'shop_id' => $debt->shop_id,
                 'customer_debt_id' => $debt->id,
                 'amount' => $pay,
+                'payment_method' => $data['payment_method'] ?? 'cash',
+                'reference' => $data['reference'] ?? null,
                 'note' => $data['note'] ?? null,
+                'receipt_path' => $path,
+                'paid_at' => $data['paid_at'] ?? now(),
                 'created_by' => $request->user()->id,
             ]);
-            $debt->amount_paid = (float) $debt->amount_paid + $pay;
-            if ($debt->balance() <= 0.0001) {
-                $debt->status = 'paid';
-                $debt->amount_paid = (float) $debt->amount;
-            }
-            $debt->save();
-            CustomerDebt::recomputeOpenBalance($debt->customer);
 
-            return $debt->fresh('customer');
+            $debt = $this->payments->recalculate($debt);
+
+            return [$payment->load('creator'), $debt];
         });
 
-        return response()->json($debt->toApiArray());
+        return response()->json([
+            'data' => $result[0]->toApiArray(),
+            'debt' => $result[1]->toApiArray(),
+        ]);
+    }
+
+    public function updatePayment(Request $request, string $id, string $paymentId)
+    {
+        $debt = CustomerDebt::forShop($request->user()->shop_id)
+            ->with('customer')
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $payment = DebtPayment::query()
+            ->where('customer_debt_id', $debt->id)
+            ->where('id', $paymentId)
+            ->firstOrFail();
+
+        $data = $request->validate([
+            'amount' => 'sometimes|required|numeric|min:0.01',
+            'note' => 'nullable|string',
+            'payment_method' => 'nullable|string|max:100',
+            'reference' => 'nullable|string|max:255',
+            'paid_at' => 'nullable|date',
+            'receipt' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:10240',
+            'receipt_base64' => 'nullable|string',
+            'receipt_filename' => 'nullable|string|max:255',
+        ]);
+
+        $result = DB::transaction(function () use ($debt, $payment, $data, $request) {
+            if (array_key_exists('amount', $data)) {
+                $payment->amount = (float) $data['amount'];
+            }
+            if (array_key_exists('note', $data)) {
+                $payment->note = $data['note'];
+            }
+            if (array_key_exists('payment_method', $data)) {
+                $payment->payment_method = $data['payment_method'];
+            }
+            if (array_key_exists('reference', $data)) {
+                $payment->reference = $data['reference'];
+            }
+            if (array_key_exists('paid_at', $data)) {
+                $payment->paid_at = $data['paid_at'];
+            }
+
+            $newPath = $this->storeReceipt($request, $data, $debt->shop_id);
+            if ($newPath) {
+                if ($payment->receipt_path) {
+                    Storage::disk('public')->delete($payment->receipt_path);
+                }
+                $payment->receipt_path = $newPath;
+            }
+
+            $payment->save();
+
+            // Temporarily mark open so recalc can set paid/open correctly
+            if ($debt->status === 'paid') {
+                $debt->status = 'open';
+                $debt->save();
+            }
+
+            $debt = $this->payments->recalculate($debt->fresh('customer'));
+
+            // Cap amount if payments exceed debt
+            $sum = (float) DebtPayment::where('customer_debt_id', $debt->id)->sum('amount');
+            if ($sum > (float) $debt->amount + 0.009) {
+                abort(422, 'Total payments would exceed debt amount.');
+            }
+
+            return [$payment->fresh('creator'), $debt];
+        });
+
+        return response()->json([
+            'data' => $result[0]->toApiArray(),
+            'debt' => $result[1]->toApiArray(),
+        ]);
     }
 
     public function writeOff(Request $request, string $id)
@@ -158,5 +267,29 @@ class DebtController extends Controller
         CustomerDebt::recomputeOpenBalance($debt->customer);
 
         return response()->json($debt->fresh('customer')->toApiArray());
+    }
+
+    private function storeReceipt(Request $request, array $data, int $shopId): ?string
+    {
+        if ($request->hasFile('receipt')) {
+            return $request->file('receipt')->store('debt-payments/'.$shopId, 'public');
+        }
+        if (! empty($data['receipt_base64'])) {
+            $raw = $data['receipt_base64'];
+            if (str_contains($raw, ',')) {
+                $raw = explode(',', $raw, 2)[1];
+            }
+            $bytes = base64_decode($raw, true);
+            if ($bytes !== false && strlen($bytes) > 0 && strlen($bytes) <= 10 * 1024 * 1024) {
+                $name = $data['receipt_filename'] ?? ('receipt-'.uniqid().'.jpg');
+                $name = basename(preg_replace('/[^a-zA-Z0-9._-]/', '_', $name));
+                $path = 'debt-payments/'.$shopId.'/'.$name;
+                Storage::disk('public')->put($path, $bytes);
+
+                return $path;
+            }
+        }
+
+        return null;
     }
 }
