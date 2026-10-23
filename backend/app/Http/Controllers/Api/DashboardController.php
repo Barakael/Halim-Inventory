@@ -13,10 +13,23 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $shopId = $request->user()->shop_id;
+        $user = $request->user();
+        $shopId = $user->shop_id;
         $today = Carbon::today();
+        $cashierId = strtolower(trim((string) $user->role)) === 'cashier'
+            ? $user->id
+            : null;
 
-        $todaySales = Sale::forShop($shopId)
+        $salesQuery = function () use ($shopId, $cashierId) {
+            $q = Sale::forShop($shopId);
+            if ($cashierId !== null) {
+                $q->where('cashier_id', $cashierId);
+            }
+
+            return $q;
+        };
+
+        $todaySales = $salesQuery()
             ->whereDate('created_at', $today)
             ->get(['total']);
 
@@ -26,7 +39,7 @@ class DashboardController extends Controller
         $weekly = [];
         for ($i = 6; $i >= 0; $i--) {
             $day = Carbon::today()->subDays($i);
-            $row = Sale::forShop($shopId)
+            $row = $salesQuery()
                 ->whereDate('created_at', $day)
                 ->selectRaw('COUNT(*) as transactions, COALESCE(SUM(total),0) as total')
                 ->first();

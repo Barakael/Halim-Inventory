@@ -81,7 +81,6 @@ class _LoginPageState extends State<LoginPage>
   Widget build(BuildContext context) {
     final p = context.brand;
     final size = MediaQuery.sizeOf(context);
-    final viewInsets = MediaQuery.viewInsetsOf(context);
     final wide = size.width >= 720;
     final panelWidth = wide ? 420.0 : double.infinity;
 
@@ -91,6 +90,8 @@ class _LoginPageState extends State<LoginPage>
       ),
       child: Scaffold(
         backgroundColor: p.bg,
+        // Scaffold already shrinks for the keyboard — do not also pad by
+        // viewInsets or the form gets crushed and fields vanish while typing.
         resizeToAvoidBottomInset: true,
         body: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
@@ -153,7 +154,8 @@ class _LoginPageState extends State<LoginPage>
                         height: 260,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: p.primary.withValues(alpha: 0.07 + (1 - t) * 0.04),
+                          color: p.primary
+                              .withValues(alpha: 0.07 + (1 - t) * 0.04),
                         ),
                       ),
                     ),
@@ -164,7 +166,7 @@ class _LoginPageState extends State<LoginPage>
                         wide ? 32 : 20,
                         8,
                         wide ? 32 : 20,
-                        12 + viewInsets.bottom,
+                        12,
                       ),
                       child: FadeTransition(
                         opacity: _fadeAnim,
@@ -177,173 +179,243 @@ class _LoginPageState extends State<LoginPage>
                                 child: LanguageChip(),
                               ),
                               Expanded(
-                                child: Center(
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: panelWidth,
-                                    ),
-                                    child: Material(
-                                      color: p.white,
-                                      elevation: 0,
-                                      borderRadius: BorderRadius.circular(20),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: p.white,
-                                          borderRadius:
-                                              BorderRadius.circular(20),
-                                          border: Border.all(
-                                            color: p.border.withValues(
-                                              alpha: 0.9,
-                                            ),
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: p.primary.withValues(
-                                                alpha: 0.08,
-                                              ),
-                                              blurRadius: 28,
-                                              offset: const Offset(0, 12),
-                                            ),
-                                          ],
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return SingleChildScrollView(
+                                      keyboardDismissBehavior:
+                                          ScrollViewKeyboardDismissBehavior
+                                              .onDrag,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          minHeight:
+                                              constraints.maxHeight - 16,
                                         ),
-                                        padding: EdgeInsets.fromLTRB(
-                                          wide ? 32 : 22,
-                                          wide ? 28 : 24,
-                                          wide ? 32 : 22,
-                                          wide ? 28 : 24,
-                                        ),
-                                        child: Form(
-                                          key: _formKey,
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.stretch,
-                                            children: [
-                                              Text(
-                                                'POS App',
-                                                style: GoogleFonts.dmSans(
-                                                  fontSize: 26,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: p.ink,
-                                                  letterSpacing: -0.5,
-                                                  height: 1.15,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 6),
-                                              Text(
-                                                context.t.signInSubtitle,
-                                                style: GoogleFonts.dmSans(
-                                                  fontSize: 14,
-                                                  height: 1.35,
-                                                  color: p.inkMid,
-                                                  fontWeight: FontWeight.w400,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 28),
-                                              _FieldLabel(
-                                                context.t.username,
-                                                p,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              _InputField(
-                                                palette: p,
-                                                controller:
-                                                    _usernameController,
-                                                hint: 'admin',
-                                                icon: Icons
-                                                    .person_outline_rounded,
-                                                keyboardType:
-                                                    TextInputType.text,
-                                                validator:
-                                                    Validators.username,
-                                                textInputAction:
-                                                    TextInputAction.next,
-                                              ),
-                                              const SizedBox(height: 18),
-                                              _FieldLabel(
-                                                context.t.password,
-                                                p,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              _InputField(
-                                                palette: p,
-                                                controller:
-                                                    _passwordController,
-                                                hint: '••••••••',
-                                                icon: Icons
-                                                    .lock_outline_rounded,
-                                                obscureText:
-                                                    _obscurePassword,
-                                                validator:
-                                                    Validators.password,
-                                                textInputAction:
-                                                    TextInputAction.done,
-                                                onFieldSubmitted: _submit,
-                                                suffixIcon:
-                                                    _VisibilityToggle(
-                                                  palette: p,
-                                                  obscure: _obscurePassword,
-                                                  onTap: () => setState(
-                                                    () =>
-                                                        _obscurePassword =
-                                                            !_obscurePassword,
+                                        child: Center(
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              maxWidth: panelWidth,
+                                            ),
+                                            child: Material(
+                                              color: p.white,
+                                              elevation: 0,
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: p.white,
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                    20,
                                                   ),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 6),
-                                              Align(
-                                                alignment:
-                                                    Alignment.centerRight,
-                                                child: TextButton(
-                                                  onPressed: () {},
-                                                  style: TextButton.styleFrom(
-                                                    padding:
-                                                        const EdgeInsets
-                                                            .symmetric(
-                                                      horizontal: 4,
-                                                      vertical: 4,
-                                                    ),
-                                                    minimumSize: Size.zero,
-                                                    tapTargetSize:
-                                                        MaterialTapTargetSize
-                                                            .shrinkWrap,
-                                                  ),
-                                                  child: Text(
-                                                    context.t.forgotPassword,
-                                                    style:
-                                                        GoogleFonts.dmSans(
-                                                      color: p.primary,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      fontSize: 13,
+                                                  border: Border.all(
+                                                    color: p.border
+                                                        .withValues(
+                                                      alpha: 0.9,
                                                     ),
                                                   ),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: p.primary
+                                                          .withValues(
+                                                        alpha: 0.08,
+                                                      ),
+                                                      blurRadius: 28,
+                                                      offset: const Offset(
+                                                        0,
+                                                        12,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                padding:
+                                                    EdgeInsets.fromLTRB(
+                                                  wide ? 32 : 22,
+                                                  wide ? 28 : 24,
+                                                  wide ? 32 : 22,
+                                                  wide ? 28 : 24,
+                                                ),
+                                                child: Form(
+                                                  key: _formKey,
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .stretch,
+                                                    children: [
+                                                      Text(
+                                                        'POS App',
+                                                        style: GoogleFonts
+                                                            .dmSans(
+                                                          fontSize: 26,
+                                                          fontWeight:
+                                                              FontWeight
+                                                                  .w800,
+                                                          color: p.ink,
+                                                          letterSpacing:
+                                                              -0.5,
+                                                          height: 1.15,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 6,
+                                                      ),
+                                                      Text(
+                                                        context.t
+                                                            .signInSubtitle,
+                                                        style: GoogleFonts
+                                                            .dmSans(
+                                                          fontSize: 14,
+                                                          height: 1.35,
+                                                          color: p.inkMid,
+                                                          fontWeight:
+                                                              FontWeight
+                                                                  .w400,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 28,
+                                                      ),
+                                                      _FieldLabel(
+                                                        context.t.username,
+                                                        p,
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 8,
+                                                      ),
+                                                      _InputField(
+                                                        palette: p,
+                                                        controller:
+                                                            _usernameController,
+                                                        hint: 'admin',
+                                                        icon: Icons
+                                                            .person_outline_rounded,
+                                                        keyboardType:
+                                                            TextInputType
+                                                                .text,
+                                                        validator: Validators
+                                                            .username,
+                                                        textInputAction:
+                                                            TextInputAction
+                                                                .next,
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 18,
+                                                      ),
+                                                      _FieldLabel(
+                                                        context.t.password,
+                                                        p,
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 8,
+                                                      ),
+                                                      _InputField(
+                                                        palette: p,
+                                                        controller:
+                                                            _passwordController,
+                                                        hint: '••••••••',
+                                                        icon: Icons
+                                                            .lock_outline_rounded,
+                                                        obscureText:
+                                                            _obscurePassword,
+                                                        validator: Validators
+                                                            .password,
+                                                        textInputAction:
+                                                            TextInputAction
+                                                                .done,
+                                                        onFieldSubmitted:
+                                                            _submit,
+                                                        suffixIcon:
+                                                            _VisibilityToggle(
+                                                          palette: p,
+                                                          obscure:
+                                                              _obscurePassword,
+                                                          onTap: () =>
+                                                              setState(
+                                                            () =>
+                                                                _obscurePassword =
+                                                                    !_obscurePassword,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 6,
+                                                      ),
+                                                      Align(
+                                                        alignment: Alignment
+                                                            .centerRight,
+                                                        child: TextButton(
+                                                          onPressed: () {},
+                                                          style: TextButton
+                                                              .styleFrom(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .symmetric(
+                                                              horizontal: 4,
+                                                              vertical: 4,
+                                                            ),
+                                                            minimumSize:
+                                                                Size.zero,
+                                                            tapTargetSize:
+                                                                MaterialTapTargetSize
+                                                                    .shrinkWrap,
+                                                          ),
+                                                          child: Text(
+                                                            context.t
+                                                                .forgotPassword,
+                                                            style: GoogleFonts
+                                                                .dmSans(
+                                                              color: p
+                                                                  .primary,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 13,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 20,
+                                                      ),
+                                                      _SubmitButton(
+                                                        palette: p,
+                                                        label: context
+                                                            .t.signIn,
+                                                        isLoading:
+                                                            _isLoading,
+                                                        onPressed: _submit,
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 16,
+                                                      ),
+                                                      Text(
+                                                        'Contact your shop owner for account access.',
+                                                        textAlign: TextAlign
+                                                            .center,
+                                                        style: GoogleFonts
+                                                            .dmSans(
+                                                          color: p.inkMid
+                                                              .withValues(
+                                                            alpha: 0.8,
+                                                          ),
+                                                          fontSize: 12.5,
+                                                          height: 1.35,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
-                                              const SizedBox(height: 20),
-                                              _SubmitButton(
-                                                palette: p,
-                                                label: context.t.signIn,
-                                                isLoading: _isLoading,
-                                                onPressed: _submit,
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Text(
-                                                'Contact your shop owner for account access.',
-                                                textAlign: TextAlign.center,
-                                                style: GoogleFonts.dmSans(
-                                                  color: p.inkMid
-                                                      .withValues(alpha: 0.8),
-                                                  fontSize: 12.5,
-                                                  height: 1.35,
-                                                ),
-                                              ),
-                                            ],
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 ),
                               ),
                               Text(
@@ -454,6 +526,8 @@ class _InputField extends StatelessWidget {
       textInputAction: textInputAction,
       onFieldSubmitted:
           onFieldSubmitted != null ? (_) => onFieldSubmitted!() : null,
+      // Keep focused field above the soft keyboard when the form scrolls.
+      scrollPadding: const EdgeInsets.only(bottom: 120),
       style: GoogleFonts.dmSans(
         fontSize: 15.5,
         color: p.ink,

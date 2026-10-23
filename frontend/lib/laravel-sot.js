@@ -76,10 +76,11 @@ function mapLaravelUserToSession(user) {
 function adaptProduct(p) {
     if (!p || typeof p !== 'object') return p;
     return {
-        id: p.id,
+        // String ids match web POS onclick handlers (addToCart('1') vs numeric 1)
+        id: p.id != null ? String(p.id) : p.id,
         name: p.name,
         description: p.description || '',
-        categoryId: p.category_id,
+        categoryId: p.category_id != null ? String(p.category_id) : p.category_id,
         categoryName: p.category || null,
         sku: p.sku || '',
         barcode: p.barcode || '',
@@ -97,10 +98,149 @@ function adaptProduct(p) {
     };
 }
 
+function escapeReceiptHtml(text) {
+    return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function formatReceiptDate(value) {
+    const d = value ? new Date(value) : new Date();
+    if (Number.isNaN(d.getTime())) return '—';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** 58mm thermal receipt HTML from adapted sale + settings */
+function renderSaleReceiptHtml(sale, settings = {}) {
+    const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+    const dateStr = formatReceiptDate(sale.createdAt || sale.completedAt);
+    const paymentMethodLabel = {
+        cash: 'Pesa Taslimu',
+        mpesa: 'M-Pesa',
+        airtel: 'Airtel Money',
+        tigo: 'Tigo Pesa',
+        bank: 'Bank Transfer',
+        credit: 'Mkopo',
+    }[String(sale.paymentMethod || '').toLowerCase()]
+        || String(sale.paymentMethod || '').toUpperCase()
+        || '—';
+
+    const items = Array.isArray(sale.items) ? sale.items : [];
+    const itemsHtml = items.map((item) => `
+  <div class="item-block">
+    <div class="item-name">${escapeReceiptHtml(item.productName || 'Bidhaa')}</div>
+    <div class="item-detail">
+      <span>${item.quantity || 0} x ${fmt(item.price)}</span>
+      <span>${fmt(item.total)}</span>
+    </div>
+  </div>`).join('');
+
+    const discountHtml = (Number(sale.discount) > 0)
+        ? `<div class="sum-row"><span>Punguzo</span><span>-${fmt(sale.discount)}</span></div>`
+        : '';
+    const creditHtml = sale.isCredit
+        ? `<div class="sum-row credit-row"><span>Mkopo Baki</span><span>${fmt((sale.totalAmount || 0) - (sale.paidAmount || 0))}</span></div>`
+        : '';
+    const customerName = sale.customerName && sale.customerName !== 'Walk-in Customer'
+        ? sale.customerName
+        : null;
+
+    return `<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Risiti ${escapeReceiptHtml(sale.receiptNumber || sale.id)}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px; background: #fff; color: #000;
+    width: 58mm; margin: 0 auto; padding: 3mm 2mm 10mm 2mm;
+  }
+  .header { text-align: center; margin-bottom: 6px; }
+  .company-name { font-size: 17px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; }
+  .company-sub { font-size: 12px; margin-top: 3px; }
+  .div-solid { border: none; border-top: 2px solid #000; margin: 6px 0; }
+  .div-dash  { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+  .receipt-title { text-align: center; font-size: 15px; font-weight: bold; letter-spacing: 4px; padding: 3px 0; }
+  .info-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; padding: 2px 0; gap: 4px; }
+  .info-row .lbl { color: #555; white-space: nowrap; }
+  .info-row .val { font-weight: bold; text-align: right; word-break: break-word; }
+  .section-label { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; padding: 2px 0; }
+  .item-block { margin: 5px 0; }
+  .item-name { font-size: 14px; font-weight: bold; line-height: 1.3; word-break: break-word; }
+  .item-detail { display: flex; justify-content: space-between; font-size: 13px; padding-left: 6px; margin-top: 1px; color: #333; }
+  .sum-row { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; color: #444; }
+  .credit-row { color: #c00; font-weight: bold; }
+  .total-box { border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 0 5px; margin: 6px 0; text-align: center; }
+  .total-label { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+  .total-amount { font-size: 22px; font-weight: bold; letter-spacing: 1px; margin-top: 3px; line-height: 1.1; }
+  .payment-section { text-align: center; font-size: 13px; margin: 6px 0; }
+  .payment-badge { display: inline-block; border: 2px solid #000; padding: 3px 14px; font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 4px; }
+  .credit-warning { font-size: 13px; font-weight: bold; color: #c00; text-align: center; margin-top: 4px; }
+  .footer { text-align: center; margin-top: 8px; }
+  .thank-you { font-size: 15px; font-weight: bold; margin-bottom: 3px; }
+  .footer-sub { font-size: 12px; color: #444; line-height: 1.5; }
+  @media print {
+    body { width: 58mm; margin: 0; padding: 2mm 2mm 8mm; }
+    .no-print { display: none !important; }
+    @page { size: 58mm auto; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="company-name">${escapeReceiptHtml(settings.companyName || 'HASLIM GROUP')}</div>
+  ${settings.address || settings.companyAddress ? `<div class="company-sub">${escapeReceiptHtml(settings.address || settings.companyAddress)}</div>` : ''}
+  ${settings.phone || settings.companyPhone ? `<div class="company-sub">Tel: ${escapeReceiptHtml(settings.phone || settings.companyPhone)}</div>` : ''}
+</div>
+<hr class="div-solid">
+<div class="receipt-title">RISITI</div>
+<hr class="div-solid">
+<div class="info-row"><span class="lbl">Namba:</span><span class="val">${escapeReceiptHtml(sale.receiptNumber || sale.id)}</span></div>
+<div class="info-row"><span class="lbl">Tarehe:</span><span class="val">${dateStr}</span></div>
+${customerName ? `<div class="info-row"><span class="lbl">Mteja:</span><span class="val">${escapeReceiptHtml(customerName)}</span></div>` : ''}
+${sale.cashierName ? `<div class="info-row"><span class="lbl">Muuzaji:</span><span class="val">${escapeReceiptHtml(sale.cashierName)}</span></div>` : ''}
+<hr class="div-dash">
+<div class="section-label">Bidhaa Zilizonunuliwa</div>
+<hr class="div-dash">
+${itemsHtml || '<div class="item-block"><div class="item-name">Hakuna bidhaa</div></div>'}
+<hr class="div-dash">
+${discountHtml}
+<div class="total-box">
+  <div class="total-label">Jumla ya Kulipa</div>
+  <div class="total-amount">TZS ${fmt(sale.totalAmount)}</div>
+</div>
+${creditHtml}
+<div class="payment-section">
+  <div>Njia ya Malipo:</div>
+  <div class="payment-badge">${escapeReceiptHtml(paymentMethodLabel)}</div>
+</div>
+${sale.isCredit ? '<div class="credit-warning">⚠ MAUZO YA MKOPO</div>' : ''}
+<hr class="div-dash">
+<div class="footer">
+  <div class="thank-you">${escapeReceiptHtml(settings.receiptFooter || 'Asante kwa kununua!')}</div>
+  <div class="footer-sub">Karibu tena</div>
+  <div class="footer-sub" style="font-size:11px;color:#888;margin-top:3px;">${formatReceiptDate(new Date())}</div>
+</div>
+<div class="no-print" style="text-align:center;margin-top:16px;">
+  <button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer;background:#0d6efd;color:#fff;border:none;border-radius:4px;">
+    Chapisha Risiti
+  </button>
+</div>
+<script>window.addEventListener('load', function() { setTimeout(function(){ window.print(); }, 400); });</script>
+</body>
+</html>`;
+}
+
 function adaptSale(s) {
     if (!s || typeof s !== 'object') return s;
     return {
-        id: s.id,
+        id: s.id != null ? String(s.id) : s.id,
         receiptNumber: s.serial_number,
         serial_number: s.serial_number,
         paymentMethod: s.payment_method,
@@ -136,7 +276,7 @@ function adaptCustomer(c) {
     if (!c || typeof c !== 'object') return c;
     const openDebt = Number(c.open_debt_balance ?? c.openDebtBalance ?? 0) || 0;
     return {
-        id: c.id,
+        id: c.id != null ? String(c.id) : c.id,
         name: c.name,
         email: c.email,
         phone: c.phone,
@@ -192,9 +332,9 @@ function isCashLikePaymentMethod(method) {
 function adaptCategory(c) {
     if (!c || typeof c !== 'object') return c;
     return {
-        id: c.id,
+        id: c.id != null ? String(c.id) : c.id,
         name: c.name,
-        parentId: c.parent_id,
+        parentId: c.parent_id != null ? String(c.parent_id) : c.parent_id,
         status: 'active',
         shop_id: c.shop_id,
     };
@@ -339,6 +479,7 @@ function adaptSettings(shop) {
         mobile: shop.mobile,
         location: shop.location,
         taxOffice: shop.tax_office,
+        receiptFooter: shop.receipt_footer || shop.receiptFooter || null,
     };
 }
 
@@ -617,6 +758,36 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
 
     app.get('/api/sales/:id', isAuthenticated, (req, res) =>
         proxyJson(req, res, { path: `/sales/${req.params.id}`, adapt: adaptSale }));
+
+    // Thermal receipt HTML — sales live in Laravel when SoT is on
+    app.get('/api/sales/:id/receipt', isAuthenticated, async (req, res) => {
+        const token = requireLaravelToken(req, res);
+        if (!token) return;
+        try {
+            const [saleRes, settingsRes] = await Promise.all([
+                laravelFetch(`/sales/${req.params.id}`, { token }),
+                laravelFetch('/settings', { token }),
+            ]);
+            if (!saleRes.ok || !saleRes.json) {
+                return res.status(saleRes.status || 404).send('<p>Sale not found</p>');
+            }
+            const raw = saleRes.json?.data && !saleRes.json.serial_number
+                ? saleRes.json.data
+                : saleRes.json;
+            const sale = adaptSale(raw);
+            if (!sale || !sale.id) {
+                return res.status(404).send('<p>Sale not found</p>');
+            }
+            const settings = settingsRes.ok
+                ? adaptSettings(unwrapData(settingsRes.json) || settingsRes.json || {})
+                : {};
+            res.setHeader('Content-Type', 'text/html; charset=UTF-8');
+            return res.send(renderSaleReceiptHtml(sale, settings || {}));
+        } catch (err) {
+            console.error('Laravel receipt proxy error:', err.message);
+            return res.status(502).send('<p>Cannot load receipt</p>');
+        }
+    });
 
     app.get('/api/customers', isAuthenticated, (req, res) => {
         const q = new URLSearchParams();

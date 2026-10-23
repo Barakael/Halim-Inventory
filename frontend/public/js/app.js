@@ -3575,12 +3575,17 @@ async function loadProductOptions(selectId) {
 // =========================
 // POS SYSTEM
 // =========================
+function sameId(a, b) {
+    return a != null && b != null && String(a) === String(b);
+}
+
 function addToCart(productId) {
-    const product = products.find(p => p.id === productId);
+    const product = products.find(p => sameId(p.id, productId));
     if (!product) return;
-    
-    const existingItem = cart.find(item => item.productId === productId);
-    
+
+    const id = String(product.id);
+    const existingItem = cart.find(item => sameId(item.productId, id));
+
     if (existingItem) {
         if (existingItem.quantity >= product.currentStock) {
             showToast('Stock haitoshi', 'danger');
@@ -3589,7 +3594,7 @@ function addToCart(productId) {
         existingItem.quantity++;
     } else {
         cart.push({
-            productId: product.id,
+            productId: id,
             name: product.name,
             price: product.retailPrice,
             wholesalePrice: product.wholesalePrice,
@@ -3597,55 +3602,55 @@ function addToCart(productId) {
             maxStock: product.currentStock
         });
     }
-    
+
     renderCart();
 }
 
 function updateCartItemQty(productId, change) {
-    const item = cart.find(i => i.productId === productId);
+    const item = cart.find(i => sameId(i.productId, productId));
     if (!item) return;
-    
+
     const newQty = item.quantity + change;
-    
+
     if (newQty <= 0) {
         removeFromCart(productId);
         return;
     }
-    
+
     if (newQty > item.maxStock) {
         showToast('Stock haitoshi', 'danger');
         return;
     }
-    
+
     item.quantity = newQty;
     renderCart();
 }
 
 function setCartItemQty(productId, newQty) {
-    const item = cart.find(i => i.productId === productId);
+    const item = cart.find(i => sameId(i.productId, productId));
     if (!item) return;
-    
+
     // Parse and validate input
     const qty = parseInt(newQty);
-    
+
     if (isNaN(qty) || qty <= 0) {
         // If invalid, restore original quantity
         renderCart();
         return;
     }
-    
+
     if (qty > item.maxStock) {
         showToast('Stock haitoshi. Kiwango cha juu ni ' + item.maxStock, 'danger');
         renderCart(); // Restore original quantity
         return;
     }
-    
+
     item.quantity = qty;
     renderCart();
 }
 
 function removeFromCart(productId) {
-    cart = cart.filter(item => item.productId !== productId);
+    cart = cart.filter(item => !sameId(item.productId, productId));
     renderCart();
 }
 
@@ -4699,6 +4704,12 @@ function printSupplierStatement() {
 // POS IMPROVEMENTS
 // =========================
 async function loadPOS() {
+    // Clear any leftover modal backdrops that can block POS clicks
+    document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+
     await loadProducts();
     await loadCustomers();
     await loadSuppliers();
@@ -4725,13 +4736,13 @@ async function loadPOS() {
         completeBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Maliza Mauzo';
     }
     
-    // Setup search
+    // Setup search (replace listener to avoid duplicates on re-entry)
     const searchInput = document.getElementById('posSearchProduct');
     if (searchInput) {
-        searchInput.addEventListener('input', function() {
+        searchInput.oninput = function() {
             const query = this.value.toLowerCase();
             renderPOSProducts(query);
-        });
+        };
     }
 }
 

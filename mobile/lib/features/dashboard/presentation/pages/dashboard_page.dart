@@ -301,9 +301,18 @@ class _CashierDashboardViewState extends State<_CashierDashboardView> {
                       builder: (context, salesState) {
                         return BlocBuilder<ProductsBloc, ProductsState>(
                           builder: (context, productsState) {
-                            final sales = salesState is SalesLoaded
+                            final allSales = salesState is SalesLoaded
                                 ? salesState.sales
                                 : <SaleEntity>[];
+                            // Cashiers only see their own sales on the dashboard
+                            // (same scoping as Reports).
+                            final uid = widget.user.id?.toString() ?? '';
+                            final sales = uid.isEmpty
+                                ? allSales
+                                : allSales
+                                    .where((s) =>
+                                        s.cashierId.toString() == uid)
+                                    .toList();
                             final products = productsState is ProductsLoaded
                                 ? productsState.products
                                 : <ProductEntity>[];

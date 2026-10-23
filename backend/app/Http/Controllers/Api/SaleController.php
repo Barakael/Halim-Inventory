@@ -16,9 +16,15 @@ class SaleController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Sale::forShop($request->user()->shop_id)
+        $user = $request->user();
+        $query = Sale::forShop($user->shop_id)
             ->with(['items', 'shop', 'cashier'])
             ->orderByDesc('created_at');
+
+        // Cashiers only see their own sales; owners/admins see the shop.
+        if ($this->isCashierRole($user->role)) {
+            $query->where('cashier_id', $user->id);
+        }
 
         if ($request->filled('date')) {
             $query->whereDate('created_at', $request->date);
@@ -39,14 +45,25 @@ class SaleController extends Controller
 
     public function show(Request $request, string $id)
     {
-        $sale = Sale::forShop($request->user()->shop_id)
+        $user = $request->user();
+        $query = Sale::forShop($user->shop_id)
             ->with(['items', 'shop', 'cashier'])
             ->where(function ($q) use ($id) {
                 $q->where('id', $id)->orWhere('legacy_id', $id);
-            })
-            ->firstOrFail();
+            });
+
+        if ($this->isCashierRole($user->role)) {
+            $query->where('cashier_id', $user->id);
+        }
+
+        $sale = $query->firstOrFail();
 
         return response()->json($sale->toApiArray());
+    }
+
+    private function isCashierRole(?string $role): bool
+    {
+        return strtolower(trim((string) $role)) === 'cashier';
     }
 
     public function store(Request $request)
