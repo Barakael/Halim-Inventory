@@ -5,19 +5,18 @@ import 'core/di/injection_container.dart';
 import 'core/l10n/app_strings.dart';
 import 'core/l10n/locale_cubit.dart';
 import 'core/router/app_router.dart';
+import 'core/router/route_names.dart';
 import 'core/storage/secure_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/brand_palette.dart';
 import 'core/theme/theme_cubit.dart';
 import 'features/analytics/presentation/bloc/analytics_bloc.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
-import 'core/router/route_names.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/products/presentation/bloc/products_bloc.dart';
 import 'features/sales/presentation/bloc/sales_bloc.dart';
 import 'features/staff/presentation/bloc/staff_bloc.dart';
-import 'features/shops/domain/repositories/shop_repository.dart';
 import 'features/shops/presentation/bloc/shop_bloc.dart';
 import 'features/transactions/presentation/bloc/transactions_bloc.dart';
 import 'features/users/presentation/bloc/user_bloc.dart';
@@ -83,6 +82,7 @@ class _AppState extends State<App> with TickerProviderStateMixin {
     ));
 
     _appRouter = AppRouter(secureStorage: sl<SecureStorage>());
+    sl<ThemeCubit>().lockSystemBlue();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -113,18 +113,6 @@ class _AppState extends State<App> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Future<void> _syncShopTheme(BuildContext context) async {
-    final themeCubit = context.read<ThemeCubit>();
-    try {
-      final shop = await sl<ShopRepository>().getCurrentShop();
-      final themeId = shop?.themeId;
-      if (!mounted || themeId == null || themeId.isEmpty) return;
-      await themeCubit.setTheme(themeId);
-    } catch (_) {
-      // Offline: keep cached SharedPreferences theme.
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized) {
@@ -139,9 +127,8 @@ class _AppState extends State<App> with TickerProviderStateMixin {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF1A1A2E),
-                    Color(0xFF0F0F1E),
-                    Color(0xFF09090F),
+                    Color(0xFF0D6EFD),
+                    Color(0xFF0A58CA),
                   ],
                 ),
               ),
@@ -238,14 +225,11 @@ class _AppState extends State<App> with TickerProviderStateMixin {
         listener: (context, state) {
           final loc = _appRouter.router.state.matchedLocation;
           if (state is AuthAuthenticated) {
-            // Shop theme applies to owner + cashiers.
-            _syncShopTheme(context);
-            if (loc == RouteNames.home || loc == RouteNames.login) {
-              _appRouter.router.go(RouteNames.dashboard);
+            if (loc != RouteNames.pos) {
+              _appRouter.router.go(RouteNames.pos);
             }
           } else if (state is AuthUnauthenticated) {
-            const publicRoutes = {RouteNames.login};
-            if (!publicRoutes.contains(loc)) {
+            if (loc != RouteNames.login) {
               _appRouter.router.go(RouteNames.login);
             }
           }
