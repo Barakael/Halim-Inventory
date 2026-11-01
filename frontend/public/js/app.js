@@ -4657,15 +4657,17 @@ async function loadSupplierStatement(supplierId, preset = 'month', from, to) {
             const jumla = Number(row.jumla ?? row.debit ?? 0) || 0;
             const malipo = Number(row.malipo ?? row.credit ?? 0) || 0;
             const qty = row.quantity;
+            // Bidhaa = product names only; payment rows use dashes (amount is under Malipo).
+            const bidhaa = row.products ? String(row.products) : '—';
             return `
             <tr>
                 <td>${escapeHtml(row.date || '')}</td>
                 <td>${escapeHtml(row.delivered_by_name || '—')}</td>
                 <td>${escapeHtml(row.delivered_by_phone || '—')}</td>
-                <td>${escapeHtml(row.products || (row.type === 'payment' ? (row.description || 'Malipo') : '—'))}</td>
+                <td>${escapeHtml(bidhaa)}</td>
                 <td class="text-end">${qty != null && qty > 0 ? qty : '—'}</td>
-                <td class="text-end">${jumla > 0 ? formatCurrency(jumla) : '—'}</td>
                 <td class="text-end">${malipo > 0 ? formatCurrency(malipo) : '—'}</td>
+                <td class="text-end">${jumla > 0 ? formatCurrency(jumla) : '—'}</td>
                 <td class="text-end fw-semibold">${formatCurrency(row.deni ?? row.balance)}</td>
                 <td>
                     ${row.receipt_url
