@@ -9,6 +9,14 @@ class ThemeCubit extends Cubit<BrandPalette> {
 
   static const _prefsKey = 'app_theme_id';
 
+  /// Keep this session on the web system's light blue, without saving over
+  /// a shop theme stored for later.
+  void lockSystemBlue() {
+    const palette = BrandPalette.classic;
+    BrandTokens.current = palette;
+    emit(palette);
+  }
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final id = prefs.getString(_prefsKey);
