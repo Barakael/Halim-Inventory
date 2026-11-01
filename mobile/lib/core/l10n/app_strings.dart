@@ -47,7 +47,7 @@ class AppStrings {
   String _t(String en, String sw) => _sw ? sw : en;
 
   // ── App ────────────────────────────────────────────────────────────
-  String get appName => 'POS App';
+  String get appName => 'Calendar';
   String get appTagline =>
       _t('Point of Sale System', 'Mfumo wa Mauzo (POS)');
   String get language => _t('Language', 'Lugha');
