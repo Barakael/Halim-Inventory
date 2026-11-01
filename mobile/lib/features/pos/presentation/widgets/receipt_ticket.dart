@@ -153,7 +153,7 @@ class ReceiptTicket {
             ...c.payment.map(kv),
             rule(),
             centered('Thank you', bold(7.5)),
-            centered('Welcome again', body(7)),
+            centered('Welcome again to KASI-MPYA', body(7)),
           ],
         ),
       ),
@@ -249,7 +249,7 @@ class ReceiptTicket {
     }
     await rule();
     await center('Thank you', size: 18, bold: true);
-    await center('Welcome again', size: 18);
+    await center('Welcome again to KASI-MPYA', size: 18);
 
     await PosPrinterPlugin.feedPaper(4);
     try {
@@ -351,7 +351,7 @@ class ReceiptTicket {
       styles: centerBold,
     ));
     bytes.addAll(generator.text(
-      'Welcome again',
+      'Welcome again to KASI-MPYA',
       styles: center,
     ));
     bytes.addAll(generator.feed(3));
