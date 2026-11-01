@@ -111,6 +111,7 @@ class TraReceiptFormatter {
     }
     lines.add(divider('='));
     lines.add(center('Thank you'));
+    lines.add(center('Welcome again to KASI-MPYA'));
     lines.add('');
     return lines;
   }
