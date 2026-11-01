@@ -85,7 +85,7 @@ class _LoginPageState extends State<LoginPage>
     final panelWidth = wide ? 420.0 : double.infinity;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
@@ -97,7 +97,7 @@ class _LoginPageState extends State<LoginPage>
           listener: (context, state) {
             setState(() => _isLoading = state is AuthLoading);
             if (state is AuthAuthenticated) {
-              context.go(RouteNames.dashboard);
+              context.go(RouteNames.pos);
             } else if (state is AuthUnauthenticated) {
               _showError(context, 'Invalid username or password.');
             } else if (state is AuthError) {
@@ -119,18 +119,16 @@ class _LoginPageState extends State<LoginPage>
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          begin: Alignment(-1 + t * 0.3, -1),
-                          end: Alignment(1 - t * 0.2, 1),
-                          colors: [
-                            Color.lerp(p.primary, p.bg, 0.88)!,
-                            p.bg,
-                            Color.lerp(p.accent, p.bg, 0.92)!,
+                          begin: Alignment(-1 + t * 0.15, -1),
+                          end: Alignment(1 - t * 0.1, 1),
+                          colors: const [
+                            Color(0xFF0D6EFD),
+                            Color(0xFF0A58CA),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  // Soft brand glow — grounds the page without floating chrome.
                   Positioned(
                     top: -80,
                     right: -60,
@@ -140,7 +138,8 @@ class _LoginPageState extends State<LoginPage>
                         height: 220,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: p.accent.withValues(alpha: 0.10 + t * 0.06),
+                          color: const Color(0xFFCFE2FF)
+                              .withValues(alpha: 0.16 + t * 0.06),
                         ),
                       ),
                     ),
@@ -154,8 +153,8 @@ class _LoginPageState extends State<LoginPage>
                         height: 260,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: p.primary
-                              .withValues(alpha: 0.07 + (1 - t) * 0.04),
+                          color: Colors.white
+                              .withValues(alpha: 0.06 + (1 - t) * 0.04),
                         ),
                       ),
                     ),
@@ -176,7 +175,9 @@ class _LoginPageState extends State<LoginPage>
                             children: [
                               Align(
                                 alignment: Alignment.centerRight,
-                                child: LanguageChip(),
+                                child: const LanguageChip(
+                                  foregroundColor: Colors.white,
+                                ),
                               ),
                               Expanded(
                                 child: LayoutBuilder(
