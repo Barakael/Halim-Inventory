@@ -73,7 +73,9 @@ class LanguageSwitcherTile extends StatelessWidget {
 
 /// Small chip for login / splash toolbars.
 class LanguageChip extends StatelessWidget {
-  const LanguageChip({super.key});
+  const LanguageChip({super.key, this.foregroundColor});
+
+  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +87,7 @@ class LanguageChip extends StatelessWidget {
       icon: const Icon(Icons.translate_rounded, size: 18),
       label: Text(isSw ? t.swahili : t.english),
       style: TextButton.styleFrom(
-        foregroundColor: BrandTokens.current.primary,
+        foregroundColor: foregroundColor ?? BrandTokens.current.primary,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       ),
     );
