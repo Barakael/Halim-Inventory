@@ -258,8 +258,8 @@
         .col-phone { width: 11%; }
         .col-products { width: 23%; }
         .col-qty { width: 6%; }
-        .col-jumla { width: 12%; }
         .col-malipo { width: 12%; }
+        .col-jumla { width: 12%; }
         .col-deni { width: 12%; }
 
         .totals-wrap {
@@ -423,8 +423,8 @@
                     <th class="col-phone">Simu</th>
                     <th class="col-products">Bidhaa</th>
                     <th class="num col-qty">Idadi</th>
-                    <th class="num col-jumla">Jumla</th>
                     <th class="num col-malipo">Malipo</th>
+                    <th class="num col-jumla">Jumla</th>
                     <th class="num col-deni">Deni</th>
                 </tr>
             </thead>
@@ -444,18 +444,11 @@
                         <td>{{ $dateLabel }}</td>
                         <td>{{ $row['delivered_by_name'] ?: '—' }}</td>
                         <td>{{ $row['delivered_by_phone'] ?: '—' }}</td>
-                        <td>
-                            @if(!empty($row['products']))
-                                {{ $row['products'] }}
-                            @elseif($isPayment)
-                                <span class="muted">{{ $row['description'] ?? 'Malipo' }}</span>
-                            @else
-                                —
-                            @endif
-                        </td>
+                        {{-- Bidhaa = product names only; payment rows use dashes --}}
+                        <td>{{ !empty($row['products']) ? $row['products'] : '—' }}</td>
                         <td class="num">{{ ($qty !== null && (int) $qty > 0) ? number_format((int) $qty) : '—' }}</td>
-                        <td class="num">{{ $jumla > 0 ? number_format($jumla, 0).' TZS' : '—' }}</td>
                         <td class="num">{{ $malipo > 0 ? number_format($malipo, 0).' TZS' : '—' }}</td>
+                        <td class="num">{{ $jumla > 0 ? number_format($jumla, 0).' TZS' : '—' }}</td>
                         <td class="num deni">{{ number_format($deni, 0) }} TZS</td>
                     </tr>
                 @empty
