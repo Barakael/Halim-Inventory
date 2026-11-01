@@ -153,6 +153,8 @@ class ReceiptPaper extends StatelessWidget {
           ...content.payment.map(kv),
           rule(),
           centered('Thank you for your purchase', body(11)),
+          const SizedBox(height: 2),
+          centered('Welcome again to KASI-MPYA', body(11)),
         ],
       ),
     );
