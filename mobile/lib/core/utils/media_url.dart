@@ -1,7 +1,6 @@
-const _apiBase = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'https://haslim.co.tz/api',
-);
+import '../network/api_environment.dart';
+
+String get _apiBase => localApiBaseUrl();
 
 String mediaOrigin() {
   final parsed = Uri.tryParse(_apiBase.trim());
