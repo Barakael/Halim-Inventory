@@ -5,9 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/theme/brand_palette.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../core/router/route_names.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/services/pos_device_service.dart';
@@ -635,7 +633,7 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
         sale: state.sale,
         shop: shop,
         onClose: () {
-          context.pop();
+          Navigator.of(ctx).pop();
           _clearCart();
         },
       ),
@@ -710,7 +708,14 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<SalesBloc, SalesState>(
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (prev, next) =>
+          next is AuthAuthenticated && prev is! AuthAuthenticated,
+      listener: (context, state) {
+        context.read<ProductsBloc>().add(const ProductsFetchRequested());
+        _prefetchShopProfile();
+      },
+      child: BlocListener<SalesBloc, SalesState>(
       listener: (ctx, state) {
         if (state is SaleCreated) {
           _handleSaleCreated(ctx, state);
@@ -734,7 +739,6 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
                       _TopBar(
                         itemCount: _itemCount,
                         isH10Device: _isH10Device,
-                        onHistoryTap: () => context.push(RouteNames.sales),
                         onScanTap: () => setState(() => _showScanner = true),
                         onAddTap: _openAddPopup,
                       ),
@@ -778,6 +782,7 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -789,14 +794,13 @@ class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.itemCount,
     required this.isH10Device,
-    required this.onHistoryTap,
     required this.onScanTap,
     required this.onAddTap,
   });
 
   final int itemCount;
   final bool isH10Device;
-  final VoidCallback onHistoryTap, onScanTap, onAddTap;
+  final VoidCallback onScanTap, onAddTap;
 
   @override
   Widget build(BuildContext context) {
@@ -851,12 +855,6 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          _TopAction(
-            icon: Icons.history_rounded,
-            tooltip: t.salesHistory,
-            onTap: onHistoryTap,
-          ),
-          const SizedBox(width: 6),
           _TopAction(
             icon: isH10Device
                 ? Icons.barcode_reader
