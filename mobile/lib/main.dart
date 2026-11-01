@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'app.dart';
 import 'core/di/injection_container.dart';
+import 'core/network/api_environment.dart';
 import 'core/network/api_path.dart';
 import 'core/services/pos_device_service.dart';
 
@@ -18,12 +19,9 @@ void main() {
 
       await Hive.initFlutter();
 
-      // Bake production/LAN API at build time:
-      // flutter build apk --dart-define=API_BASE_URL=https://haslim.co.tz/api
-      const String baseUrl = String.fromEnvironment(
-        'API_BASE_URL',
-        defaultValue: 'https://haslim.co.tz/api',
-      );
+      // Local Laravel first so UI changes can be checked against this machine.
+      // Production: --dart-define=API_BASE_URL=https://haslim.co.tz/api
+      final String baseUrl = localApiBaseUrl();
 
       final normalized = normalizeApiBaseUrl(baseUrl);
       assert(() {
