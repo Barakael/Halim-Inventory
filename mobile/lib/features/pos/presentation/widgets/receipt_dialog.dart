@@ -57,11 +57,17 @@ class ReceiptDialog extends StatefulWidget {
     required this.sale,
     this.shop,
     required this.onClose,
+    this.allowPrint = false,
+    this.onPrinted,
   });
 
   final SaleEntity sale;
   final ShopEntity? shop;
   final VoidCallback onClose;
+
+  /// Cashiers confirm the sale only. Admin prints from the receipt queue.
+  final bool allowPrint;
+  final Future<void> Function()? onPrinted;
 
   @override
   State<ReceiptDialog> createState() => _ReceiptDialogState();
@@ -269,9 +275,14 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
     HapticFeedback.mediumImpact();
 
     try {
-      if (PosDeviceService.instance.hasBuiltInPrinter) {
+      final paperMm = _resolvedShop?.receiptPaperMm == 80 ? 80 : 58;
+      final skipBuiltin =
+          _resolvedShop?.skipBuiltinPrinter == true || paperMm == 80;
+
+      if (!skipBuiltin && PosDeviceService.instance.hasBuiltInPrinter) {
         try {
           await ReceiptTicket.printH10S(_ticket);
+          if (widget.onPrinted != null) await widget.onPrinted!();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Receipt printed on H10S.')),
@@ -285,16 +296,31 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
 
       final btOk = await _ensureBluetoothConnected();
       if (btOk) {
-        final bytes = await ReceiptTicket.buildBluetoothBytes(_ticket);
+        final bytes = await ReceiptTicket.buildBluetoothBytes(
+          _ticket,
+          paperMm: paperMm,
+        );
         final ok = await PrintBluetoothThermal.writeBytes(bytes);
         if (ok) {
+          if (widget.onPrinted != null) await widget.onPrinted!();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Receipt printed via Bluetooth.')),
+              SnackBar(
+                content: Text(
+                  paperMm == 80
+                      ? 'Receipt printed on the 80mm Bluetooth printer.'
+                      : 'Receipt printed via Bluetooth.',
+                ),
+              ),
             );
           }
           return;
         }
+      }
+
+      if (widget.allowPrint) {
+        _showError('Print failed. The receipt stays in the queue.');
+        return;
       }
 
       final pdfBytes = await ReceiptTicket.buildPdf(_ticket);
@@ -509,10 +535,13 @@ class _ReceiptDialogState extends State<ReceiptDialog> {
                   ),
                 ),
                 _ActionBar(
+                  allowPrint: widget.allowPrint,
                   isPrinting: _isPrinting,
                   isConnectingPrinter: _isConnectingPrinter,
                   connectedPrinterName: _connectedPrinterName,
-                  hasBuiltInPrinter:
+                  hasBuiltInPrinter: widget.allowPrint &&
+                      _resolvedShop?.skipBuiltinPrinter != true &&
+                      _resolvedShop?.receiptPaperMm != 80 &&
                       PosDeviceService.instance.hasBuiltInPrinter,
                   onConnectPrinter: _connectPrinter,
                   onPrint: _printReceipt,
@@ -625,6 +654,7 @@ class _RawReceiptToggle extends StatelessWidget {
 
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
+    required this.allowPrint,
     required this.isPrinting,
     required this.isConnectingPrinter,
     required this.connectedPrinterName,
@@ -635,6 +665,7 @@ class _ActionBar extends StatelessWidget {
     required this.onClose,
   });
 
+  final bool allowPrint;
   final bool isPrinting;
   final bool isConnectingPrinter;
   final String? connectedPrinterName;
@@ -656,7 +687,16 @@ class _ActionBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (connectedPrinterName != null)
+          if (!allowPrint)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Sale saved. The receipt is waiting for admin to print.',
+                textAlign: TextAlign.center,
+                style: _ts(13, weight: FontWeight.w600),
+              ),
+            ),
+          if (allowPrint && connectedPrinterName != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(
@@ -673,7 +713,7 @@ class _ActionBar extends StatelessWidget {
                 ],
               ),
             ),
-          if (!hasBuiltInPrinter)
+          if (allowPrint && !hasBuiltInPrinter)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: SizedBox(
@@ -700,6 +740,7 @@ class _ActionBar extends StatelessWidget {
                 ),
               ),
             ),
+          if (allowPrint)
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -723,9 +764,10 @@ class _ActionBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          if (allowPrint) const SizedBox(height: 10),
           Row(
             children: [
+              if (allowPrint)
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: isPrinting ? null : onShare,
@@ -740,12 +782,17 @@ class _ActionBar extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              if (allowPrint) const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: onClose,
-                  icon: const Icon(Icons.point_of_sale_rounded, size: 16),
-                  label: const Text('New Sale'),
+                  icon: Icon(
+                    allowPrint
+                        ? Icons.close_rounded
+                        : Icons.point_of_sale_rounded,
+                    size: 16,
+                  ),
+                  label: Text(allowPrint ? 'Close' : 'New Sale'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     foregroundColor: _C.inkMid,

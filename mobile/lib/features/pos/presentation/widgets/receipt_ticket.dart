@@ -258,9 +258,15 @@ class ReceiptTicket {
     await PosPrinterPlugin.release();
   }
 
-  static Future<List<int>> buildBluetoothBytes(ReceiptContent c) async {
+  static Future<List<int>> buildBluetoothBytes(
+    ReceiptContent c, {
+    int paperMm = 58,
+  }) async {
     final profile = await CapabilityProfile.load();
-    final generator = Generator(PaperSize.mm58, profile);
+    final generator = Generator(
+      paperMm == 80 ? PaperSize.mm80 : PaperSize.mm58,
+      profile,
+    );
     final bytes = <int>[];
 
     const left = PosStyles(align: PosAlign.left);
