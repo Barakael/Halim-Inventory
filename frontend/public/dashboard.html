@@ -53,14 +53,18 @@
                 <i class="bi bi-receipt"></i>
                 <span>Mauzo</span>
             </a>
+            <a class="menu-item" href="/receipts" data-page="receipts" data-role="admin,super_admin">
+                <i class="bi bi-printer"></i>
+                <span>Risiti</span>
+            </a>
 
-            <a class="menu-item" href="/credits" data-page="credits" data-role="admin,cashier,storekeeper">
+            <a class="menu-item" href="/credits" data-page="credits" data-role="admin,cashier,storekeeper,super_admin">
                 <i class="bi bi-credit-card"></i>
                 <span>Madeni</span>
             </a>
             
 
-            <a class="menu-item" href="/purchases" data-page="purchases" data-role="admin,storekeeper">
+            <a class="menu-item" href="/purchases" data-page="purchases" data-role="admin,storekeeper,super_admin">
                 <i class="bi bi-truck"></i>
                 <span>Manunuzi</span>
             </a>
@@ -68,7 +72,7 @@
                 <i class="bi bi-wallet2"></i>
                 <span>Matumizi</span>
             </a>
-            <a class="menu-item" href="/suppliers" data-page="suppliers" data-role="admin,storekeeper">
+            <a class="menu-item" href="/suppliers" data-page="suppliers" data-role="admin,storekeeper,super_admin">
                 <i class="bi bi-building"></i>
                 <span>Wasambazaji</span>
             </a>
@@ -153,6 +157,7 @@
             </div>
             <!-- Dashboard Page -->
             <section class="page-section active" id="page-dashboard">
+                <div id="superAdminDashboard" style="display:none"></div>
 
                 <!-- ── Row 1: KPI stat cards ─────────────────────────── -->
                 <div class="row g-3 mb-3">
@@ -896,125 +901,85 @@
             
             <!-- Reports Page -->
             <section class="page-section" id="page-reports">
-                <div class="row g-4 align-items-start">
-
-                    <!-- Left column: Filters -->
-                    <div class="col-12 col-lg-3">
-                        <div class="data-card">
-                            <div class="data-card-header">
-                                <h5><i class="bi bi-funnel me-2"></i>Vichujio</h5>
+                <div class="data-card mb-3">
+                    <div class="data-card-header">
+                        <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Mtiririko wa Pesa</h5>
+                        <div class="report-period-wrap">
+                            <div class="report-periods" id="reportPeriods" role="tablist">
+                                <button type="button" data-period="day" onclick="setReportPeriod('day')">Leo</button>
+                                <button type="button" class="active" data-period="week" onclick="setReportPeriod('week')">Wiki hii</button>
+                                <button type="button" data-period="month" onclick="setReportPeriod('month')">Mwezi huu</button>
+                                <button type="button" data-period="months" id="reportMonthsBtn" onclick="setReportPeriod('months')">Miezi</button>
+                                <button type="button" data-period="year" id="reportYearBtn" onclick="setReportPeriod('year')">Mwaka</button>
                             </div>
-                            <div class="p-3">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold small">Tarehe ya Kuanzia</label>
-                                    <input type="date" class="form-control form-control-sm" id="reportStartDate">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold small">Tarehe ya Mwisho</label>
-                                    <input type="date" class="form-control form-control-sm" id="reportEndDate">
-                                </div>
-                                <div class="mb-3" id="reportSupplierFilterWrapper">
-                                    <label class="form-label fw-semibold small">Msambazaji</label>
-                                    <select class="form-select form-select-sm" id="reportSupplierFilter">
-                                        <option value="">Msambazaji Wote</option>
-                                    </select>
-                                </div>
-                                <button class="btn btn-primary w-100" onclick="loadSalesReport()">
-                                    <i class="bi bi-bar-chart me-2"></i>Tengeneza Ripoti
-                                </button>
-
-                                <hr class="my-3">
-
-                                <p class="text-muted small fw-semibold mb-2">Aina ya Ripoti</p>
-                                <div class="d-flex flex-column gap-2">
-                                    <a href="#" class="btn btn-outline-secondary text-start btn-sm" id="salesReportTab"
-                                       onclick="event.preventDefault(); loadSalesReport(); return false;">
-                                        <i class="bi bi-cart me-2"></i>Mauzo
-                                    </a>
-                                    <a href="#" class="btn btn-outline-secondary text-start btn-sm" id="purchaseReportTab"
-                                       onclick="event.preventDefault(); loadPurchaseReport(); return false;">
-                                        <i class="bi bi-box-arrow-in-down me-2"></i>Manunuzi
-                                    </a>
-                                    <a href="#" class="btn btn-outline-secondary text-start btn-sm" id="profitLossReportTab"
-                                       onclick="event.preventDefault(); loadProfitLossReport(); return false;">
-                                        <i class="bi bi-graph-up-arrow me-2"></i>Faida / Hasara
-                                    </a>
-                                </div>
+                            <div class="report-subperiods" id="reportMonthCounts" hidden>
+                                <span class="report-sub-label">Miezi iliyopita</span>
+                                <button type="button" data-months="1" onclick="setReportMonthCount(1)">1</button>
+                                <button type="button" data-months="3" class="active" onclick="setReportMonthCount(3)">3</button>
+                                <button type="button" data-months="6" onclick="setReportMonthCount(6)">6</button>
+                                <button type="button" data-months="12" onclick="setReportMonthCount(12)">12</button>
+                            </div>
+                            <div class="report-subperiods" id="reportYearChoices" hidden></div>
+                        </div>
+                    </div>
+                    <div class="p-3 p-md-4">
+                        <p class="report-story" id="reportStory">Inapakia mtiririko wa pesa…</p>
+                        <div class="report-flow">
+                            <div class="report-step">
+                                <div class="report-step-kicker">1 · Pesa iliyoingia</div>
+                                <div class="report-step-value" id="reportIn">—</div>
+                                <div class="report-step-note">Taslimu iliyopokelewa kutoka mauzo na malipo ya madeni.</div>
+                            </div>
+                            <div class="report-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></div>
+                            <div class="report-step">
+                                <div class="report-step-kicker">2 · Pesa iliyotoka</div>
+                                <div class="report-step-value" id="reportOut">—</div>
+                                <div class="report-step-note" id="reportOutNote">Manunuzi kwa wasambazaji na matumizi ya duka.</div>
+                            </div>
+                            <div class="report-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></div>
+                            <div class="report-step" id="reportLeftStep">
+                                <div class="report-step-kicker">3 · Iliyobaki</div>
+                                <div class="report-step-value" id="reportNet">—</div>
+                                <div class="report-step-note" id="reportNetNote">Kilichobaki baada ya kulipa manunuzi na matumizi.</div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Right column: Report content -->
-                    <div class="col-12 col-lg-9">
-                        <div class="data-card">
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-lg-7">
+                        <div class="data-card h-100">
                             <div class="data-card-header">
-                                <h5><i class="bi bi-graph-up me-2"></i>Ripoti</h5>
+                                <h5 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Mtiririko kwa muda</h5>
                             </div>
-                            <div class="p-4">
-                                <!-- Summary stat cards -->
-                                <div class="row g-3 mb-4">
-                                    <div class="col-sm-6 col-lg-3">
-                                        <div class="stat-card">
-                                            <div class="label">Jumla ya Taslimu</div>
-                                            <div class="value" id="reportTotalCash">0 TZS</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6 col-lg-3">
-                                        <div class="stat-card">
-                                            <div class="label">Jumla ya Madeni</div>
-                                            <div class="value" id="reportTotalDebts">0 TZS</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6 col-lg-3">
-                                        <div class="stat-card">
-                                            <div class="label">Jumla ya Mapato</div>
-                                            <div class="value" id="reportTotalRevenue">0 TZS</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6 col-lg-3">
-                                        <div class="stat-card">
-                                            <div class="label">Transactions</div>
-                                            <div class="value" id="reportTotalTransactions">0</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row g-3 mb-4" id="cashflowBalanceRow">
-                                    <div class="col-sm-4">
-                                        <div class="stat-card">
-                                            <div class="label">Mapato (Cash in)</div>
-                                            <div class="value text-primary" id="cashflowMapato">0 TZS</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-4">
-                                        <div class="stat-card">
-                                            <div class="label">Matumizi (Cash out)</div>
-                                            <div class="value text-warning" id="cashflowMatumizi">0 TZS</div>
-                                            <div class="small text-muted" id="cashflowMatumiziDetail"></div>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-4">
-                                        <div class="stat-card">
-                                            <div class="label">Net (Mapato − Matumizi)</div>
-                                            <div class="value" id="cashflowNet">0 TZS</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row g-3 mb-4">
-                                    <div class="col-sm-6">
-                                        <div class="stat-card">
-                                            <div class="label">Wastani kwa Muamala</div>
-                                            <div class="value" id="reportAvgTransaction">0 TZS</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Report data containers -->
-                                <div id="purchaseReport" style="display: none;"></div>
-                                <div id="profitLossReport" style="display: none;"></div>
+                            <div class="p-3" id="reportFlowChart">
+                                <p class="text-muted text-center py-3 mb-0">Inapakia…</p>
                             </div>
                         </div>
                     </div>
+                    <div class="col-12 col-lg-5">
+                        <div class="data-card h-100">
+                            <div class="data-card-header">
+                                <h5 class="mb-0"><i class="bi bi-signpost-split me-2"></i>Pesa ilienda wapi</h5>
+                            </div>
+                            <div class="p-3" id="reportWhereChart">
+                                <p class="text-muted text-center py-3 mb-0">Inapakia…</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
+                <div class="data-card">
+                    <div class="report-tabs" role="tablist">
+                        <button type="button" class="active" id="salesReportTab" onclick="showReportDetail('sales')">
+                            <i class="bi bi-cart me-1"></i>Mauzo
+                        </button>
+                        <button type="button" id="purchaseReportTab" onclick="showReportDetail('purchases')">
+                            <i class="bi bi-box-arrow-in-down me-1"></i>Manunuzi
+                        </button>
+                    </div>
+                    <div class="p-3 p-md-4" id="salesReport"></div>
+                    <div class="p-3 p-md-4" id="purchaseReport" style="display:none;"></div>
                 </div>
             </section>
             
@@ -1072,6 +1037,37 @@
             </section>
      
             <!-- Settings Page (includes Matawi + Activity Logs as tabs) -->
+            <section class="page-section" id="page-receipts">
+                <div class="data-card">
+                    <div class="data-card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-printer me-2"></i>Receipt queue</h5>
+                        <button class="btn btn-sm btn-primary" onclick="loadReceiptQueue()">Refresh</button>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-muted mb-3" id="receiptQueueNote">Finished sales wait here. Admin prints them on the phone with the Bluetooth printer.</p>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Receipt</th>
+                                        <th>Time</th>
+                                        <th>Cashier</th>
+                                        <th>Customer</th>
+                                        <th>Payment</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="receiptQueueBody">
+                                    <tr><td colspan="8" class="text-center text-muted">Loading…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section class="page-section" id="page-settings">
                 <!-- Tab Navigation -->
                 <ul class="nav nav-tabs mb-4" id="settingsTabs">
@@ -1142,6 +1138,19 @@
                                             <div class="col-12">
                                                 <label class="form-label">Receipt Footer</label>
                                                 <textarea class="form-control" id="settingReceiptFooter" rows="2"></textarea>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Receipt paper</label>
+                                                <select class="form-select" id="settingReceiptPaper">
+                                                    <option value="58">58mm (POS printer)</option>
+                                                    <option value="80">80mm (Bluetooth phone printer)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 d-flex align-items-end">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="settingSkipBuiltinPrinter">
+                                                    <label class="form-check-label" for="settingSkipBuiltinPrinter">Skip built-in POS printer</label>
+                                                </div>
                                             </div>
                                             <div class="col-12">
                                                 <button type="submit" class="btn btn-primary">
@@ -1603,8 +1612,8 @@
                             <input type="text" class="form-control" id="userUsername" name="username" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Password *</label>
-                            <input type="password" class="form-control" id="userPassword" name="password">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" id="userPassword" name="password" minlength="6" autocomplete="new-password" placeholder="Angalau herufi 6. Acha tupu ukihariri bila kubadilisha">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Jina Kamili *</label>
@@ -1622,6 +1631,7 @@
                             <label class="form-label">Role *</label>
                             <select class="form-select" id="userRole" name="role" required>
                                 <option value="admin">Msimamizi (Admin)</option>
+                                <option value="super_admin">Super Admin</option>
                                 <option value="cashier">Karani (Cashier)</option>
                                 <option value="storekeeper">Mhifadhi Stoo (Storekeeper)</option>
                             </select>
