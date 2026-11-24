@@ -8,6 +8,7 @@ import '../../../../core/l10n/language_switcher.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import 'super_admin_dashboard_page.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -110,7 +111,10 @@ class _DashboardPageState extends State<DashboardPage>
         final user = authState.user;
         final role = user.roleName.toLowerCase().trim();
 
-        if (role == 'owner' || role == 'business owner' || role == 'super_admin') {
+        if (role == 'super_admin') {
+          return const SuperAdminDashboardPage();
+        }
+        if (role == 'owner' || role == 'business owner') {
           return _OwnerDashboardView(
             user: user,
             tabController: _tabController,

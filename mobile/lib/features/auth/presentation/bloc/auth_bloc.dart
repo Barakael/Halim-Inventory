@@ -37,12 +37,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthCheckStatusRequested event,
     Emitter<AuthState> emit,
   ) async {
-    final user = await authRepository.getCachedUser();
-    if (user != null) {
-      emit(AuthAuthenticated(user: user));
-    } else {
-      emit(const AuthUnauthenticated());
-    }
+    // Never restore a persisted session — password required every launch.
+    await logoutUseCase();
+    shopProfileService.clear();
+    emit(const AuthUnauthenticated());
   }
 
   Future<void> _onLogin(
