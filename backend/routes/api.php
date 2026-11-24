@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DebtController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\CashflowController;
 use App\Http\Controllers\Api\MediaController;
+use App\Http\Controllers\Api\ReceiptPrintJobController;
 use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\PurchasePaymentController;
 use App\Http\Controllers\Api\SaleController;
@@ -28,6 +29,11 @@ Route::middleware(['auth:sanctum', EnsureShopActive::class])->group(function () 
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/dashboard/super', [DashboardController::class, 'superAdmin']);
+
+    Route::get('/receipt-jobs', [ReceiptPrintJobController::class, 'index']);
+    Route::get('/receipt-jobs/{id}', [ReceiptPrintJobController::class, 'show']);
+    Route::post('/receipt-jobs/{id}/printed', [ReceiptPrintJobController::class, 'markPrinted']);
 
     Route::get('/products', [ProductController::class, 'index']);
     Route::post('/products', [ProductController::class, 'store']);
