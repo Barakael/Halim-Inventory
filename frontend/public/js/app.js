@@ -264,7 +264,8 @@ function updateUserUI() {
     if (userName) userName.textContent = currentUser.fullName;
     if (userRole) {
         const roles = { 
-            admin: 'Msimamizi', 
+            admin: 'Msimamizi',
+            super_admin: 'Super Admin',
             cashier: 'Karani', 
             storekeeper: 'Mhifadhi Stoo',
             reception: 'Reception',
@@ -466,6 +467,7 @@ function navigateTo(page, updateUrl = true) {
         categories: 'Stoo',
         stock: 'Stoo',
         sales: 'Mauzo',
+        receipts: 'Risiti',
         purchases: 'Manunuzi',
         suppliers: 'Wasambazaji',
         'supplier-statement': 'Taarifa ya Msambazaji',
@@ -526,6 +528,9 @@ async function loadPageData(page) {
             break;
         case 'sales':
             await loadSales();
+            break;
+        case 'receipts':
+            await loadReceiptQueue();
             break;
         case 'purchases':
             await loadPurchases();
@@ -700,9 +705,211 @@ function setupEventListeners() {
 // =========================
 // DASHBOARD
 // =========================
+function escHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[ch]));
+}
+
+function showStandardDashboard() {
+    const page = document.getElementById('page-dashboard');
+    const superRoot = document.getElementById('superAdminDashboard');
+    if (!page) return;
+    [...page.children].forEach((el) => {
+        el.style.display = el === superRoot ? 'none' : '';
+    });
+}
+
+function renderSuperAdminDashboard(data) {
+    const sales = data.sales_today || {};
+    const split = sales.payment_split || {};
+    const splitRows = Object.keys(split).map((method) => `
+        <tr>
+            <td>${escHtml(method)}</td>
+            <td class="text-end">${formatCurrency(split[method] || 0)}</td>
+        </tr>
+    `).join('') || '<tr><td colspan="2" class="text-muted">No sales yet today.</td></tr>';
+
+    const supplierRows = (data.suppliers || []).map((s) => `
+        <tr>
+            <td>${escHtml(s.name)}</td>
+            <td>${escHtml(s.phone || '')}</td>
+            <td class="text-end">${s.today_purchases_count || 0}</td>
+            <td class="text-end">${formatCurrency(s.brought_in || 0)}</td>
+            <td class="text-end">${formatCurrency(s.paid || 0)}</td>
+            <td class="text-end">${formatCurrency(s.open_debt || 0)}</td>
+            <td><button class="btn btn-sm btn-outline-primary" onclick="openSupplierStatement('${s.id}')">Statement</button></td>
+        </tr>
+    `).join('') || '<tr><td colspan="7" class="text-muted text-center">No suppliers yet.</td></tr>';
+
+    const supplierDebtRows = (data.supplier_debts || []).map((s) => `
+        <tr>
+            <td>${escHtml(s.name)}</td>
+            <td>${escHtml(s.phone || '')}</td>
+            <td class="text-end">${formatCurrency(s.open_debt || 0)}</td>
+        </tr>
+    `).join('') || '<tr><td colspan="3" class="text-muted text-center">No supplier debt.</td></tr>';
+
+    const salesDebtRows = (data.sales_debts || []).map((c) => `
+        <tr>
+            <td>${escHtml(c.name)}</td>
+            <td>${escHtml(c.phone || '')}</td>
+            <td class="text-end">${formatCurrency(c.open_debt || 0)}</td>
+        </tr>
+    `).join('') || '<tr><td colspan="3" class="text-muted text-center">No sales debt.</td></tr>';
+
+    const statements = data.statements || {};
+
+    return `
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-xl-3">
+                <div class="kpi-card kpi-blue">
+                    <div class="kpi-value">${formatCurrency(sales.total || 0)}</div>
+                    <div class="kpi-label">Sales today</div>
+                    <div class="kpi-sub">${sales.count || 0} sales</div>
+                </div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="kpi-card kpi-blue">
+                    <div class="kpi-value">${formatCurrency(data.supplier_debt_total || 0)}</div>
+                    <div class="kpi-label">Wasapazaji debt</div>
+                </div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="kpi-card kpi-blue">
+                    <div class="kpi-value">${formatCurrency(data.sales_debt_total || 0)}</div>
+                    <div class="kpi-label">Sales debt</div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-lg-4">
+                <div class="data-card h-100">
+                    <div class="data-card-header"><h5 class="mb-0">Payment split today</h5></div>
+                    <div class="table-responsive">
+                        <table class="table mb-0"><tbody>${splitRows}</tbody></table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-8">
+                <div class="data-card h-100">
+                    <div class="data-card-header"><h5 class="mb-0">Statements</h5></div>
+                    <div class="p-3">
+                        <p class="mb-2"><strong>${escHtml(statements.title || 'Supplier statements')}</strong></p>
+                        <p class="mb-0">${escHtml(statements.description || '')}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="data-card mb-3">
+            <div class="data-card-header"><h5 class="mb-0">Wasapazaji</h5></div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th><th>Phone</th><th>Today</th><th>Brought in</th><th>Paid</th><th>Deni</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody>${supplierRows}</tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-12 col-lg-6">
+                <div class="data-card h-100">
+                    <div class="data-card-header"><h5 class="mb-0">Debts from wasapazaji</h5></div>
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead><tr><th>Supplier</th><th>Phone</th><th class="text-end">Open deni</th></tr></thead>
+                            <tbody>${supplierDebtRows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="data-card h-100">
+                    <div class="data-card-header"><h5 class="mb-0">Debts from sales</h5></div>
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead><tr><th>Customer</th><th>Phone</th><th class="text-end">Open deni</th></tr></thead>
+                            <tbody>${salesDebtRows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function loadSuperAdminDashboard() {
+    const page = document.getElementById('page-dashboard');
+    const superRoot = document.getElementById('superAdminDashboard');
+    if (!page || !superRoot) return;
+    [...page.children].forEach((el) => {
+        el.style.display = el === superRoot ? 'block' : 'none';
+    });
+    superRoot.innerHTML = '<p class="text-muted p-3 mb-0">Loading…</p>';
+    const result = await api('/api/dashboard/super');
+    if (!result.success) {
+        superRoot.innerHTML = `<p class="text-danger p-3 mb-0">${escHtml(result.message || 'Failed to load')}</p>`;
+        return;
+    }
+    superRoot.innerHTML = renderSuperAdminDashboard(result.data || {});
+}
+
+async function loadReceiptQueue() {
+    const body = document.getElementById('receiptQueueBody');
+    const note = document.getElementById('receiptQueueNote');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Loading…</td></tr>';
+    const result = await api('/api/receipt-jobs');
+    if (!result.success) {
+        body.innerHTML = `<tr><td colspan="8" class="text-center text-danger">${escHtml(result.message || 'Failed')}</td></tr>`;
+        return;
+    }
+    if (note) {
+        note.textContent = result.can_print
+            ? 'Finished sales wait here. Print them on the admin phone with the Bluetooth printer. This screen is the queue.'
+            : 'You can view receipts. Printing stays with admin.';
+    }
+    const rows = result.data || [];
+    if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No receipts yet.</td></tr>';
+        return;
+    }
+    body.innerHTML = rows.map((job) => {
+        const status = job.status === 'printed'
+            ? '<span class="badge bg-success">Printed</span>'
+            : '<span class="badge bg-warning text-dark">Queued</span>';
+        return `
+            <tr>
+                <td>${escHtml(job.serial_number || job.sale_id)}</td>
+                <td>${formatDateTime(job.created_at)}</td>
+                <td>${escHtml(job.cashier_name || '')}</td>
+                <td>${escHtml(job.customer_name || 'Walk-in')}</td>
+                <td>${escHtml(job.payment_method || '')}</td>
+                <td>${formatCurrency(job.amount || 0)}</td>
+                <td>${status}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="printReceipt('${job.sale_id}')">View</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
 async function loadDashboard() {
     // Only admin and cashier can see dashboard
     const role = currentUser && currentUser.role;
+    if (role === 'super_admin') {
+        await loadSuperAdminDashboard();
+        return;
+    }
+    showStandardDashboard();
     if (role === 'storekeeper') {
         navigateTo('stock', true);
         return;
@@ -1442,7 +1649,7 @@ function renderSuppliersTable() {
         const lastAt = s.lastPurchasedAt || s.last_purchased_at;
         
         return `
-        <tr class="supplier-row-clickable align-middle" data-supplier-id="${s.id}" role="button" tabindex="0" title="Bofya kuona stock aliyowasilisha">
+        <tr class="supplier-row-clickable align-middle" data-supplier-id="${s.id}" role="button" tabindex="0" title="Bofya kuona taarifa">
             <td><span class="supplier-name-link">${escapeHtml(s.name || '')}</span></td>
             <td>${escapeHtml(s.phone || '—')}</td>
             <td class="small text-muted" style="max-width:180px;">${escapeHtml(maelezo)}</td>
@@ -1487,7 +1694,7 @@ function setupSuppliersTableClick() {
         const row = e.target.closest('tr[data-supplier-id]');
         if (!row) return;
         e.preventDefault();
-        viewSupplierStockHistory(row.dataset.supplierId);
+        openSupplierStatement(row.dataset.supplierId);
     });
 
     tbody.addEventListener('keydown', (e) => {
@@ -1495,7 +1702,7 @@ function setupSuppliersTableClick() {
         const row = e.target.closest('tr[data-supplier-id]');
         if (!row) return;
         e.preventDefault();
-        viewSupplierStockHistory(row.dataset.supplierId);
+        openSupplierStatement(row.dataset.supplierId);
     });
 }
 
@@ -2285,17 +2492,17 @@ function renderSalesTableWithData(sales) {
                 <button class="btn btn-sm btn-info btn-icon me-1" onclick="viewSale('${s.id}')" title="Ona">
                     <i class="bi bi-eye"></i>
                 </button>
-                ${(s.status === 'verified' || s.status === 'completed' || !s.status) ? `
-                    <button class="btn btn-sm btn-secondary btn-icon" onclick="printReceipt('${s.id}')" title="Print">
-                        <i class="bi bi-printer"></i>
-                    </button>
-                ` : ''}
             </td>
         </tr>
     `).join('');
 }
 
 function printReceipt(saleId) {
+    const role = currentUser && currentUser.role;
+    if (role !== 'admin' && role !== 'super_admin') {
+        showToast('Receipt is waiting for admin.', 'info');
+        return;
+    }
     window.open(`/api/sales/${saleId}/receipt`, '_blank');
 }
 
@@ -2774,12 +2981,13 @@ async function saveUser() {
     const result = await api(url, { method, body: JSON.stringify(data) });
     
     if (result.success) {
-        showToast(result.message);
+        showToast(result.message || 'Mtumiaji amehifadhiwa');
         bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
         form.reset();
         await loadUsers();
     } else {
-        showToast(result.message, 'danger');
+        const detail = result.errors && Object.values(result.errors).flat()[0];
+        showToast(detail || result.message || 'Imeshindikana kuhifadhi mtumiaji', 'danger');
     }
 }
 
@@ -2798,8 +3006,11 @@ async function editUser(id) {
     const result = await api('/api/users');
     if (!result.success) return;
     
-    const user = result.data.find(u => u.id === id);
-    if (!user) return;
+    const user = (result.data || []).find((u) => String(u.id) === String(id));
+    if (!user) {
+        showToast('Mtumiaji hapatikani', 'danger');
+        return;
+    }
     
     document.getElementById('userId').value = user.id;
     document.getElementById('userUsername').value = user.username;
@@ -2821,9 +3032,11 @@ async function editUser(id) {
     document.getElementById('userStatus').value = user.status;
     document.getElementById('userPassword').value = '';
     document.getElementById('userPassword').required = false;
-    
-    await loadBranchOptions('userBranch');
-    document.getElementById('userBranch').value = user.branchId;
+    document.getElementById('userPassword').placeholder = 'Acha tupu kuweka nenosiri la sasa';
+
+    await loadBranches();
+    loadBranchOptions('userBranch');
+    document.getElementById('userBranch').value = user.branchId || '';
     
     document.getElementById('userModalLabel').textContent = 'Hariri Mtumiaji';
     new bootstrap.Modal(document.getElementById('userModal')).show();
@@ -2942,95 +3155,483 @@ function editBranch(id) {
 // =========================
 // REPORTS
 // =========================
-async function loadReports() {
-    // Initialize report containers
-    const purchaseReportDiv = document.getElementById('purchaseReport');
-    const profitLossReportDiv = document.getElementById('profitLossReport');
-    if (purchaseReportDiv) purchaseReportDiv.style.display = 'none';
-    if (profitLossReportDiv) profitLossReportDiv.style.display = 'none';
-    
-    // Load suppliers for filter (admin only)
-    if (currentUser && currentUser.role === 'admin') {
-        await loadSuppliers();
-        const supplierFilter = document.getElementById('reportSupplierFilter');
-        if (supplierFilter && suppliers.length > 0) {
-            supplierFilter.innerHTML = '<option value="">Msambazaji Wote</option>' + 
-                suppliers.filter(s => s.status === 'active').map(s => 
-                    `<option value="${s.id}">${s.name}</option>`
-                ).join('');
-        }
-    } else {
-        const supplierWrapper = document.getElementById('reportSupplierFilterWrapper');
-        if (supplierWrapper) supplierWrapper.style.display = 'none';
-    }
-    
-    // Default to sales report
-    await loadSalesReport();
+const REPORT_PERIOD_LABEL = {
+    day: 'Leo',
+    week: 'Wiki hii',
+    month: 'Mwezi huu',
+    months: 'Miezi',
+    year: 'Mwaka',
+};
+const REPORT_MONTH_COUNTS = [1, 3, 6, 12];
+const REPORT_MIN_YEAR = 2024;
+
+let reportPeriod = 'week';
+let reportMonthCount = 3;
+let reportYear = Math.max(new Date().getFullYear(), 2026);
+let reportDetail = 'sales';
+let reportRequest = 0;
+let reportPurchaseRequest = 0;
+let reportCache = null;
+
+function reportIso(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
 }
 
-function _setActiveReportTab(activeId) {
-    ['salesReportTab', 'purchaseReportTab', 'profitLossReportTab'].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (id === activeId) {
-            el.classList.add('btn-primary');
-            el.classList.remove('btn-outline-secondary');
-        } else {
-            el.classList.remove('btn-primary');
-            el.classList.add('btn-outline-secondary');
-        }
+function reportAddDays(date, days) {
+    const next = new Date(date);
+    next.setDate(next.getDate() + days);
+    return next;
+}
+
+function reportEachDay(start, end, visit) {
+    for (let cursor = new Date(start); cursor <= end; cursor = reportAddDays(cursor, 1)) {
+        visit(cursor);
+    }
+}
+
+function reportRange(period) {
+    const end = new Date();
+    end.setHours(0, 0, 0, 0);
+    const start = new Date(end);
+    if (period === 'week') start.setDate(start.getDate() - 6);
+    else if (period === 'month') start.setDate(1);
+    else if (period === 'months') {
+        const count = REPORT_MONTH_COUNTS.includes(reportMonthCount) ? reportMonthCount : 3;
+        start.setDate(1);
+        start.setMonth(start.getMonth() - (count - 1));
+    } else if (period === 'year') {
+        const year = reportYearChoices().includes(reportYear) ? reportYear : reportYearChoices()[0];
+        start.setFullYear(year, 0, 1);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (year < today.getFullYear()) end.setFullYear(year, 11, 31);
+    }
+    return { start, end, startDate: reportIso(start), endDate: reportIso(end) };
+}
+
+function reportYearChoices() {
+    const newest = Math.max(new Date().getFullYear(), 2026);
+    const years = [];
+    for (let year = newest; year >= REPORT_MIN_YEAR; year -= 1) years.push(year);
+    return years;
+}
+
+function reportIntro(period) {
+    if (period === 'months') {
+        return reportMonthCount === 1 ? 'Katika mwezi 1' : `Katika miezi ${reportMonthCount}`;
+    }
+    if (period === 'year') return `Mwaka ${reportYear}`;
+    return REPORT_PERIOD_LABEL[period] || 'Kipindi hiki';
+}
+
+function syncReportPeriodUi() {
+    document.querySelectorAll('#reportPeriods [data-period]').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.period === reportPeriod);
     });
+    const monthsEl = document.getElementById('reportMonthCounts');
+    const yearsEl = document.getElementById('reportYearChoices');
+    if (monthsEl) monthsEl.hidden = reportPeriod !== 'months';
+    if (yearsEl) {
+        yearsEl.hidden = reportPeriod !== 'year';
+        yearsEl.innerHTML = `<span class="report-sub-label">Chagua mwaka</span>${reportYearChoices().map((year) => (
+            `<button type="button" data-year="${year}" class="${year === reportYear ? 'active' : ''}" onclick="setReportYear(${year})">${year}</button>`
+        )).join('')}`;
+    }
+    document.querySelectorAll('#reportMonthCounts [data-months]').forEach((btn) => {
+        btn.classList.toggle('active', Number(btn.dataset.months) === reportMonthCount);
+    });
+    const monthsBtn = document.getElementById('reportMonthsBtn');
+    if (monthsBtn) monthsBtn.textContent = reportPeriod === 'months' ? `Miezi ${reportMonthCount}` : 'Miezi';
+    const yearBtn = document.getElementById('reportYearBtn');
+    if (yearBtn) yearBtn.textContent = reportPeriod === 'year' ? `Mwaka ${reportYear}` : 'Mwaka';
+}
+
+function reportPayLabel(method) {
+    const labels = {
+        cash: 'Cash',
+        bank: 'Bank',
+        mpesa: 'M-Pesa',
+        airtel: 'Airtel Money',
+        tigo: 'Tigo Pesa',
+        halopesa: 'Halo Pesa',
+        credit: 'Mkopo',
+        card: 'Kadi',
+    };
+    const key = String(method || 'other').toLowerCase().trim();
+    if (labels[key]) return labels[key];
+    if (!key || key === 'other') return 'Nyingine';
+    if (key.includes('mobile') || key.includes('pesa')) return 'Pesa ya simu';
+    return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+function setReportPeriod(period) {
+    if (!REPORT_PERIOD_LABEL[period]) return;
+    reportPeriod = period;
+    syncReportPeriodUi();
+    loadReports();
+}
+
+function setReportMonthCount(count) {
+    const next = Number(count);
+    if (!REPORT_MONTH_COUNTS.includes(next)) return;
+    reportMonthCount = next;
+    reportPeriod = 'months';
+    syncReportPeriodUi();
+    loadReports();
+}
+
+function setReportYear(year) {
+    const next = Number(year);
+    if (!reportYearChoices().includes(next)) return;
+    reportYear = next;
+    reportPeriod = 'year';
+    syncReportPeriodUi();
+    loadReports();
+}
+
+function showReportDetail(which) {
+    reportDetail = which === 'purchases' ? 'purchases' : 'sales';
+    const salesPane = document.getElementById('salesReport');
+    const purchasePane = document.getElementById('purchaseReport');
+    if (salesPane) salesPane.style.display = reportDetail === 'sales' ? '' : 'none';
+    if (purchasePane) purchasePane.style.display = reportDetail === 'purchases' ? '' : 'none';
+    document.getElementById('salesReportTab')?.classList.toggle('active', reportDetail === 'sales');
+    document.getElementById('purchaseReportTab')?.classList.toggle('active', reportDetail === 'purchases');
+    if (reportDetail === 'purchases') loadPurchaseReport();
+    else renderSalesDetail();
+}
+
+async function loadReports() {
+    const ticket = ++reportRequest;
+    const range = reportRange(reportPeriod);
+    const storyEl = document.getElementById('reportStory');
+    if (storyEl) storyEl.textContent = 'Inapakia mtiririko wa pesa…';
+
+    const salesUrl = `/api/reports/sales?groupBy=day&startDate=${range.startDate}&endDate=${range.endDate}`;
+    const cashUrl = `/api/cashflow/summary?from=${range.startDate}&to=${range.endDate}`;
+    const [salesRes, cashRes] = await Promise.all([api(salesUrl), api(cashUrl)]);
+    if (ticket !== reportRequest) return;
+
+    if (!salesRes.success) {
+        showToast(salesRes.message || 'Hitilafu katika kupata ripoti ya mauzo', 'danger');
+    }
+
+    reportCache = {
+        key: `${range.startDate}|${range.endDate}`,
+        range,
+        sales: salesRes.success ? (salesRes.data || {}) : { summary: {}, groupedData: [], sales: [] },
+        cashflow: cashRes.success ? (cashRes.data || {}) : null,
+        purchases: null,
+    };
+
+    renderReportOverview();
+    if (reportDetail === 'purchases') await loadPurchaseReport();
+    else renderSalesDetail();
 }
 
 async function loadSalesReport() {
-    // Update active tab
-    const purchaseReportDiv = document.getElementById('purchaseReport');
-    const profitLossReportDiv = document.getElementById('profitLossReport');
-    
-    _setActiveReportTab('salesReportTab');
-    if (purchaseReportDiv) purchaseReportDiv.style.display = 'none';
-    if (profitLossReportDiv) profitLossReportDiv.style.display = 'none';
-    
-    const startDate = document.getElementById('reportStartDate')?.value;
-    const endDate = document.getElementById('reportEndDate')?.value;
-    const supplierId = document.getElementById('reportSupplierFilter')?.value || '';
-    
-    let url = '/api/reports/sales?groupBy=day';
-    if (startDate && endDate) {
-        url += `&startDate=${startDate}&endDate=${endDate}`;
-    }
-    if (supplierId && currentUser && currentUser.role === 'admin') {
-        url += `&supplierId=${supplierId}`;
-    }
-    
-    const result = await api(url);
-    if (!result.success) {
-        showToast('Hitilafu katika kupata ripoti ya mauzo', 'danger');
-        return;
-    }
-    
-    const data = result.data;
-    
-    // Update summary — cash vs madeni from Laravel SoT
-    const cashEl = document.getElementById('reportTotalCash');
-    const debtsEl = document.getElementById('reportTotalDebts');
-    const revenueEl = document.getElementById('reportTotalRevenue');
-    const transactionsEl = document.getElementById('reportTotalTransactions');
-    const avgTransactionEl = document.getElementById('reportAvgTransaction');
+    showReportDetail('sales');
+}
 
-    const summary = data.summary || {};
-    const totalCash = summary.totalCash != null
-        ? summary.totalCash
-        : (summary.totalRevenue || 0);
-    const totalDebts = summary.totalDebts != null ? summary.totalDebts : 0;
+function bucketReportSeries(grouped, period, start, end) {
+    const byDate = Object.create(null);
+    (grouped || []).forEach((row) => {
+        if (row && row.date) byDate[String(row.date).slice(0, 10)] = row;
+    });
+    const take = (day) => {
+        const row = byDate[reportIso(day)] || {};
+        return {
+            cash: Number(row.cash) || 0,
+            debts: Number(row.debts) || 0,
+        };
+    };
 
-    if (cashEl) cashEl.textContent = formatCurrency(totalCash);
-    if (debtsEl) debtsEl.textContent = formatCurrency(totalDebts);
-    if (revenueEl) revenueEl.textContent = formatCurrency(summary.totalRevenue || 0);
-    if (transactionsEl) transactionsEl.textContent = summary.totalTransactions || 0;
-    if (avgTransactionEl) avgTransactionEl.textContent = formatCurrency(summary.averageTransaction || 0);
+    if (period === 'day' || period === 'week') {
+        const buckets = [];
+        reportEachDay(start, end, (day) => {
+            const value = take(day);
+            const label = period === 'day'
+                ? day.toLocaleDateString('sw-TZ', { weekday: 'long', day: 'numeric', month: 'short' })
+                : day.toLocaleDateString('sw-TZ', { weekday: 'short', day: 'numeric' });
+            buckets.push({ label, ...value });
+        });
+        return buckets;
+    }
 
-    await loadCashflowBalance(startDate, endDate);
+    if (period === 'month') {
+        const buckets = [];
+        let cursor = new Date(start);
+        while (cursor <= end) {
+            const weekStart = new Date(cursor);
+            let weekEnd = reportAddDays(weekStart, 6);
+            if (weekEnd > end) weekEnd = new Date(end);
+            let cash = 0;
+            let debts = 0;
+            reportEachDay(weekStart, weekEnd, (day) => {
+                const value = take(day);
+                cash += value.cash;
+                debts += value.debts;
+            });
+            const month = weekStart.toLocaleDateString('sw-TZ', { month: 'short' });
+            buckets.push({
+                label: `${weekStart.getDate()}–${weekEnd.getDate()} ${month}`,
+                cash,
+                debts,
+            });
+            cursor = reportAddDays(weekEnd, 1);
+        }
+        return buckets;
+    }
+
+    const buckets = [];
+    const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    const last = new Date(end.getFullYear(), end.getMonth(), 1);
+    while (cursor <= last) {
+        const year = cursor.getFullYear();
+        const monthIndex = cursor.getMonth();
+        let cash = 0;
+        let debts = 0;
+        (grouped || []).forEach((row) => {
+            const parts = String(row.date || '').slice(0, 10).split('-');
+            if (Number(parts[0]) === year && Number(parts[1]) === monthIndex + 1) {
+                cash += Number(row.cash) || 0;
+                debts += Number(row.debts) || 0;
+            }
+        });
+        buckets.push({
+            label: cursor.toLocaleDateString('sw-TZ', { month: 'short', year: '2-digit' }),
+            cash,
+            debts,
+        });
+        cursor.setMonth(cursor.getMonth() + 1);
+    }
+    return buckets;
+}
+
+function renderDuoChart(buckets) {
+    if (!buckets.length) {
+        return '<p class="text-muted text-center py-3 mb-0">Hakuna siku za kuonyesha.</p>';
+    }
+    const max = Math.max(...buckets.flatMap((bucket) => [bucket.cash, bucket.debts]), 1);
+    const cols = buckets.map((bucket) => {
+        const cashH = bucket.cash > 0 ? Math.max(4, Math.round((bucket.cash / max) * 100)) : 0;
+        const debtH = bucket.debts > 0 ? Math.max(4, Math.round((bucket.debts / max) * 100)) : 0;
+        return `
+            <div class="report-duo-col">
+                <div class="report-duo-value">${escapeHtml(formatCurrencyShort(bucket.cash))}</div>
+                <div class="report-duo-bars">
+                    <div class="report-duo-bar in" style="height:${cashH}%" title="Taslimu ${escapeHtml(formatCurrency(bucket.cash))}"></div>
+                    <div class="report-duo-bar credit" style="height:${debtH}%" title="Mkopo ${escapeHtml(formatCurrency(bucket.debts))}"></div>
+                </div>
+                <div class="report-duo-label">${escapeHtml(bucket.label)}</div>
+            </div>`;
+    }).join('');
+    return `
+        <div class="report-duo-chart">${cols}</div>
+        <div class="report-legend">
+            <span><i class="report-swatch in"></i>Taslimu iliyokusanywa</span>
+            <span><i class="report-swatch credit"></i>Mauzo ya mkopo (bado haijalipwa)</span>
+        </div>
+        <p class="report-chart-note">Bluu ni pesa iliyolipwa. Njano ni mauzo yaliyoandikwa kama deni, si pesa iliyotoka.</p>`;
+}
+
+function renderWhereChart(rows) {
+    const max = Math.max(...rows.map((row) => Number(row.value) || 0), 1);
+    const body = rows.map((row) => {
+        const amount = row.value == null ? null : Number(row.value) || 0;
+        const width = amount > 0 ? Math.max(2, Math.round((amount / max) * 100)) : 0;
+        const shown = amount == null ? '—' : formatCurrency(amount);
+        return `
+            <div class="hbar-row">
+                <div class="hbar-label-row">
+                    <span>${escapeHtml(row.label)}</span>
+                    <span style="font-weight:700;">${escapeHtml(shown)}</span>
+                </div>
+                <div class="hbar-track">
+                    <div class="hbar-fill ${row.cls}" style="width:${width}%;"></div>
+                </div>
+                <div class="report-chart-note" style="margin-top:2px;">${escapeHtml(row.hint)}</div>
+            </div>`;
+    }).join('');
+    return `
+        <div class="hbar-chart">${body}</div>
+        <p class="report-chart-note">Kila mstari ni kiasi chake. Si sehemu za jumla moja.</p>`;
+}
+
+function renderReportOverview() {
+    if (!reportCache) return;
+    const summary = reportCache.sales.summary || {};
+    const cashflow = reportCache.cashflow;
+    const mapato = cashflow ? Number(cashflow.mapato) || 0 : null;
+    const matumizi = cashflow ? Number(cashflow.matumizi) || 0 : null;
+    const net = cashflow ? Number(cashflow.net) || 0 : null;
+    const breakdown = (cashflow && cashflow.matumizi_breakdown) || {};
+    const purchaseOut = Number(breakdown.purchase_payments) || 0;
+    const expenses = Number(breakdown.expenses) || 0;
+    const totalCash = summary.totalCash != null ? Number(summary.totalCash) || 0 : Number(summary.totalRevenue) || 0;
+    const totalDebts = Number(summary.totalDebts) || 0;
+    const intro = reportIntro(reportPeriod);
+
+    const storyEl = document.getElementById('reportStory');
+    if (storyEl) {
+        if (!cashflow) {
+            storyEl.textContent = `${intro} hatukuweza kupata pesa iliyoingia na iliyotoka. Chati ya mauzo bado iko chini.`;
+        } else if (net >= 0) {
+            storyEl.innerHTML = `${escapeHtml(intro)} duka lilipokea <strong>${escapeHtml(formatCurrency(mapato))}</strong>, likatumia <strong>${escapeHtml(formatCurrency(matumizi))}</strong> (manunuzi na matumizi), na kubaki na <strong>${escapeHtml(formatCurrency(net))}</strong>.`;
+        } else {
+            storyEl.innerHTML = `${escapeHtml(intro)} duka lilipokea <strong>${escapeHtml(formatCurrency(mapato))}</strong>, likatumia <strong>${escapeHtml(formatCurrency(matumizi))}</strong> (manunuzi na matumizi), na matumizi yamezidi mapato kwa <strong>${escapeHtml(formatCurrency(Math.abs(net)))}</strong>.`;
+        }
+    }
+
+    const inEl = document.getElementById('reportIn');
+    const outEl = document.getElementById('reportOut');
+    const netEl = document.getElementById('reportNet');
+    const outNote = document.getElementById('reportOutNote');
+    const netNote = document.getElementById('reportNetNote');
+    if (inEl) inEl.textContent = mapato == null ? '—' : formatCurrency(mapato);
+    if (outEl) {
+        outEl.textContent = matumizi == null ? '—' : formatCurrency(matumizi);
+        outEl.classList.add('is-out');
+    }
+    if (outNote && cashflow) {
+        outNote.textContent = `Manunuzi ${formatCurrency(purchaseOut)} · Matumizi ${formatCurrency(expenses)}`;
+    }
+    if (netEl) {
+        netEl.textContent = net == null ? '—' : formatCurrency(net);
+        netEl.classList.toggle('is-positive', net != null && net >= 0);
+        netEl.classList.toggle('is-negative', net != null && net < 0);
+    }
+    if (netNote) {
+        netNote.textContent = net == null
+            ? 'Kilichobaki baada ya kulipa manunuzi na matumizi.'
+            : (net >= 0
+                ? 'Kilichobaki baada ya kulipa manunuzi na matumizi.'
+                : 'Matumizi yamezidi pesa iliyoingia.');
+    }
+
+    const flowChart = document.getElementById('reportFlowChart');
+    if (flowChart) {
+        const buckets = bucketReportSeries(
+            reportCache.sales.groupedData || [],
+            reportPeriod,
+            reportCache.range.start,
+            reportCache.range.end,
+        );
+        flowChart.innerHTML = renderDuoChart(buckets);
+    }
+
+    const whereChart = document.getElementById('reportWhereChart');
+    if (whereChart) {
+        whereChart.innerHTML = renderWhereChart([
+            {
+                label: 'Taslimu iliyokusanywa',
+                hint: 'Mauzo yaliyolipwa taslimu, kadi, au pesa ya simu.',
+                value: totalCash,
+                cls: 'hbar-blue',
+            },
+            {
+                label: 'Mauzo ya mkopo',
+                hint: 'Thamani iliyoandikwa kama deni. Bado haijaingia kama pesa.',
+                value: totalDebts,
+                cls: 'hbar-yellow',
+            },
+            {
+                label: 'Malipo ya wasambazaji',
+                hint: cashflow ? 'Pesa iliyotoka kwenda manunuzi.' : 'Hakuna data ya pesa iliyotoka.',
+                value: cashflow ? purchaseOut : null,
+                cls: 'hbar-green',
+            },
+            {
+                label: 'Matumizi',
+                hint: cashflow ? 'Gharama za duka katika kipindi hiki.' : 'Hakuna data ya matumizi.',
+                value: cashflow ? expenses : null,
+                cls: 'hbar-rose',
+            },
+        ]);
+    }
+}
+
+function renderSalesDetail() {
+    const container = document.getElementById('salesReport');
+    if (!container || !reportCache || reportDetail !== 'sales') return;
+    const summary = reportCache.sales.summary || {};
+    const sales = [...(reportCache.sales.sales || [])].sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+    );
+    const revenue = Number(summary.totalRevenue) || 0;
+    const count = Number(summary.totalTransactions) || sales.length;
+    const avg = Number(summary.averageTransaction) || (count > 0 ? revenue / count : 0);
+
+    const mix = {};
+    sales.forEach((sale) => {
+        const key = sale.paymentMethod || sale.payment_method || 'other';
+        mix[key] = (mix[key] || 0) + (Number(sale.totalAmount ?? sale.total) || 0);
+    });
+    const mixRows = Object.entries(mix)
+        .map(([method, total]) => ({ method, total }))
+        .sort((a, b) => b.total - a.total);
+    const mixMax = Math.max(...mixRows.map((row) => row.total), 1);
+    const mixHtml = mixRows.length
+        ? `<div class="hbar-chart">${mixRows.map((row) => {
+            const width = Math.max(2, Math.round((row.total / mixMax) * 100));
+            return `
+                <div class="hbar-row">
+                    <div class="hbar-label-row">
+                        <span>${escapeHtml(reportPayLabel(row.method))}</span>
+                        <span style="font-weight:700;">${escapeHtml(formatCurrency(row.total))}</span>
+                    </div>
+                    <div class="hbar-track">
+                        <div class="hbar-fill hbar-blue" style="width:${width}%;"></div>
+                    </div>
+                </div>`;
+        }).join('')}</div>`
+        : '<p class="text-muted mb-0">Hakuna mauzo katika kipindi hiki.</p>';
+
+    const shown = sales.slice(0, 12);
+    const rows = shown.map((sale) => {
+        const receipt = sale.receiptNumber || sale.serial_number || sale.id || '—';
+        const customer = sale.customerName || 'Walk-in';
+        const amount = Number(sale.totalAmount ?? sale.total) || 0;
+        return `
+            <tr>
+                <td>${escapeHtml(sale.createdAt ? formatDateTime(sale.createdAt) : '—')}</td>
+                <td>${escapeHtml(receipt)}</td>
+                <td>${escapeHtml(customer)}</td>
+                <td>${escapeHtml(reportPayLabel(sale.paymentMethod || sale.payment_method))}</td>
+                <td>${escapeHtml(formatCurrency(amount))}</td>
+            </tr>`;
+    }).join('') || '<tr><td colspan="5" class="text-center text-muted">Hakuna mauzo katika kipindi hiki.</td></tr>';
+
+    const more = sales.length > shown.length
+        ? `<p class="report-chart-note mb-0">Inaonyesha ${shown.length} ya mauzo ${sales.length}.</p>`
+        : '';
+
+    container.innerHTML = `
+        <p class="report-story" style="margin-bottom:14px;">
+            Mauzo <strong>${count}</strong>, jumla ya thamani <strong>${escapeHtml(formatCurrency(revenue))}</strong>.
+            Wastani <strong>${escapeHtml(formatCurrency(avg))}</strong> kwa muamala.
+        </p>
+        <h6 class="mb-2">Njia za malipo</h6>
+        ${mixHtml}
+        <h6 class="mt-4 mb-2">Mauzo ya hivi karibuni</h6>
+        <div class="table-responsive">
+            <table class="table table-sm mb-2">
+                <thead>
+                    <tr>
+                        <th>Tarehe</th>
+                        <th>Risiti</th>
+                        <th>Mteja</th>
+                        <th>Malipo</th>
+                        <th>Kiasi</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+        ${more}`;
 }
 
 async function loadCashflowBalance(startDate, endDate) {
@@ -3038,282 +3639,165 @@ async function loadCashflowBalance(startDate, endDate) {
     if (startDate) params.set('from', startDate);
     if (endDate) params.set('to', endDate);
     const qs = params.toString() ? `?${params}` : '';
-    const result = await api(`/api/cashflow/summary${qs}`);
-    const mapatoEl = document.getElementById('cashflowMapato');
-    const matumiziEl = document.getElementById('cashflowMatumizi');
-    const netEl = document.getElementById('cashflowNet');
-    const detailEl = document.getElementById('cashflowMatumiziDetail');
-    if (!result.success) {
-        if (mapatoEl) mapatoEl.textContent = '—';
-        if (matumiziEl) matumiziEl.textContent = '—';
-        if (netEl) netEl.textContent = '—';
-        return;
-    }
-    const d = result.data || {};
-    if (mapatoEl) mapatoEl.textContent = formatCurrency(d.mapato || 0);
-    if (matumiziEl) matumiziEl.textContent = formatCurrency(d.matumizi || 0);
-    if (netEl) {
-        const net = Number(d.net || 0);
-        netEl.textContent = formatCurrency(net);
-        netEl.classList.toggle('text-success', net >= 0);
-        netEl.classList.toggle('text-danger', net < 0);
-    }
-    if (detailEl) {
-        const b = d.matumizi_breakdown || {};
-        detailEl.textContent = `Manunuzi: ${formatCurrency(b.purchase_payments || 0)} · Matumizi: ${formatCurrency(b.expenses || 0)}`;
-    }
+    return api(`/api/cashflow/summary${qs}`);
+}
+
+function summarizePurchases(list) {
+    const purchases = Array.isArray(list) ? list : [];
+    const totalPurchases = purchases.reduce((sum, p) => sum + (Number(p.totalAmount) || 0), 0);
+    const cashPurchases = purchases
+        .filter((p) => p.paymentType === 'cash')
+        .reduce((sum, p) => sum + (Number(p.totalAmount) || 0), 0);
+    const creditPurchases = purchases
+        .filter((p) => p.paymentType !== 'cash')
+        .reduce((sum, p) => sum + (Number(p.totalAmount) || 0), 0);
+    const totalPaidForCredits = purchases.reduce((sum, p) => sum + (Number(p.totalPaid) || 0), 0);
+    const totalRemainingDebt = purchases.reduce((sum, p) => sum + (Number(p.remainingBalance) || 0), 0);
+    const totalItems = purchases.reduce((sum, p) => (
+        sum + (p.items || []).reduce((itemSum, item) => itemSum + (Number(item.quantity) || 0), 0)
+    ), 0);
+    return {
+        purchases,
+        summary: {
+            totalPurchases,
+            totalOrders: purchases.length,
+            averageOrder: purchases.length ? totalPurchases / purchases.length : 0,
+            cashPurchases,
+            creditPurchases,
+            totalPaidForCredits,
+            totalRemainingDebt,
+            totalSuppliers: new Set(purchases.map((p) => p.supplierId).filter(Boolean)).size,
+            totalItems,
+        },
+    };
 }
 
 async function loadPurchaseReport() {
-    // Update active tab
-    const purchaseReportDiv = document.getElementById('purchaseReport');
-    const profitLossReportDiv = document.getElementById('profitLossReport');
-    
-    _setActiveReportTab('purchaseReportTab');
-    if (purchaseReportDiv) purchaseReportDiv.style.display = 'block';
-    if (profitLossReportDiv) profitLossReportDiv.style.display = 'none';
-    
-    const startDate = document.getElementById('reportStartDate')?.value;
-    const endDate = document.getElementById('reportEndDate')?.value;
-    const supplierId = document.getElementById('reportSupplierFilter')?.value || '';
-    
-    let url = '/api/reports/purchases';
-    const params = [];
-    if (startDate && endDate) {
-        params.push(`startDate=${startDate}`);
-        params.push(`endDate=${endDate}`);
-    }
-    if (supplierId && currentUser && currentUser.role === 'admin') {
-        params.push(`supplierId=${supplierId}`);
-    }
-    if (params.length > 0) {
-        url += '?' + params.join('&');
-    }
-    
-    const result = await api(url);
-    if (!result.success) {
-        showToast('Hitilafu katika kupata ripoti ya manunuzi', 'danger');
+    const container = document.getElementById('purchaseReport');
+    if (!container || reportDetail !== 'purchases') return;
+    if (!reportCache) {
+        await loadReports();
         return;
     }
-    
-    const data = result.data;
+    if (reportCache.purchases) {
+        renderPurchaseDetail(reportCache.purchases);
+        return;
+    }
+
+    const ticket = ++reportPurchaseRequest;
+    container.innerHTML = '<p class="text-muted mb-0">Inapakia manunuzi…</p>';
+    const { startDate, endDate } = reportCache.range;
+    const result = await api(`/api/purchases?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`);
+    if (ticket !== reportPurchaseRequest) return;
+    if (!reportCache || reportCache.range.startDate !== startDate) return;
+
+    if (!result.success) {
+        showToast(result.message || 'Hitilafu katika kupata ripoti ya manunuzi', 'danger');
+        container.innerHTML = '<p class="text-muted mb-0">Hatukuweza kupata manunuzi.</p>';
+        return;
+    }
+
+    reportCache.purchases = summarizePurchases(result.data);
+    window.currentPurchaseReportData = reportCache.purchases;
+    renderPurchaseDetail(reportCache.purchases);
+}
+
+function renderPurchaseDetail(data) {
     const container = document.getElementById('purchaseReport');
     if (!container) return;
-    
-    // Update summary cards
-    const revenueEl = document.getElementById('reportTotalRevenue');
-    const transactionsEl = document.getElementById('reportTotalTransactions');
-    const avgTransactionEl = document.getElementById('reportAvgTransaction');
-    
-    if (revenueEl) revenueEl.textContent = formatCurrency(data.summary.totalPurchases);
-    if (transactionsEl) transactionsEl.textContent = data.summary.totalOrders;
-    if (avgTransactionEl) avgTransactionEl.textContent = formatCurrency(data.summary.averageOrder);
-    
-    // Display purchase details
+    const summary = data.summary;
+    const creditLeft = summary.totalRemainingDebt || 0;
+    const rows = data.purchases.map((p) => {
+        const paid = Number(p.totalPaid) || 0;
+        const balance = p.paymentType === 'credit' ? (Number(p.remainingBalance) || 0) : 0;
+        const id = JSON.stringify(String(p.id));
+        return `
+            <tr>
+                <td>${escapeHtml(p.createdAt ? formatDate(p.createdAt) : '—')}</td>
+                <td>${escapeHtml(p.invoiceNumber || p.reference || '—')}</td>
+                <td>${escapeHtml(p.supplierName || '—')}</td>
+                <td>${escapeHtml(formatCurrency(p.totalAmount || 0))}</td>
+                <td><span class="badge bg-${p.paymentType === 'credit' ? 'warning' : 'success'}">${p.paymentType === 'credit' ? 'Mkopo' : 'Cash'}</span></td>
+                <td>${escapeHtml(formatCurrency(paid))}</td>
+                <td>${p.paymentType === 'credit' ? `<span class="text-danger fw-bold">${escapeHtml(formatCurrency(balance))}</span>` : '—'}</td>
+                <td>
+                    <button class="btn btn-sm btn-info btn-icon" onclick='viewPurchaseDetails(${id})' title="Angalia Maelezo">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </td>
+            </tr>`;
+    }).join('') || '<tr><td colspan="8" class="text-center text-muted">Hakuna manunuzi katika kipindi hiki.</td></tr>';
+
     container.innerHTML = `
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="label">Manunuzi ya Cash</div>
-                    <div class="value text-success">${formatCurrency(data.summary.cashPurchases)}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="label">Manunuzi ya Mkopo</div>
-                    <div class="value text-warning">${formatCurrency(data.summary.creditPurchases)}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="label">Msambazaji</div>
-                    <div class="value">${data.summary.totalSuppliers}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="label">Bidhaa Zinazonunuliwa</div>
-                    <div class="value">${data.summary.totalItems}</div>
-                </div>
-            </div>
-        </div>
-        
-        ${data.summary.creditPurchases > 0 ? `
-            <div class="row g-4 mb-4">
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <div class="label">Jumla ya Manunuzi ya Mkopo</div>
-                        <div class="value text-warning">${formatCurrency(data.summary.creditPurchases)}</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <div class="label">Kiasi Kilicholipwa</div>
-                        <div class="value text-success">${formatCurrency(data.summary.totalPaidForCredits || 0)}</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <div class="label">Deni Baki</div>
-                        <div class="value text-danger">${formatCurrency(data.summary.totalRemainingDebt || 0)}</div>
-                    </div>
-                </div>
-            </div>
-        ` : ''}
-        
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="mb-0">Orodha ya Manunuzi</h6>
-            <button class="btn btn-sm btn-success" onclick="exportPurchaseReportToExcel()">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <p class="report-story mb-0">
+                Manunuzi <strong>${summary.totalOrders}</strong> yenye jumla <strong>${escapeHtml(formatCurrency(summary.totalPurchases))}</strong>.
+                Yamelipwa <strong>${escapeHtml(formatCurrency(summary.totalPaidForCredits))}</strong>,
+                deni la wasambazaji baki <strong>${escapeHtml(formatCurrency(creditLeft))}</strong>.
+            </p>
+            <button class="btn btn-sm btn-success flex-shrink-0" onclick="exportPurchaseReportToExcel()">
                 <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
             </button>
         </div>
         <div class="table-responsive">
-            <table class="table table-sm">
+            <table class="table table-sm mb-0">
                 <thead>
                     <tr>
                         <th>Tarehe</th>
                         <th>Invoice</th>
                         <th>Msambazaji</th>
                         <th>Kiasi</th>
-                        <th>Aina ya Malipo</th>
-                        <th>Njia ya Malipo</th>
-                        ${data.summary.creditPurchases > 0 ? '<th>Kiasi Kilicholipwa</th><th>Deni Baki</th><th>Vitendo</th>' : '<th>Vitendo</th>'}
+                        <th>Aina</th>
+                        <th>Kilicholipwa</th>
+                        <th>Deni baki</th>
+                        <th></th>
                     </tr>
                 </thead>
-                <tbody>
-                    ${data.purchases.map(p => {
-                        const paymentMethodLabels = {
-                            'cash': 'Cash',
-                            'bank': 'Bank Transfer',
-                            'mpesa': 'M-Pesa',
-                            'airtel': 'Airtel Money',
-                            'tigo': 'Tigo Pesa',
-                            'halopesa': 'Halo Pesa'
-                        };
-                        
-                        function formatPaymentMethod(method) {
-                            if (paymentMethodLabels[method]) {
-                                return paymentMethodLabels[method];
-                            }
-                            return method ? method.split('_').map(word => 
-                                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                            ).join(' ') : '-';
-                        }
-                        
-                        // Get payment info for credit purchases
-                        let paidAmount = p.totalPaid !== undefined ? p.totalPaid : 0;
-                        let remainingBalance = p.paymentType === 'credit' ? (p.remainingBalance !== undefined ? p.remainingBalance : p.totalAmount) : 0;
-                        
-                        return `
-                        <tr>
-                            <td>${formatDate(p.createdAt)}</td>
-                            <td>${p.invoiceNumber}</td>
-                            <td>${p.supplierName}</td>
-                            <td>${formatCurrency(p.totalAmount)}</td>
-                            <td><span class="badge bg-${p.paymentType === 'credit' ? 'warning' : 'success'}">${p.paymentType === 'credit' ? 'Mkopo' : 'Cash'}</span></td>
-                            <td>${p.paymentType === 'cash' ? formatPaymentMethod(p.paymentMethod || 'cash') : '-'}</td>
-                            ${data.summary.creditPurchases > 0 ? `
-                                <td>${p.paymentType === 'credit' ? formatCurrency(paidAmount) : '-'}</td>
-                                <td>${p.paymentType === 'credit' ? `<span class="text-danger fw-bold">${formatCurrency(remainingBalance)}</span>` : '-'}</td>
-                            ` : ''}
-                            <td>
-                                <button class="btn btn-sm btn-info btn-icon" onclick="viewPurchaseDetails('${p.id}')" title="Angalia Maelezo">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        `;
-                    }).join('') || '<tr><td colspan="' + (data.summary.creditPurchases > 0 ? '9' : '7') + '" class="text-center text-muted">Hakuna manunuzi</td></tr>'}
-                </tbody>
+                <tbody>${rows}</tbody>
             </table>
-        </div>
-    `;
-    
-    // Store purchase data for Excel export
+        </div>`;
     window.currentPurchaseReportData = data;
 }
 
 function exportPurchaseReportToExcel() {
-    if (!window.currentPurchaseReportData) {
+    const data = window.currentPurchaseReportData;
+    if (!data || !data.summary || !data.purchases) {
         showToast('Hakuna data ya ku-export', 'danger');
         return;
     }
-    
-    const data = window.currentPurchaseReportData;
-    const startDate = document.getElementById('reportStartDate')?.value || '';
-    const endDate = document.getElementById('reportEndDate')?.value || '';
-    const supplierId = document.getElementById('reportSupplierFilter')?.value || '';
-    const supplierName = supplierId ? suppliers.find(s => s.id === supplierId)?.name || 'Msambazaji Wote' : 'Msambazaji Wote';
-    
-    // Create CSV content
-    let csv = '\uFEFF'; // BOM for Excel UTF-8 support
-    
-    // Header
+    const range = reportCache && reportCache.range;
+    const startDate = range ? range.startDate : '';
+    const endDate = range ? range.endDate : '';
+    const summary = data.summary;
+
+    let csv = '\uFEFF';
     csv += 'RIPOTI YA MANUNUZI\n';
     csv += `Tarehe: ${startDate && endDate ? `${startDate} - ${endDate}` : 'Zote'}\n`;
-    csv += `Msambazaji: ${supplierName}\n`;
     csv += `Tarehe ya Kuunda: ${formatDateTime(new Date())}\n\n`;
-    
-    // Summary
     csv += 'MUHTASARI\n';
-    csv += `Jumla ya Manunuzi,${data.summary.totalPurchases.toLocaleString()}\n`;
-    csv += `Idadi ya Manunuzi,${data.summary.totalOrders}\n`;
-    csv += `Wastani wa Manunuzi,${data.summary.averageOrder.toLocaleString()}\n`;
-    csv += `Manunuzi ya Cash,${data.summary.cashPurchases.toLocaleString()}\n`;
-    csv += `Manunuzi ya Mkopo,${data.summary.creditPurchases.toLocaleString()}\n`;
-    if (data.summary.creditPurchases > 0) {
-        csv += `Kiasi Kilicholipwa,${(data.summary.totalPaidForCredits || 0).toLocaleString()}\n`;
-        csv += `Deni Baki,${(data.summary.totalRemainingDebt || 0).toLocaleString()}\n`;
-    }
-    csv += `Msambazaji,${data.summary.totalSuppliers}\n`;
-    csv += `Bidhaa Zinazonunuliwa,${data.summary.totalItems}\n\n`;
-    
-    // Purchase details
+    csv += `Jumla ya Manunuzi,${summary.totalPurchases}\n`;
+    csv += `Idadi ya Manunuzi,${summary.totalOrders}\n`;
+    csv += `Wastani wa Manunuzi,${Math.round(summary.averageOrder)}\n`;
+    csv += `Manunuzi ya Cash,${summary.cashPurchases}\n`;
+    csv += `Manunuzi ya Mkopo,${summary.creditPurchases}\n`;
+    csv += `Kiasi Kilicholipwa,${summary.totalPaidForCredits || 0}\n`;
+    csv += `Deni Baki,${summary.totalRemainingDebt || 0}\n`;
+    csv += `Msambazaji,${summary.totalSuppliers}\n`;
+    csv += `Bidhaa Zinazonunuliwa,${summary.totalItems}\n\n`;
     csv += 'ORODHA YA MANUNUZI\n';
-    csv += 'Tarehe,Invoice,Msambazaji,Kiasi,Aina ya Malipo,Njia ya Malipo';
-    if (data.summary.creditPurchases > 0) {
-        csv += ',Kiasi Kilicholipwa,Deni Baki';
-    }
-    csv += '\n';
-    
-    const paymentMethodLabels = {
-        'cash': 'Cash',
-        'bank': 'Bank Transfer',
-        'mpesa': 'M-Pesa',
-        'airtel': 'Airtel Money',
-        'tigo': 'Tigo Pesa',
-        'halopesa': 'Halo Pesa'
-    };
-    
-    function formatPaymentMethod(method) {
-        if (paymentMethodLabels[method]) {
-            return paymentMethodLabels[method];
-        }
-        return method ? method.split('_').map(word => 
-            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-        ).join(' ') : '-';
-    }
-    
-    data.purchases.forEach(p => {
-        const date = formatDate(p.createdAt);
-        const invoice = p.invoiceNumber || '';
-        const supplier = p.supplierName || '';
-        const amount = p.totalAmount || 0;
+    csv += 'Tarehe,Invoice,Msambazaji,Kiasi,Aina ya Malipo,Kiasi Kilicholipwa,Deni Baki\n';
+
+    data.purchases.forEach((p) => {
+        const date = p.createdAt ? formatDate(p.createdAt) : '';
+        const invoice = String(p.invoiceNumber || p.reference || '').replace(/"/g, '""');
+        const supplier = String(p.supplierName || '').replace(/"/g, '""');
+        const amount = Number(p.totalAmount) || 0;
         const paymentType = p.paymentType === 'credit' ? 'Mkopo' : 'Cash';
-        const paymentMethod = p.paymentType === 'cash' ? formatPaymentMethod(p.paymentMethod || 'cash') : '-';
-        
-        csv += `"${date}","${invoice}","${supplier}",${amount.toLocaleString()},"${paymentType}","${paymentMethod}"`;
-        
-        if (data.summary.creditPurchases > 0) {
-            const paid = p.paymentType === 'credit' ? (p.totalPaid !== undefined ? p.totalPaid : 0) : 0;
-            const balance = p.paymentType === 'credit' ? (p.remainingBalance !== undefined ? p.remainingBalance : p.totalAmount) : 0;
-            csv += `,${paid.toLocaleString()},${balance.toLocaleString()}`;
-        }
-        
-        csv += '\n';
+        const paid = Number(p.totalPaid) || 0;
+        const balance = p.paymentType === 'credit' ? (Number(p.remainingBalance) || 0) : 0;
+        csv += `"${date}","${invoice}","${supplier}",${amount},"${paymentType}",${paid},${balance}\n`;
     });
-    
-    // Create blob and download
+
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -3323,96 +3807,14 @@ function exportPurchaseReportToExcel() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+    URL.revokeObjectURL(url);
     showToast('Ripoti ime-download kama faili ya Excel', 'success');
 }
 
 async function loadProfitLossReport() {
-    // Update active tab
-    const purchaseReportDiv = document.getElementById('purchaseReport');
-    const profitLossReportDiv = document.getElementById('profitLossReport');
-    
-    _setActiveReportTab('profitLossReportTab');
-    if (purchaseReportDiv) purchaseReportDiv.style.display = 'none';
-    if (profitLossReportDiv) profitLossReportDiv.style.display = 'block';
-    
-    const startDate = document.getElementById('reportStartDate')?.value;
-    const endDate = document.getElementById('reportEndDate')?.value;
-    
-    let url = '/api/reports/profit-loss';
-    if (startDate && endDate) {
-        url += `?startDate=${startDate}&endDate=${endDate}`;
-    }
-    
-    const result = await api(url);
-    if (!result.success) return;
-    
-    const data = result.data;
-    const container = document.getElementById('profitLossReport');
-    if (!container) return;
-
-    await loadCashflowBalance(startDate, endDate);
-    const cashflow = await api(`/api/cashflow/summary?${new URLSearchParams({
-        ...(startDate ? { from: startDate } : {}),
-        ...(endDate ? { to: endDate } : {}),
-    })}`);
-    const cf = cashflow.success ? (cashflow.data || {}) : {};
-    const matumiziTotal = cf.matumizi != null
-        ? Number(cf.matumizi)
-        : Number(data.totalExpenses || 0);
-    const mapato = cf.mapato != null ? Number(cf.mapato) : Number(data.revenue || 0);
-    const netBalanced = cf.net != null ? Number(cf.net) : (mapato - matumiziTotal);
-    
-    container.innerHTML = `
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="label">Mapato</div>
-                    <div class="value text-primary">${formatCurrency(mapato)}</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="label">Gharama za Bidhaa</div>
-                    <div class="value text-danger">${formatCurrency(data.costOfGoodsSold)}</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="label">Faida Ghafi</div>
-                    <div class="value ${data.grossProfit >= 0 ? 'text-success' : 'text-danger'}">
-                        ${formatCurrency(data.grossProfit)}
-                    </div>
-                    <div class="small text-muted">${data.grossProfitMargin}%</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="label">Matumizi (expenses + manunuzi lipa)</div>
-                    <div class="value text-warning">${formatCurrency(matumiziTotal)}</div>
-                    <div class="small text-muted">Manunuzi: ${formatCurrency(cf.matumizi_breakdown?.purchase_payments || 0)}</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="label">Net (Mapato − Matumizi)</div>
-                    <div class="value ${netBalanced >= 0 ? 'text-success' : 'text-danger'}">
-                        ${formatCurrency(netBalanced)}
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="label">Faida Halisi (P&amp;L)</div>
-                    <div class="value ${data.netProfit >= 0 ? 'text-success' : 'text-danger'}">
-                        ${formatCurrency(data.netProfit)}
-                    </div>
-                    <div class="small text-muted">${data.netProfitMargin}%</div>
-                </div>
-            </div>
-        </div>
-    `;
+    showReportDetail('sales');
 }
+
 
 // =========================
 // ACTIVITY LOGS
@@ -3464,6 +3866,10 @@ async function loadSettings() {
     document.getElementById('settingLoanLimitDays').value = settings.loanLimitAlertDays ?? 7;
     document.getElementById('settingTaxRate').value = settings.taxRate || 18;
     document.getElementById('settingReceiptFooter').value = settings.receiptFooter || '';
+    const paperEl = document.getElementById('settingReceiptPaper');
+    if (paperEl) paperEl.value = String(settings.receiptPaperMm) === '80' ? '80' : '58';
+    const skipEl = document.getElementById('settingSkipBuiltinPrinter');
+    if (skipEl) skipEl.checked = !!settings.skipBuiltinPrinter;
 }
 
 async function saveSettings() {
@@ -3477,7 +3883,9 @@ async function saveSettings() {
         expiryAlertDays: parseInt(document.getElementById('settingExpiryDays').value),
         loanLimitAlertDays: parseInt(document.getElementById('settingLoanLimitDays').value) || 7,
         taxRate: parseFloat(document.getElementById('settingTaxRate').value),
-        receiptFooter: document.getElementById('settingReceiptFooter').value
+        receiptFooter: document.getElementById('settingReceiptFooter').value,
+        receiptPaperMm: Number(document.getElementById('settingReceiptPaper')?.value) === 80 ? 80 : 58,
+        skipBuiltinPrinter: !!document.getElementById('settingSkipBuiltinPrinter')?.checked
     };
     
     const result = await api('/api/settings', { 
@@ -3777,9 +4185,8 @@ async function completeSale() {
         await loadProducts(); // Refresh stock
         renderPOSProducts();
         
-        // Only ask to print if order is completed (not pending verification)
-        if (result.data.status === 'completed' && confirm('Chapisha risiti?')) {
-            printReceipt(result.data.id);
+        if (result.data.status === 'completed') {
+            showToast('Sale saved. Receipt is waiting for admin.', 'info');
         } else if (result.data.status === 'pending_verification') {
             showToast('Agizo limewasilishwa. Cashier atathibitisha na kukamilisha malipo.', 'info');
         }
@@ -5024,9 +5431,6 @@ async function viewSale(saleId) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Funga</button>
-                        <button type="button" class="btn btn-primary" onclick="printReceipt('${sale.id}')">
-                            <i class="bi bi-printer me-1"></i>Chapisha
-                        </button>
                     </div>
                 </div>
             </div>
@@ -5494,11 +5898,6 @@ function viewOngoingOrder(orderId) {
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Funga</button>
-                            ${order.status === 'verified' || order.status === 'completed' ? `
-                                <button type="button" class="btn btn-primary" onclick="printReceipt('${order.id}')">
-                                    <i class="bi bi-printer me-1"></i>Chapisha Risiti
-                                </button>
-                            ` : ''}
                         </div>
                     </div>
                 </div>
