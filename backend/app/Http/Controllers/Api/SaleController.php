@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerDebt;
 use App\Models\Product;
+use App\Models\ReceiptPrintJob;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
@@ -298,6 +299,19 @@ class SaleController extends Controller
                     );
                     CustomerDebt::recomputeOpenBalance($customer->fresh());
                 }
+
+                ReceiptPrintJob::firstOrCreate(
+                    ['sale_id' => $sale->id],
+                    [
+                        'shop_id' => $shopId,
+                        'serial_number' => $serial,
+                        'cashier_id' => $user->id,
+                        'customer_name' => $sale->customer_name,
+                        'payment_method' => $paymentMethod,
+                        'amount' => $total,
+                        'status' => 'queued',
+                    ]
+                );
 
                 return $sale->load(['items', 'shop', 'cashier']);
             });
