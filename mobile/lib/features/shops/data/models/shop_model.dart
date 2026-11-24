@@ -17,6 +17,8 @@ class ShopModel extends ShopEntity {
     super.serialPrefix = 'DEM',
     super.status = 'active',
     super.themeId = 'classic',
+    super.receiptPaperMm = 58,
+    super.skipBuiltinPrinter = false,
     super.manager,
     super.ownerName,
     super.ownerEmail,
@@ -83,6 +85,13 @@ class ShopModel extends ShopEntity {
           raw['serial_prefix']?.toString() ?? raw['serialPrefix']?.toString() ?? 'DEM',
       status: raw['status']?.toString() ?? 'active',
       themeId: (raw['theme_id'] ?? raw['themeId'] ?? 'classic').toString(),
+      receiptPaperMm: asInt(raw['receipt_paper_mm'] ?? raw['receiptPaperMm']) == 80
+          ? 80
+          : 58,
+      skipBuiltinPrinter: raw['skip_builtin_printer'] == true ||
+          raw['skipBuiltinPrinter'] == true ||
+          raw['skip_builtin_printer'] == 1 ||
+          raw['skipBuiltinPrinter'] == 1,
       manager: ownerName,
       ownerName: ownerName,
       ownerEmail: ownerEmail,
@@ -115,6 +124,8 @@ class ShopModel extends ShopEntity {
         'serial_prefix': serialPrefix,
         'status': status,
         'theme_id': themeId,
+        'receipt_paper_mm': receiptPaperMm,
+        'skip_builtin_printer': skipBuiltinPrinter,
         'manager_name': manager,
         'owner_name': ownerName,
         'owner_email': ownerEmail,
