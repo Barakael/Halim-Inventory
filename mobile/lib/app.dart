@@ -221,53 +221,98 @@ class _AppState extends State<App> with TickerProviderStateMixin {
             create: (_) => sl<TransactionsBloc>()),
         BlocProvider<UserBloc>(create: (_) => sl<UserBloc>()),
       ],
-      child: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          final loc = _appRouter.router.state.matchedLocation;
-          if (state is AuthAuthenticated) {
-            if (loc != RouteNames.pos) {
-              _appRouter.router.go(RouteNames.pos);
+      child: _AuthSessionLifecycle(
+        child: BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            final loc = _appRouter.router.state.matchedLocation;
+            if (state is AuthAuthenticated) {
+              if (loc != RouteNames.pos) {
+                _appRouter.router.go(RouteNames.pos);
+              }
+            } else if (state is AuthUnauthenticated) {
+              if (loc != RouteNames.login) {
+                _appRouter.router.go(RouteNames.login);
+              }
             }
-          } else if (state is AuthUnauthenticated) {
-            if (loc != RouteNames.login) {
-              _appRouter.router.go(RouteNames.login);
-            }
-          }
-        },
-        child: BlocBuilder<ThemeCubit, BrandPalette>(
-          builder: (context, palette) {
-            return BlocBuilder<LocaleCubit, Locale>(
-              builder: (context, locale) {
-                final t = AppStrings.fromLocale(locale);
-                return MaterialApp.router(
-                  title: t.appName,
-                  debugShowCheckedModeBanner: false,
-                  theme: AppTheme.lightFor(palette),
-                  darkTheme: AppTheme.dark,
-                  themeMode: ThemeMode.light,
-                  locale: locale,
-                  supportedLocales: LocaleCubit.supported,
-                  localizationsDelegates: const [
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate,
-                  ],
-                  builder: (context, child) {
-                    return BrandPaletteScope(
-                      palette: palette,
-                      child: AppStringsScope(
-                        strings: t,
-                        child: child ?? const SizedBox.shrink(),
-                      ),
-                    );
-                  },
-                  routerConfig: _appRouter.router,
-                );
-              },
-            );
           },
+          child: BlocBuilder<ThemeCubit, BrandPalette>(
+            builder: (context, palette) {
+              return BlocBuilder<LocaleCubit, Locale>(
+                builder: (context, locale) {
+                  final t = AppStrings.fromLocale(locale);
+                  return MaterialApp.router(
+                    title: t.appName,
+                    debugShowCheckedModeBanner: false,
+                    theme: AppTheme.lightFor(palette),
+                    darkTheme: AppTheme.dark,
+                    themeMode: ThemeMode.light,
+                    locale: locale,
+                    supportedLocales: LocaleCubit.supported,
+                    localizationsDelegates: const [
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                      GlobalCupertinoLocalizations.delegate,
+                    ],
+                    builder: (context, child) {
+                      return BrandPaletteScope(
+                        palette: palette,
+                        child: AppStringsScope(
+                          strings: t,
+                          child: child ?? const SizedBox.shrink(),
+                        ),
+                      );
+                    },
+                    routerConfig: _appRouter.router,
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );
   }
+}
+
+/// Clears the login session whenever the app leaves the foreground so a
+/// password is required again on return.
+class _AuthSessionLifecycle extends StatefulWidget {
+  const _AuthSessionLifecycle({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_AuthSessionLifecycle> createState() => _AuthSessionLifecycleState();
+}
+
+class _AuthSessionLifecycleState extends State<_AuthSessionLifecycle>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.paused &&
+        state != AppLifecycleState.hidden &&
+        state != AppLifecycleState.detached) {
+      return;
+    }
+    if (!mounted) return;
+    final auth = context.read<AuthBloc>();
+    if (auth.state is AuthAuthenticated) {
+      auth.add(const AuthLogoutRequested());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
