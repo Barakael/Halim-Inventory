@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class StaffController extends Controller
 {
@@ -14,7 +15,7 @@ class StaffController extends Controller
     {
         $staff = User::where('shop_id', $request->user()->shop_id)
             ->with('branch')
-            ->whereIn('role', ['cashier', 'storekeeper', 'owner', 'admin'])
+            ->whereIn('role', ['cashier', 'storekeeper', 'owner', 'admin', 'super_admin'])
             ->orderBy('name')
             ->get()
             ->map(fn (User $u) => $this->toApi($u));
@@ -26,7 +27,8 @@ class StaffController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
+            'email' => 'nullable|email|max:255|unique:users,email',
+            'username' => 'nullable|string|max:100|unique:users,username',
             'password' => 'required|string|min:6',
             'branch_id' => 'nullable|integer',
             'phone' => 'nullable|string|max:50',
@@ -35,7 +37,10 @@ class StaffController extends Controller
 
         $shopId = $request->user()->shop_id;
         $branchId = $this->resolveBranch($shopId, $data['branch_id'] ?? null);
-        $username = $this->uniqueUsername(Str::before($data['email'], '@') ?: 'staff');
+        $requestedUsername = trim((string) ($data['username'] ?? ''));
+        $username = $requestedUsername !== ''
+            ? $requestedUsername
+            : $this->uniqueUsername(Str::before((string) ($data['email'] ?? ''), '@') ?: 'staff');
 
         $user = User::create([
             'shop_id' => $shopId,
@@ -57,7 +62,14 @@ class StaffController extends Controller
         $user = User::where('shop_id', $request->user()->shop_id)->where('id', $id)->firstOrFail();
         $data = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|max:255',
+            'email' => [
+                'nullable', 'email', 'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+            'username' => [
+                'sometimes', 'required', 'string', 'max:100',
+                Rule::unique('users', 'username')->ignore($user->id),
+            ],
             'password' => 'nullable|string|min:6',
             'branch_id' => 'nullable|integer',
             'phone' => 'nullable|string|max:50',
@@ -68,7 +80,10 @@ class StaffController extends Controller
         if (array_key_exists('branch_id', $data)) {
             $user->branch_id = $this->resolveBranch($request->user()->shop_id, $data['branch_id']);
         }
-        foreach (['name', 'email', 'phone', 'role', 'status'] as $field) {
+        if (array_key_exists('username', $data)) {
+            $data['username'] = trim((string) $data['username']);
+        }
+        foreach (['name', 'email', 'username', 'phone', 'role', 'status'] as $field) {
             if (array_key_exists($field, $data)) {
                 $user->{$field} = $data[$field];
             }
@@ -120,9 +135,11 @@ class StaffController extends Controller
         return [
             'id' => $u->id,
             'name' => $u->name,
+            'username' => $u->username,
             'email' => $u->email,
             'phone' => $u->phone,
             'role' => $u->role,
+            'status' => $u->status ?: 'active',
             'role_name' => $u->role,
             'branch_id' => $u->branch_id,
             'branch' => $u->relationLoaded('branch') && $u->branch
