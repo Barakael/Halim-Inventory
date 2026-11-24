@@ -1,5 +1,11 @@
 allprojects {
     repositories {
+        // Local copy of the Flutter arm64 release engine. Google Storage
+        // downloads of this jar time out on this network.
+        val engineMirror = File("${System.getProperty("user.home")}/.gradle/flutter-engine-mirror")
+        if (engineMirror.isDirectory) {
+            maven { url = uri(engineMirror) }
+        }
         google()
         mavenCentral()
     }
