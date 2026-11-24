@@ -463,8 +463,10 @@ const dashboardRoutes = [
     '/categories',
     '/stock',
     '/sales',
+    '/receipts',
     '/purchases',
     '/suppliers',
+    '/supplier-statement',
     '/customers',
     '/credits',
     '/expenses',
@@ -2194,22 +2196,9 @@ ${sale.isCredit ? '<div class="credit-warning">⚠ MAUZO YA MKOPO</div>' : ''}
   <div class="footer-sub" style="font-size:11px;color:#888;margin-top:3px;">${moment().format('DD/MM/YYYY HH:mm')}</div>
 </div>
 
-<!-- Print button -->
-<div class="no-print" style="text-align:center;margin-top:16px;">
-  <button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer;background:#0d6efd;color:#fff;border:none;border-radius:4px;">
-    🖨 Chapisha Risiti
-  </button>
-  <div style="margin-top:8px;font-size:11px;color:#666;line-height:1.6;">
-    💡 Badilisha <strong>"Destination"</strong><br>
-    kutoka <em>"Save as PDF"</em> hadi printer yako (58mm).
-  </div>
+<div class="no-print" style="text-align:center;margin-top:16px;font-size:12px;color:#444;">
+  Preview only. Admin prints this receipt on the Bluetooth printer.
 </div>
-
-<script>
-  window.addEventListener('load', function() {
-    setTimeout(function() { window.print(); }, 400);
-  });
-</script>
 </body>
 </html>`;
 
