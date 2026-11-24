@@ -10,6 +10,10 @@ class ApiEndpoints {
 
   // Dashboard
   static const String dashboard = '/dashboard';
+  static const String dashboardSuper = '/dashboard/super';
+  static const String receiptJobs = '/receipt-jobs';
+  static String receiptJob(String id) => '/receipt-jobs/$id';
+  static String receiptJobPrinted(String id) => '/receipt-jobs/$id/printed';
 
   // Users (super_admin)
   static const String users = '/users';
