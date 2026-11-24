@@ -37,6 +37,9 @@ class SettingsController extends Controller
                 'string',
                 Rule::in(['classic', 'coral', 'indigo', 'warm', 'grove']),
             ],
+            'receipt_paper_mm' => 'sometimes|integer|in:58,80',
+            'skip_builtin_printer' => 'sometimes|boolean',
+            'receipt_footer' => 'nullable|string|max:500',
         ]);
 
         if (array_key_exists('theme_id', $data)) {
