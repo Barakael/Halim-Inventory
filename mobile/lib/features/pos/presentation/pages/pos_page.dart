@@ -14,6 +14,7 @@ import '../../../../core/services/shop_profile_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/platform_utils.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../products/presentation/bloc/products_bloc.dart';
 import '../../../products/domain/entities/product_entity.dart';
@@ -25,6 +26,8 @@ import '../../../shops/domain/entities/shop_entity.dart';
 import '../widgets/barcode_scanner_widget.dart';
 import '../widgets/hardware_barcode_listener.dart';
 import '../widgets/payment_method_dialog.dart';
+import '../../../dashboard/presentation/pages/super_admin_dashboard_page.dart';
+import 'receipt_queue_page.dart';
 import '../widgets/receipt_dialog.dart';
 import '../../domain/models/cart_item.dart';
 import '../../../../shared/widgets/product_photo.dart';
@@ -418,9 +421,18 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
 
   /// Sum of line totals (selling prices).
   double get _subtotal =>
-      _cart.fold(0.0, (s, i) => s + i.product.price * i.quantity);
+      _cart.fold(0.0, (s, i) => s + i.unitPrice * i.quantity);
   double get _total => _subtotal;
   int get _itemCount => _cart.fold(0, (s, i) => s + i.quantity);
+
+  int _cartQtyForProduct(String productId) => _cart
+      .where((i) => i.product.id == productId)
+      .fold(0, (s, i) => s + i.quantity);
+
+  double _unitPriceFor(ProductEntity product, SaleType saleType) =>
+      saleType == SaleType.wholesale
+          ? (product.cost ?? 0)
+          : product.price;
 
   void _prefetchShopProfile() {
     final auth = context.read<AuthBloc>().state;
@@ -446,7 +458,8 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
     if (s is ProductsLoaded) {
       final match = _findByBarcode(code, s.products);
       if (match != null) {
-        _addToCart(match);
+        // Scan defaults to Rejareja for fast cashier flow.
+        _addToCart(match, saleType: SaleType.retail);
         _searchCtrl.clear();
         setState(() => _searchQuery = '');
       } else {
@@ -458,94 +471,171 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
     }
   }
 
-  void _addToCart(ProductEntity product) {
+  void _addToCart(
+    ProductEntity product, {
+    SaleType saleType = SaleType.retail,
+  }) {
     HapticFeedback.lightImpact();
+    final unitPrice = _unitPriceFor(product, saleType);
+    if (saleType == SaleType.wholesale && unitPrice <= 0) {
+      _toast(AppStrings.read(context).wholesalePriceMissing, isError: true);
+      return;
+    }
     // Defer setState to next frame to avoid gesture event conflicts
     Future.microtask(() {
       if (!mounted) return;
       setState(() {
-        final idx = _cart.indexWhere((i) => i.product.id == product.id);
+        if (product.stock <= 0) {
+          _toast(
+              '${product.name} — ${AppStrings.read(context).outOfStockLower}',
+              isError: true);
+          return;
+        }
+        final used = _cartQtyForProduct(product.id);
+        final idx = _cart.indexWhere(
+          (i) => i.product.id == product.id && i.saleType == saleType,
+        );
         if (idx != -1) {
-          if (_cart[idx].quantity < product.stock) {
-            _cart[idx] =
-                CartItem(product: product, quantity: _cart[idx].quantity + 1);
+          if (used < product.stock) {
+            final existing = _cart[idx];
+            _cart[idx] = CartItem(
+              product: product,
+              quantity: existing.quantity + 1,
+              saleType: saleType,
+              unitPrice: unitPrice,
+            );
             _cartBadgeCtrl.forward(from: 0);
           } else {
             _toast(
                 '${AppStrings.read(context).maxStockReached} ${product.name}',
                 isError: true);
           }
+        } else if (used < product.stock) {
+          _cart.add(CartItem(
+            product: product,
+            quantity: 1,
+            saleType: saleType,
+            unitPrice: unitPrice,
+          ));
+          _cartBadgeCtrl.forward(from: 0);
         } else {
-          if (product.stock > 0) {
-            _cart.add(CartItem(product: product, quantity: 1));
-            _cartBadgeCtrl.forward(from: 0);
-          } else {
-            _toast(
-                '${product.name} — ${AppStrings.read(context).outOfStockLower}',
-                isError: true);
-          }
+          _toast(
+              '${AppStrings.read(context).maxStockReached} ${product.name}',
+              isError: true);
         }
       });
     });
   }
 
-  Future<void> _promptQuantity(ProductEntity product, {int? currentQty}) async {
+  Future<void> _promptQuantity(
+    ProductEntity product, {
+    int? currentQty,
+    SaleType saleType = SaleType.retail,
+  }) async {
     if (product.stock <= 0) {
       _toast(
           '${product.name} — ${AppStrings.read(context).outOfStockLower}',
           isError: true);
       return;
     }
+    final unitPrice = _unitPriceFor(product, saleType);
+    if (saleType == SaleType.wholesale && unitPrice <= 0) {
+      _toast(AppStrings.read(context).wholesalePriceMissing, isError: true);
+      return;
+    }
     HapticFeedback.selectionClick();
+    final otherQty = _cart
+        .where((i) =>
+            i.product.id == product.id && i.saleType != saleType)
+        .fold(0, (s, i) => s + i.quantity);
+    final maxForLine = product.stock - otherQty;
+    if (maxForLine <= 0 && (currentQty == null || currentQty <= 0)) {
+      _toast(AppStrings.read(context).insufficientStock, isError: true);
+      return;
+    }
     final qty = await showQuantityDialog(
       context,
       productName: product.name,
-      maxStock: product.stock,
+      maxStock: maxForLine > 0 ? maxForLine : (currentQty ?? 1),
       initial: currentQty ?? 1,
       title: currentQty != null
           ? AppStrings.read(context).setQuantity
           : AppStrings.read(context).addQuantity,
     );
     if (!mounted || qty == null) return;
-    _setCartQty(product, qty);
+    _setCartQty(product, qty, saleType: saleType);
   }
 
-  void _setCartQty(ProductEntity product, int qty) {
+  void _setCartQty(
+    ProductEntity product,
+    int qty, {
+    SaleType saleType = SaleType.retail,
+  }) {
     setState(() {
-      final idx = _cart.indexWhere((i) => i.product.id == product.id);
+      final unitPrice = _unitPriceFor(product, saleType);
+      final idx = _cart.indexWhere(
+        (i) => i.product.id == product.id && i.saleType == saleType,
+      );
       if (qty <= 0) {
         if (idx != -1) _cart.removeAt(idx);
         return;
       }
-      if (qty > product.stock) {
+      final otherQty = _cart
+          .where((i) =>
+              i.product.id == product.id && i.saleType != saleType)
+          .fold(0, (s, i) => s + i.quantity);
+      if (qty + otherQty > product.stock) {
         _toast(AppStrings.read(context).insufficientStock, isError: true);
         return;
       }
       if (idx == -1) {
-        _cart.add(CartItem(product: product, quantity: qty));
+        _cart.add(CartItem(
+          product: product,
+          quantity: qty,
+          saleType: saleType,
+          unitPrice: unitPrice,
+        ));
       } else {
-        _cart[idx] = CartItem(product: product, quantity: qty);
+        _cart[idx] = CartItem(
+          product: product,
+          quantity: qty,
+          saleType: saleType,
+          unitPrice: unitPrice,
+        );
       }
       _cartBadgeCtrl.forward(from: 0);
     });
   }
 
-  void _updateQty(String id, int qty) {
+  void _updateQty(String lineKey, int qty) {
     setState(() {
-      final idx = _cart.indexWhere((i) => i.product.id == id);
+      final idx = _cart.indexWhere((i) => i.lineKey == lineKey);
       if (idx == -1) return;
+      final item = _cart[idx];
       if (qty <= 0) {
         _cart.removeAt(idx);
-      } else if (qty <= _cart[idx].product.stock) {
-        _cart[idx] = CartItem(product: _cart[idx].product, quantity: qty);
-      } else {
-        _toast(AppStrings.read(context).insufficientStock, isError: true);
+        return;
       }
+      final otherQty = _cart
+          .where((i) =>
+              i.product.id == item.product.id &&
+              i.saleType != item.saleType)
+          .fold(0, (s, i) => s + i.quantity);
+      if (qty + otherQty > item.product.stock) {
+        _toast(AppStrings.read(context).insufficientStock, isError: true);
+        return;
+      }
+      _cart[idx] = CartItem(
+        product: item.product,
+        quantity: qty,
+        saleType: item.saleType,
+        unitPrice: item.unitPrice,
+      );
     });
   }
 
-  void _removeFromCart(String id) =>
-      setState(() => _cart.removeWhere((i) => i.product.id == id));
+  void _removeFromCart(String lineKey) =>
+      setState(() => _cart.removeWhere((i) => i.lineKey == lineKey));
 
   void _clearCart() => setState(() => _cart.clear());
 
@@ -580,7 +670,7 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
           .map((i) => {
                 'product_id': i.product.id,
                 'quantity': i.quantity,
-                'price': i.product.price,
+                'price': i.unitPrice,
               })
           .toList(),
       'subtotal': _subtotal,
@@ -632,6 +722,7 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
       builder: (_) => ReceiptDialog(
         sale: state.sale,
         shop: shop,
+        allowPrint: false,
         onClose: () {
           Navigator.of(ctx).pop();
           _clearCart();
@@ -659,23 +750,27 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
     );
   }
 
-  void _openAddPopup() {
-    final state = context.read<ProductsBloc>().state;
-    if (state is! ProductsLoaded) {
-      _toast(AppStrings.read(context).productsStillLoading, isError: true);
-      return;
-    }
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      builder: (_) => _AddProductDialog(
-        products: state.products,
-        cartIds: _cart.map((i) => i.product.id).toSet(),
-        onAdd: _addToCart,
-      ),
-    );
+  void _logout() {
+    context.read<AuthBloc>().add(const AuthLogoutRequested());
   }
+
+  String _roleName(BuildContext context) {
+    final auth = context.read<AuthBloc>().state;
+    if (auth is! AuthAuthenticated) return '';
+    return auth.user.roleName.toLowerCase().trim();
+  }
+
+  bool _showReceiptQueue(BuildContext context) {
+    final role = _roleName(context);
+    return role == 'owner' || role == 'admin' || role == 'super_admin';
+  }
+
+  bool _canPrintReceipts(BuildContext context) {
+    final role = _roleName(context);
+    return role == 'owner' || role == 'admin';
+  }
+
+  bool _isSuperAdmin(BuildContext context) => _roleName(context) == 'super_admin';
 
   void _toast(String msg, {bool isError = false}) {
     if (!mounted) return;
@@ -739,8 +834,27 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
                       _TopBar(
                         itemCount: _itemCount,
                         isH10Device: _isH10Device,
+                        showReceiptQueue: _showReceiptQueue(context),
+                        canPrintReceipts: _canPrintReceipts(context),
+                        showSuperDashboard: _isSuperAdmin(context),
                         onScanTap: () => setState(() => _showScanner = true),
-                        onAddTap: _openAddPopup,
+                        onLogoutTap: _logout,
+                        onReceiptsTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ReceiptQueuePage(
+                                canPrint: _canPrintReceipts(context),
+                              ),
+                            ),
+                          );
+                        },
+                        onDashboardTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SuperAdminDashboardPage(),
+                            ),
+                          );
+                        },
                       ),
                       _SearchRow(
                         controller: _searchCtrl,
@@ -755,6 +869,7 @@ class _POSPageState extends State<POSPage> with TickerProviderStateMixin {
                           onAddToCart: _addToCart,
                           onSetQuantity: _promptQuantity,
                           cart: _cart,
+                          cartQtyForProduct: _cartQtyForProduct,
                         ),
                       ),
                     ],
@@ -794,13 +909,21 @@ class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.itemCount,
     required this.isH10Device,
+    required this.showReceiptQueue,
+    required this.canPrintReceipts,
+    required this.showSuperDashboard,
     required this.onScanTap,
-    required this.onAddTap,
+    required this.onLogoutTap,
+    required this.onReceiptsTap,
+    required this.onDashboardTap,
   });
 
   final int itemCount;
   final bool isH10Device;
-  final VoidCallback onScanTap, onAddTap;
+  final bool showReceiptQueue;
+  final bool canPrintReceipts;
+  final bool showSuperDashboard;
+  final VoidCallback onScanTap, onLogoutTap, onReceiptsTap, onDashboardTap;
 
   @override
   Widget build(BuildContext context) {
@@ -855,6 +978,24 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
+          if (showSuperDashboard) ...[
+            _TopAction(
+              icon: Icons.dashboard_outlined,
+              tooltip: 'Super admin',
+              onTap: onDashboardTap,
+            ),
+            const SizedBox(width: 6),
+          ],
+          if (showReceiptQueue) ...[
+            _TopAction(
+              icon: canPrintReceipts
+                  ? Icons.print_outlined
+                  : Icons.receipt_long_outlined,
+              tooltip: canPrintReceipts ? 'Print receipts' : 'View receipts',
+              onTap: onReceiptsTap,
+            ),
+            const SizedBox(width: 6),
+          ],
           _TopAction(
             icon: isH10Device
                 ? Icons.barcode_reader
@@ -864,9 +1005,9 @@ class _TopBar extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Tooltip(
-            message: t.add,
+            message: t.logout,
             child: GestureDetector(
-              onTap: onAddTap,
+              onTap: onLogoutTap,
               child: Container(
                 width: 36,
                 height: 36,
@@ -874,7 +1015,7 @@ class _TopBar extends StatelessWidget {
                   color: _T.accent,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.add_rounded,
+                child: const Icon(Icons.logout_rounded,
                     color: Colors.white, size: 20),
               ),
             ),
@@ -1021,13 +1162,18 @@ class _ProductsBody extends StatelessWidget {
     required this.onAddToCart,
     required this.onSetQuantity,
     required this.cart,
+    required this.cartQtyForProduct,
   });
 
   final String searchQuery;
-  final void Function(ProductEntity) onAddToCart;
-  final Future<void> Function(ProductEntity product, {int? currentQty})
-      onSetQuantity;
+  final void Function(ProductEntity product, {SaleType saleType}) onAddToCart;
+  final Future<void> Function(
+    ProductEntity product, {
+    int? currentQty,
+    SaleType saleType,
+  }) onSetQuantity;
   final List<CartItem> cart;
+  final int Function(String productId) cartQtyForProduct;
 
   @override
   Widget build(BuildContext context) {
@@ -1132,7 +1278,7 @@ class _ProductsBody extends StatelessWidget {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        t.qtyTapHint,
+                        t.chooseSaleTypeHint,
                         style: _T.ts(12,
                             weight: FontWeight.w500, color: _T.inkLight),
                         maxLines: 1,
@@ -1148,21 +1294,36 @@ class _ProductsBody extends StatelessWidget {
                   itemCount: products.length,
                   itemBuilder: (_, i) {
                     final p = products[i];
-                    final cartQty = cart
-                            .where((c) => c.product.id == p.id)
-                            .firstOrNull
-                            ?.quantity ??
-                        0;
+                    final cartQty = cartQtyForProduct(p.id);
+                    final retailQty = cart
+                        .where((c) =>
+                            c.product.id == p.id &&
+                            c.saleType == SaleType.retail)
+                        .fold(0, (s, c) => s + c.quantity);
                     return _ProductListItem(
                       product: p,
                       cartQty: cartQty,
-                      onTap: p.stock == 0 ? null : () => onAddToCart(p),
+                      onAddRetail: p.stock == 0
+                          ? null
+                          : () => onAddToCart(p, saleType: SaleType.retail),
+                      onAddWholesale: p.stock == 0
+                          ? null
+                          : () =>
+                              onAddToCart(p, saleType: SaleType.wholesale),
                       onLongPress: p.stock == 0
                           ? null
-                          : () => onSetQuantity(p,
-                              currentQty: cartQty > 0 ? cartQty : null),
-                      onEditQty: cartQty > 0
-                          ? () => onSetQuantity(p, currentQty: cartQty)
+                          : () => onSetQuantity(
+                                p,
+                                currentQty:
+                                    retailQty > 0 ? retailQty : null,
+                                saleType: SaleType.retail,
+                              ),
+                      onEditQty: retailQty > 0
+                          ? () => onSetQuantity(
+                                p,
+                                currentQty: retailQty,
+                                saleType: SaleType.retail,
+                              )
                           : null,
                       isLast: i == products.length - 1,
                     );
@@ -1185,7 +1346,8 @@ class _ProductListItem extends StatelessWidget {
   const _ProductListItem({
     required this.product,
     required this.cartQty,
-    required this.onTap,
+    required this.onAddRetail,
+    required this.onAddWholesale,
     this.onLongPress,
     this.onEditQty,
     required this.isLast,
@@ -1193,16 +1355,18 @@ class _ProductListItem extends StatelessWidget {
 
   final ProductEntity product;
   final int cartQty;
-  final VoidCallback? onTap;
+  final VoidCallback? onAddRetail;
+  final VoidCallback? onAddWholesale;
   final VoidCallback? onLongPress;
   final VoidCallback? onEditQty;
   final bool isLast;
 
   @override
   Widget build(BuildContext context) {
+    final t = context.t;
     final outOfStock = product.stock == 0;
+    final jumlaPrice = product.cost ?? 0;
     return GestureDetector(
-      onTap: onTap,
       onLongPress: onLongPress,
       behavior: HitTestBehavior.opaque,
       child: Container(
@@ -1218,90 +1382,97 @@ class _ProductListItem extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ProductPhoto(
-                url: product.image,
-                size: 52,
-                radius: 12,
-                iconSize: 24,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: _T.ts(14,
-                          weight: FontWeight.w600,
-                          color: outOfStock ? _T.inkMid : _T.ink,
-                          height: 1.2),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 5),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+              Row(
+                children: [
+                  ProductPhoto(
+                    url: product.image,
+                    size: 52,
+                    radius: 12,
+                    iconSize: 24,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          CurrencyFormatter.format(product.price),
+                          product.name,
                           style: _T.ts(14,
-                              weight: FontWeight.w800,
-                              color: outOfStock
-                                  ? _T.inkMid
-                                  : _T.primary),
+                              weight: FontWeight.w600,
+                              color: outOfStock ? _T.inkMid : _T.ink,
+                              height: 1.2),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        _StockBadge(stock: product.stock),
-                      ],
-                    ),
-                    if (product.barcode != null &&
-                        product.barcode!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _T.bg,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: _T.border),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        const SizedBox(height: 5),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Icon(Icons.qr_code_rounded,
-                                size: 14, color: _T.ink),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                product.barcode!.trim(),
-                                style: _T.ts(13,
-                                    weight: FontWeight.w700,
-                                    color: _T.ink,
-                                    letterSpacing: 0.3),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                            Text(
+                              '${t.saleRetail}: ${CurrencyFormatter.format(product.price)}',
+                              style: _T.ts(12,
+                                  weight: FontWeight.w700,
+                                  color: outOfStock
+                                      ? _T.inkMid
+                                      : _T.primary),
                             ),
+                            Text(
+                              '${t.saleWholesale}: ${CurrencyFormatter.format(jumlaPrice)}',
+                              style: _T.ts(12,
+                                  weight: FontWeight.w700,
+                                  color: outOfStock
+                                      ? _T.inkMid
+                                      : _T.inkMid),
+                            ),
+                            _StockBadge(stock: product.stock),
                           ],
                         ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
+                        if (product.barcode != null &&
+                            product.barcode!.trim().isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _T.bg,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: _T.border),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.qr_code_rounded,
+                                    size: 14, color: _T.ink),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    product.barcode!.trim(),
+                                    style: _T.ts(13,
+                                        weight: FontWeight.w700,
+                                        color: _T.ink,
+                                        letterSpacing: 0.3),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                   if (cartQty > 0) ...[
+                    const SizedBox(width: 8),
                     GestureDetector(
                       onTap: onEditQty,
                       child: Tooltip(
-                        message: context.t.setQuantity,
+                        message: t.setQuantity,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 9, vertical: 3),
@@ -1324,44 +1495,88 @@ class _ProductListItem extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 6),
                   ],
-                  if (outOfStock)
-                    Tooltip(
-                      message: context.t.outOfStock,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: _T.dangerSoft,
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Icon(Icons.block_rounded,
-                            color: _T.danger, size: 18),
-                      ),
-                    )
-                  else
-                    Tooltip(
-                      message: context.t.add,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: cartQty > 0
-                              ? _T.accentSoft
-                              : _T.primary,
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Icon(Icons.add_rounded,
-                            color: cartQty > 0
-                                ? _T.accent
-                                : Colors.white,
-                            size: 20),
-                      ),
-                    ),
                 ],
               ),
+              const SizedBox(height: 10),
+              if (outOfStock)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Tooltip(
+                    message: t.outOfStock,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: _T.dangerSoft,
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Icon(Icons.block_rounded,
+                          color: _T.danger, size: 18),
+                    ),
+                  ),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SaleTypeButton(
+                        label: t.saleRetail,
+                        onTap: onAddRetail,
+                        filled: true,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _SaleTypeButton(
+                        label: t.saleWholesale,
+                        onTap: onAddWholesale,
+                        filled: false,
+                      ),
+                    ),
+                  ],
+                ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SaleTypeButton extends StatelessWidget {
+  const _SaleTypeButton({
+    required this.label,
+    required this.onTap,
+    required this.filled,
+  });
+
+  final String label;
+  final VoidCallback? onTap;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: filled ? _T.primary : _T.bg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: filled ? null : Border.all(color: _T.border),
+          ),
+          child: Text(
+            label,
+            style: _T.ts(
+              13,
+              weight: FontWeight.w700,
+              color: filled ? Colors.white : _T.primary,
+            ),
           ),
         ),
       ),
@@ -1554,8 +1769,8 @@ class _CartSheet extends StatefulWidget {
 
   final List<CartItem> cart;
   final double subtotal, tax, total;
-  final void Function(String, int) onUpdateQty;
-  final void Function(String) onRemove;
+  final void Function(String lineKey, int qty) onUpdateQty;
+  final void Function(String lineKey) onRemove;
   final VoidCallback onClear, onCheckout;
 
   @override
@@ -1571,26 +1786,32 @@ class _CartSheetState extends State<_CartSheet> {
     _localCart = List.from(widget.cart);
   }
 
-  void _localUpdateQty(String id, int qty) {
-    widget.onUpdateQty(id, qty);
+  void _localUpdateQty(String lineKey, int qty) {
+    widget.onUpdateQty(lineKey, qty);
     setState(() {
-      final idx = _localCart.indexWhere((i) => i.product.id == id);
+      final idx = _localCart.indexWhere((i) => i.lineKey == lineKey);
       if (idx == -1) return;
       if (qty <= 0) {
         _localCart.removeAt(idx);
       } else {
-        _localCart[idx] =
-            CartItem(product: _localCart[idx].product, quantity: qty);
+        final existing = _localCart[idx];
+        _localCart[idx] = CartItem(
+          product: existing.product,
+          quantity: qty,
+          saleType: existing.saleType,
+          unitPrice: existing.unitPrice,
+        );
       }
     });
   }
 
-  void _localRemove(String id) {
-    widget.onRemove(id);
-    setState(() => _localCart.removeWhere((i) => i.product.id == id));
+  void _localRemove(String lineKey) {
+    widget.onRemove(lineKey);
+    setState(() => _localCart.removeWhere((i) => i.lineKey == lineKey));
   }
 
-  double get _sub => _localCart.fold(0.0, (s, i) => s + i.product.price * i.quantity);
+  double get _sub =>
+      _localCart.fold(0.0, (s, i) => s + i.unitPrice * i.quantity);
   double get _total => _sub;
 
   @override
@@ -1700,25 +1921,31 @@ class _CartSheetState extends State<_CartSheet> {
                     Divider(height: 1, color: _T.border),
                 itemBuilder: (_, i) {
                   final item = _localCart[i];
+                  final otherQty = _localCart
+                      .where((c) =>
+                          c.product.id == item.product.id &&
+                          c.saleType != item.saleType)
+                      .fold(0, (s, c) => s + c.quantity);
+                  final maxForLine = item.product.stock - otherQty;
                   return _CartRow(
                     item: item,
                     onIncrease: () => _localUpdateQty(
-                        item.product.id, item.quantity + 1),
+                        item.lineKey, item.quantity + 1),
                     onDecrease: () => _localUpdateQty(
-                        item.product.id, item.quantity - 1),
+                        item.lineKey, item.quantity - 1),
                     onEditQty: () async {
                       final qty = await showQuantityDialog(
                         context,
                         productName: item.product.name,
-                        maxStock: item.product.stock,
+                        maxStock: maxForLine,
                         initial: item.quantity,
                         title: context.t.setQuantity,
                       );
                       if (qty != null) {
-                        _localUpdateQty(item.product.id, qty);
+                        _localUpdateQty(item.lineKey, qty);
                       }
                     },
-                    onRemove: () => _localRemove(item.product.id),
+                    onRemove: () => _localRemove(item.lineKey),
                   );
                 },
               ),
@@ -1851,9 +2078,38 @@ class _CartRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  CurrencyFormatter.format(item.product.price),
-                  style: _T.ts(12, color: _T.inkMid),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: item.saleType == SaleType.wholesale
+                            ? _T.accentSoft
+                            : _T.primaryOpacity(0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        item.saleType == SaleType.wholesale
+                            ? context.t.saleWholesale
+                            : context.t.saleRetail,
+                        style: _T.ts(10,
+                            weight: FontWeight.w700,
+                            color: item.saleType == SaleType.wholesale
+                                ? _T.accent
+                                : _T.primary),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        CurrencyFormatter.format(item.unitPrice),
+                        style: _T.ts(12, color: _T.inkMid),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1894,7 +2150,7 @@ class _CartRow extends StatelessWidget {
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 88, minWidth: 56),
             child: Text(
-              CurrencyFormatter.format(item.product.price * item.quantity),
+              CurrencyFormatter.format(item.unitPrice * item.quantity),
               style: _T.ts(13, weight: FontWeight.w700, color: _T.primary),
               textAlign: TextAlign.right,
               maxLines: 1,
@@ -1957,372 +2213,6 @@ class _SummRow extends StatelessWidget {
           style: _T.ts(13, weight: FontWeight.w600, color: _T.ink),
         ),
       ],
-    );
-  }
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ADD PRODUCT DIALOG
-// ════════════════════════════════════════════════════════════════════════════
-class _AddProductDialog extends StatefulWidget {
-  const _AddProductDialog({
-    required this.products,
-    required this.cartIds,
-    required this.onAdd,
-  });
-
-  final List<ProductEntity> products;
-  final Set<String> cartIds;
-  final void Function(ProductEntity) onAdd;
-
-  @override
-  State<_AddProductDialog> createState() => _AddProductDialogState();
-}
-
-class _AddProductDialogState extends State<_AddProductDialog> {
-  final _searchCtrl = TextEditingController();
-  String _q = '';
-  ProductEntity? _selected;
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  List<ProductEntity> get _filtered {
-    if (_q.isEmpty) return widget.products;
-    return widget.products.where((p) {
-      return p.name.toLowerCase().contains(_q) ||
-          (p.barcode?.toLowerCase().contains(_q) ?? false);
-    }).toList();
-  }
-
-  void _submit() {
-    if (_selected == null) return;
-    widget.onAdd(_selected!);
-    Navigator.of(context).pop();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 36),
-      child: Container(
-        decoration: BoxDecoration(
-          color: _T.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: _T.floatShadow,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
-              decoration: BoxDecoration(
-                color: _T.primary,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.add_shopping_cart_rounded,
-                        color: Colors.white, size: 18),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Add Product',
-                            style: _T.ts(16,
-                                weight: FontWeight.w800,
-                                color: Colors.white)),
-                        Text('Select a product to add to cart',
-                            style: _T.ts(11, color: Colors.white54)),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.close_rounded,
-                          color: Colors.white, size: 16),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-              child: TextField(
-                controller: _searchCtrl,
-                onChanged: (v) => setState(() => _q = v.toLowerCase()),
-                style: _T.ts(15, weight: FontWeight.w600, color: _T.ink),
-                decoration: InputDecoration(
-                  hintText: context.t.searchProductsHint,
-                  hintStyle: _T.ts(14, weight: FontWeight.w500, color: _T.inkLight),
-                  prefixIcon: Icon(Icons.search_rounded,
-                      color: _T.ink, size: 18),
-                  filled: true,
-                  fillColor: _T.bg,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 11),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(11),
-                    borderSide: BorderSide(color: _T.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(11),
-                    borderSide: BorderSide(color: _T.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(11),
-                    borderSide: BorderSide(color: _T.primary, width: 1.5),
-                  ),
-                ),
-              ),
-            ),
-            Flexible(
-              child: _filtered.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.search_off_rounded,
-                              color: _T.inkLight, size: 36),
-                          const SizedBox(height: 10),
-                          Text('No products found',
-                              style: _T.ts(13, color: _T.inkMid)),
-                        ],
-                      ),
-                    )
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                      itemCount: _filtered.length,
-                      separatorBuilder: (_, __) =>
-                          Divider(height: 1, color: _T.border),
-                      itemBuilder: (_, i) {
-                        final p = _filtered[i];
-                        final isSelected = _selected?.id == p.id;
-                        final inCart = widget.cartIds.contains(p.id);
-                        final oos = p.stock == 0;
-                        return GestureDetector(
-                          onTap: oos
-                              ? null
-                              : () => setState(() => _selected = p),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 120),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? _T.primaryOpacity(0.07)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  width: 20,
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isSelected
-                                        ? _T.primary
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? _T.primary
-                                          : oos
-                                              ? _T.inkLight
-                                              : _T.inkMid,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: isSelected
-                                      ? const Icon(Icons.check_rounded,
-                                          size: 12, color: Colors.white)
-                                      : null,
-                                ),
-                                const SizedBox(width: 10),
-                                ProductPhoto(
-                                  url: p.image,
-                                  size: 40,
-                                  radius: 9,
-                                  iconSize: 18,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        p.name,
-                                        style: _T.ts(13,
-                                            weight: FontWeight.w600,
-                                            color: oos ? _T.inkMid : _T.ink),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        CurrencyFormatter.format(p.price),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: _T.ts(12,
-                                            weight: FontWeight.w700,
-                                            color: oos
-                                                ? _T.inkMid
-                                                : _T.primary),
-                                      ),
-                                      if (p.barcode != null &&
-                                          p.barcode!.trim().isNotEmpty) ...[
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          p.barcode!.trim(),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: _T.ts(12,
-                                              weight: FontWeight.w600,
-                                              color: _T.ink),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                Flexible(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      _StockBadge(stock: p.stock),
-                                      if (inCart) ...[
-                                        const SizedBox(height: 4),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: _T.accentSoft,
-                                            borderRadius:
-                                                BorderRadius.circular(5),
-                                          ),
-                                          child: Text('In cart',
-                                              style: _T.ts(9,
-                                                  weight: FontWeight.w600,
-                                                  color: _T.accent)),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-            if (_selected != null)
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _T.accentSoft,
-                  borderRadius: BorderRadius.circular(11),
-                  border: Border.all(color: _T.accent.withValues(alpha: 0.25)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle_rounded,
-                        color: _T.accent, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _selected!.name,
-                        style: _T.ts(13,
-                            weight: FontWeight.w600, color: _T.ink),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Flexible(
-                      child: Text(
-                        CurrencyFormatter.format(_selected!.price),
-                        style: _T.ts(13,
-                            weight: FontWeight.w700, color: _T.primary),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.right,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        side: BorderSide(color: _T.border),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(11)),
-                      ),
-                      child: Text('Cancel',
-                          style: _T.ts(14,
-                              weight: FontWeight.w600, color: _T.inkMid)),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: _selected == null ? null : _submit,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 13),
-                        backgroundColor: _T.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(11)),
-                      ),
-                      child: Text(
-                        _selected == null ? 'Select a product' : 'Add to Cart',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: _T.ts(14,
-                            weight: FontWeight.w700, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
