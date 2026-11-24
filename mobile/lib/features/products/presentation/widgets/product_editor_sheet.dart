@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/brand_palette.dart';
-import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/widgets/product_photo.dart';
 import '../bloc/products_bloc.dart';
 
@@ -65,6 +64,7 @@ class _ProductEditorSheetState extends State<ProductEditorSheet> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _barcodeCtrl;
   late final TextEditingController _priceCtrl;
+  late final TextEditingController _wholesalePriceCtrl;
   late final TextEditingController _stockCtrl;
   late final TextEditingController _categoryCtrl;
   late final TextEditingController _thresholdCtrl;
@@ -87,6 +87,9 @@ class _ProductEditorSheetState extends State<ProductEditorSheet> {
     _nameCtrl = TextEditingController(text: '${p?.name ?? ''}');
     _barcodeCtrl = TextEditingController(text: '${p?.barcode ?? ''}');
     _priceCtrl = TextEditingController(text: p?.price == null ? '' : '${p.price}');
+    _wholesalePriceCtrl = TextEditingController(
+      text: p?.cost == null ? '' : '${p.cost}',
+    );
     _stockCtrl = TextEditingController(text: p?.stock == null ? '10' : '${p.stock}');
     final initialCat = '${p?.category ?? ''}'.trim();
     _categoryCtrl = TextEditingController(
@@ -105,6 +108,7 @@ class _ProductEditorSheetState extends State<ProductEditorSheet> {
     _nameCtrl.dispose();
     _barcodeCtrl.dispose();
     _priceCtrl.dispose();
+    _wholesalePriceCtrl.dispose();
     _stockCtrl.dispose();
     _categoryCtrl.dispose();
     _thresholdCtrl.dispose();
@@ -119,11 +123,16 @@ class _ProductEditorSheetState extends State<ProductEditorSheet> {
     final category = (_selectedCategory ?? _categoryCtrl.text).trim();
     if (category.isEmpty) return;
 
+    final retailPrice = double.tryParse(_priceCtrl.text.trim()) ?? 0.0;
+    final wholesalePrice =
+        double.tryParse(_wholesalePriceCtrl.text.trim()) ?? 0.0;
     final data = <String, dynamic>{
       'name': _nameCtrl.text.trim(),
       // Backend accepts null for products without a barcode.
       'barcode': barcode.isEmpty ? null : barcode,
-      'price': double.tryParse(_priceCtrl.text.trim()) ?? 0.0,
+      'price': retailPrice,
+      'cost_price': wholesalePrice,
+      'cost': wholesalePrice,
       'stock': int.tryParse(_stockCtrl.text.trim()) ?? 0,
       'category': category,
       'lowStockThreshold': threshold,
@@ -444,7 +453,7 @@ class _ProductEditorSheetState extends State<ProductEditorSheet> {
                         _buildCategoryField(t),
                         const SizedBox(height: 14),
                         _labeledField(
-                          label: t.priceTzsRequired,
+                          label: t.retailPriceTzs,
                           controller: _priceCtrl,
                           hint: '0',
                           keyboardType: const TextInputType.numberWithOptions(
@@ -458,22 +467,22 @@ class _ProductEditorSheetState extends State<ProductEditorSheet> {
                             return null;
                           },
                         ),
-                        if (widget.product?.cost != null) ...[
-                          const SizedBox(height: 14),
-                          InputDecorator(
-                            decoration: InputDecoration(
-                              labelText: t.lastCost,
-                              border: const OutlineInputBorder(),
-                            ),
-                            child: Text(
-                              CurrencyFormatter.format(widget.product!.cost!),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: BrandTokens.current.ink,
-                              ),
-                            ),
+                        const SizedBox(height: 14),
+                        _labeledField(
+                          label: t.wholesalePriceTzs,
+                          controller: _wholesalePriceCtrl,
+                          hint: '0',
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
                           ),
-                        ],
+                          validator: (v) {
+                            final n = double.tryParse(v ?? '');
+                            if (n == null || n < 0) {
+                              return t.enterValidPrice;
+                            }
+                            return null;
+                          },
+                        ),
                         const SizedBox(height: 14),
                         _labeledField(
                           label: t.stockQuantity,
