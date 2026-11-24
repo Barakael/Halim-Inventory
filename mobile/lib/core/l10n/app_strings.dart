@@ -242,6 +242,16 @@ class AppStrings {
   String get pointOfSale => _t('Point of Sale', 'Sehemu ya Mauzo');
   String get tapProductToCart =>
       _t('Tap a product to add it to cart', 'Gusa bidhaa kuongeza kwenye kikapu');
+  String get saleRetail => _t('Rejareja', 'Rejareja');
+  String get saleWholesale => _t('Jumla', 'Jumla');
+  String get chooseSaleTypeHint => _t(
+        'Choose Rejareja or Jumla to add to cart',
+        'Chagua Rejareja au Jumla kuongeza kwenye kikapu',
+      );
+  String get wholesalePriceMissing => _t(
+        'Set Bei Jumla on the product first',
+        'Weka Bei Jumla kwenye bidhaa kwanza',
+      );
   String get h10ScannerActive => _t(
         'H10S scanner active — scan to add items',
         'Skana ya H10S inatumika — skani kuongeza bidhaa',
@@ -527,6 +537,10 @@ class AppStrings {
       _t('e.g. Beverages', 'mf. Vinywaji');
   String get priceTzsRequired =>
       _t('Price (TZS) *', 'Bei (TZS) *');
+  String get retailPriceTzs =>
+      _t('Bei Rejareja (TZS) *', 'Bei Rejareja (TZS) *');
+  String get wholesalePriceTzs =>
+      _t('Bei Jumla (TZS) *', 'Bei Jumla (TZS) *');
   String get enterValidPrice =>
       _t('Enter a valid price', 'Weka bei sahihi');
   String get stockQuantity =>
