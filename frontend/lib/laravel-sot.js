@@ -113,8 +113,9 @@ function formatReceiptDate(value) {
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** 58mm thermal receipt HTML from adapted sale + settings */
+/** Thermal receipt HTML. Width follows the shop paper setting (58 or 80). View only — printing is the admin Bluetooth queue. */
 function renderSaleReceiptHtml(sale, settings = {}) {
+    const paperMm = Number(settings.receiptPaperMm) === 80 ? 80 : 58;
     const fmt = (n) => Number(n || 0).toLocaleString('en-US');
     const dateStr = formatReceiptDate(sale.createdAt || sale.completedAt);
     const paymentMethodLabel = {
@@ -159,7 +160,7 @@ function renderSaleReceiptHtml(sale, settings = {}) {
   body {
     font-family: 'Courier New', Courier, monospace;
     font-size: 14px; background: #fff; color: #000;
-    width: 58mm; margin: 0 auto; padding: 3mm 2mm 10mm 2mm;
+    width: ${paperMm}mm; margin: 0 auto; padding: 3mm 2mm 10mm 2mm;
   }
   .header { text-align: center; margin-bottom: 6px; }
   .company-name { font-size: 17px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; }
@@ -186,9 +187,9 @@ function renderSaleReceiptHtml(sale, settings = {}) {
   .thank-you { font-size: 15px; font-weight: bold; margin-bottom: 3px; }
   .footer-sub { font-size: 12px; color: #444; line-height: 1.5; }
   @media print {
-    body { width: 58mm; margin: 0; padding: 2mm 2mm 8mm; }
+    body { width: ${paperMm}mm; margin: 0; padding: 2mm 2mm 8mm; }
     .no-print { display: none !important; }
-    @page { size: 58mm auto; margin: 0; }
+    @page { size: ${paperMm}mm auto; margin: 0; }
   }
 </style>
 </head>
@@ -227,12 +228,9 @@ ${sale.isCredit ? '<div class="credit-warning">⚠ MAUZO YA MKOPO</div>' : ''}
   <div class="footer-sub">Karibu tena</div>
   <div class="footer-sub" style="font-size:11px;color:#888;margin-top:3px;">${formatReceiptDate(new Date())}</div>
 </div>
-<div class="no-print" style="text-align:center;margin-top:16px;">
-  <button onclick="window.print()" style="padding:10px 28px;font-size:14px;cursor:pointer;background:#0d6efd;color:#fff;border:none;border-radius:4px;">
-    Chapisha Risiti
-  </button>
+<div class="no-print" style="text-align:center;margin-top:16px;font-size:12px;color:#444;">
+  Preview only. Admin prints this receipt on the Bluetooth printer.
 </div>
-<script>window.addEventListener('load', function() { setTimeout(function(){ window.print(); }, 400); });</script>
 </body>
 </html>`;
 }
@@ -441,15 +439,15 @@ function adaptPurchase(p) {
 function adaptStaff(u) {
     if (!u || typeof u !== 'object') return u;
     return {
-        id: u.id,
-        username: u.email ? String(u.email).split('@')[0] : String(u.id),
+        id: u.id != null ? String(u.id) : u.id,
+        username: u.username || (u.email ? String(u.email).split('@')[0] : String(u.id)),
         fullName: u.name,
         email: u.email,
         phone: u.phone,
         role: u.role === 'owner' ? 'admin' : u.role,
-        branchId: u.branch_id,
+        branchId: u.branch_id != null ? String(u.branch_id) : '',
         branchName: u.branch_name || (u.branch && u.branch.name) || null,
-        status: 'active',
+        status: u.status || 'active',
         createdAt: u.created_at,
     };
 }
@@ -480,6 +478,8 @@ function adaptSettings(shop) {
         location: shop.location,
         taxOffice: shop.tax_office,
         receiptFooter: shop.receipt_footer || shop.receiptFooter || null,
+        receiptPaperMm: Number(shop.receipt_paper_mm) === 80 ? 80 : 58,
+        skipBuiltinPrinter: !!(shop.skip_builtin_printer || shop.skipBuiltinPrinter),
     };
 }
 
@@ -760,7 +760,7 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
         proxyJson(req, res, { path: `/sales/${req.params.id}`, adapt: adaptSale }));
 
     // Thermal receipt HTML — sales live in Laravel when SoT is on
-    app.get('/api/sales/:id/receipt', isAuthenticated, async (req, res) => {
+    app.get('/api/sales/:id/receipt', isAuthenticated, hasRole('admin', 'super_admin'), async (req, res) => {
         const token = requireLaravelToken(req, res);
         if (!token) return;
         try {
@@ -801,6 +801,71 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
 
     app.get('/api/settings', isAuthenticated, (req, res) =>
         proxyJson(req, res, { path: '/settings', adapt: adaptSettings }));
+
+    app.get('/api/receipt-jobs', isAuthenticated, hasRole('admin', 'super_admin'), async (req, res) => {
+        const token = requireLaravelToken(req, res);
+        if (!token) return;
+        const q = req.query.status ? `?status=${encodeURIComponent(req.query.status)}` : '';
+        try {
+            const { ok, json, status } = await laravelFetch(`/receipt-jobs${q}`, { token });
+            if (!ok) {
+                return res.status(status).json({ success: false, message: json?.message || 'Failed' });
+            }
+            return res.json({
+                success: true,
+                can_print: !!json?.can_print,
+                data: json?.data || [],
+            });
+        } catch (err) {
+            return res.status(502).json({ success: false, message: err.message });
+        }
+    });
+
+    app.get('/api/receipt-jobs/:id', isAuthenticated, hasRole('admin', 'super_admin'), async (req, res) => {
+        const token = requireLaravelToken(req, res);
+        if (!token) return;
+        try {
+            const { ok, json, status } = await laravelFetch(`/receipt-jobs/${req.params.id}`, { token });
+            if (!ok) {
+                return res.status(status).json({ success: false, message: json?.message || 'Failed' });
+            }
+            return res.json({ success: true, data: json?.data || json });
+        } catch (err) {
+            return res.status(502).json({ success: false, message: err.message });
+        }
+    });
+
+    app.post('/api/receipt-jobs/:id/printed', isAuthenticated, hasRole('admin'), async (req, res) => {
+        const token = requireLaravelToken(req, res);
+        if (!token) return;
+        try {
+            const { ok, json, status } = await laravelFetch(`/receipt-jobs/${req.params.id}/printed`, {
+                method: 'POST',
+                token,
+                body: {},
+            });
+            if (!ok) {
+                return res.status(status).json({ success: false, message: json?.message || 'Failed' });
+            }
+            return res.json({ success: true, data: json?.data || json });
+        } catch (err) {
+            return res.status(502).json({ success: false, message: err.message });
+        }
+    });
+
+    app.get('/api/dashboard/super', isAuthenticated, hasRole('super_admin'), async (req, res) => {
+        const token = requireLaravelToken(req, res);
+        if (!token) return;
+        try {
+            const { ok, json, status } = await laravelFetch('/dashboard/super', { token });
+            if (!ok) {
+                return res.status(status).json({ success: false, message: json?.message || 'Failed' });
+            }
+            return res.json({ success: true, data: json?.data || json });
+        } catch (err) {
+            return res.status(502).json({ success: false, message: err.message });
+        }
+    });
 
     app.get('/api/dashboard/stats', isAuthenticated, async (req, res) => {
         const token = requireLaravelToken(req, res);
@@ -1485,6 +1550,8 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
                 mobile: b.mobile,
                 location: b.location,
                 tax_office: b.taxOffice ?? b.tax_office,
+                receipt_paper_mm: b.receiptPaperMm ?? b.receipt_paper_mm,
+                skip_builtin_printer: b.skipBuiltinPrinter ?? b.skip_builtin_printer,
             },
             adapt: adaptSettings,
         });
@@ -1497,10 +1564,11 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
             method: 'POST',
             body: {
                 name: b.fullName || b.name,
-                email: b.email || `${b.username}@local.test`,
+                username: b.username || undefined,
+                email: b.email || (b.username ? `${b.username}@local.test` : undefined),
                 password: b.password,
-                branch_id: b.branchId ?? b.branch_id,
-                phone: b.phone,
+                branch_id: b.branchId || b.branch_id || null,
+                phone: b.phone || null,
                 role: b.role === 'admin' ? 'owner' : (b.role || 'cashier'),
             },
             adapt: adaptStaff,
@@ -1512,10 +1580,12 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
         const b = req.body || {};
         const body = {
             name: b.fullName || b.name,
-            email: b.email,
-            phone: b.phone,
-            branch_id: b.branchId ?? b.branch_id,
+            username: b.username || undefined,
+            email: b.email || undefined,
+            phone: b.phone || null,
+            branch_id: b.branchId || b.branch_id || null,
             role: b.role === 'admin' ? 'owner' : b.role,
+            status: b.status || undefined,
             password: b.password || undefined,
         };
         Object.keys(body).forEach((k) => body[k] === undefined && delete body[k]);
