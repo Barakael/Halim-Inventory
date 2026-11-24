@@ -13,13 +13,15 @@ class Shop extends Model
     protected $fillable = [
         'name', 'address', 'phone', 'email', 'tax_rate', 'currency',
         'tin', 'vrn', 'mobile', 'location', 'tax_office', 'serial_prefix',
-        'receipt_footer', 'status', 'theme_id', 'legacy_id',
+        'receipt_footer', 'receipt_paper_mm', 'skip_builtin_printer', 'status', 'theme_id', 'legacy_id',
     ];
 
     protected function casts(): array
     {
         return [
             'tax_rate' => 'float',
+            'receipt_paper_mm' => 'integer',
+            'skip_builtin_printer' => 'boolean',
         ];
     }
 
@@ -54,6 +56,9 @@ class Shop extends Model
             'location' => $this->location,
             'tax_office' => $this->tax_office,
             'serial_prefix' => $this->serial_prefix,
+            'receipt_footer' => $this->receipt_footer,
+            'receipt_paper_mm' => (int) ($this->receipt_paper_mm ?: 58) === 80 ? 80 : 58,
+            'skip_builtin_printer' => (bool) $this->skip_builtin_printer,
             'status' => $this->status,
             'theme_id' => $this->normalizedThemeId(),
             'branches_count' => $this->branches()->count(),
