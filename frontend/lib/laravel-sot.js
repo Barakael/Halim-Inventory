@@ -116,6 +116,9 @@ function formatReceiptDate(value) {
 /** Thermal receipt HTML. Width follows the shop paper setting (58 or 80). View only — printing is the admin Bluetooth queue. */
 function renderSaleReceiptHtml(sale, settings = {}) {
     const paperMm = Number(settings.receiptPaperMm) === 80 ? 80 : 58;
+    const autoPrint = !!settings.autoPrint;
+    const printJobId = settings.printJobId != null ? String(settings.printJobId) : '';
+    const saleIdAttr = sale.id != null ? String(sale.id) : '';
     const fmt = (n) => Number(n || 0).toLocaleString('en-US');
     const dateStr = formatReceiptDate(sale.createdAt || sale.completedAt);
     const paymentMethodLabel = {
@@ -229,8 +232,37 @@ ${sale.isCredit ? '<div class="credit-warning">⚠ MAUZO YA MKOPO</div>' : ''}
   <div class="footer-sub" style="margin-top:3px;">${formatReceiptDate(new Date())}</div>
 </div>
 <div class="no-print" style="text-align:center;margin-top:16px;font-size:12px;color:#444;">
-  Preview only. Admin prints this receipt on the Bluetooth printer.
+  Preview only. Office printing uses the Windows POS-80 printer.
 </div>
+<script>
+(function () {
+  var jobId = ${JSON.stringify(printJobId)};
+  var saleId = ${JSON.stringify(saleIdAttr)};
+  var shouldAutoPrint = ${autoPrint ? 'true' : 'false'};
+  function notifyPrinted() {
+    try {
+      if (window.opener) {
+        window.opener.postMessage({ type: 'haslim-receipt-printed', jobId: jobId, saleId: saleId }, window.location.origin);
+      }
+    } catch (e) {}
+  }
+  window.addEventListener('afterprint', function () {
+    notifyPrinted();
+    if (shouldAutoPrint) {
+      setTimeout(function () { try { window.close(); } catch (e) {} }, 400);
+    }
+  });
+  if (shouldAutoPrint) {
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        try { window.focus(); window.print(); } catch (e) {}
+        // Kiosk / some drivers never fire afterprint — still notify.
+        setTimeout(notifyPrinted, 2500);
+      }, 400);
+    });
+  }
+})();
+</script>
 </body>
 </html>`;
 }
@@ -830,8 +862,14 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
             const settings = settingsRes.ok
                 ? adaptSettings(unwrapData(settingsRes.json) || settingsRes.json || {})
                 : {};
+            const merged = {
+                ...(settings || {}),
+                receiptPaperMm: 80,
+                autoPrint: String(req.query.autoprint || '') === '1',
+                printJobId: req.query.job_id || '',
+            };
             res.setHeader('Content-Type', 'text/html; charset=UTF-8');
-            return res.send(renderSaleReceiptHtml(sale, settings || {}));
+            return res.send(renderSaleReceiptHtml(sale, merged));
         } catch (err) {
             console.error('Laravel receipt proxy error:', err.message);
             return res.status(502).send('<p>Cannot load receipt</p>');

@@ -864,85 +864,157 @@ async function loadSuperAdminDashboard() {
     superRoot.innerHTML = renderSuperAdminDashboard(result.data || {});
 }
 
-// Browser-side office printing (no Node agent). Keep https://haslim.co.tz open
-// as admin on the PC that has Windows printer "POS-80" set as default.
+// Browser-side office printing (no Node agent).
+// Keep https://haslim.co.tz open as admin; set Windows default printer to POS-80.
+// For fully silent prints, launch Chrome with --kiosk-printing.
 let browserReceiptPusher = null;
+let browserReceiptPollTimer = null;
 const browserReceiptPrinting = new Set();
+const browserReceiptPrinted = new Set();
 
-async function printReceiptJobInBrowser(job) {
-    const jobId = String(job.id || job.job_id || '');
-    const saleId = job.sale_id;
-    if (!jobId || !saleId) return;
-    if (browserReceiptPrinting.has(jobId)) return;
-    browserReceiptPrinting.add(jobId);
-    try {
-        const htmlRes = await fetch(`/api/sales/${saleId}/receipt`, { credentials: 'same-origin' });
-        if (!htmlRes.ok) throw new Error(`Receipt HTML failed (${htmlRes.status})`);
-        const html = await htmlRes.text();
-        await new Promise((resolve, reject) => {
-            const frame = document.createElement('iframe');
-            frame.setAttribute('aria-hidden', 'true');
-            frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
-            document.body.appendChild(frame);
-            const cleanup = () => {
-                try { frame.remove(); } catch (_) { /* ignore */ }
-            };
-            frame.onload = () => {
-                try {
-                    frame.contentWindow.focus();
-                    frame.contentWindow.print();
-                    resolve();
-                } catch (err) {
-                    reject(err);
-                } finally {
-                    setTimeout(cleanup, 1500);
-                }
-            };
-            frame.onerror = () => {
-                cleanup();
-                reject(new Error('Receipt frame failed'));
-            };
-            frame.srcdoc = html;
-        });
-        await api(`/api/receipt-jobs/${jobId}/printed`, { method: 'POST' });
-        console.log('[receipt-print] browser printed job', jobId);
+function ensureReceiptPrintBanner() {
+    let banner = document.getElementById('receiptPrintBanner');
+    if (banner) return banner;
+    banner = document.createElement('div');
+    banner.id = 'receiptPrintBanner';
+    banner.style.cssText = [
+        'display:none',
+        'position:fixed',
+        'right:16px',
+        'bottom:16px',
+        'z-index:99999',
+        'max-width:360px',
+        'background:#111',
+        'color:#fff',
+        'padding:14px 16px',
+        'border-radius:10px',
+        'box-shadow:0 8px 24px rgba(0,0,0,.35)',
+        'font-size:14px',
+    ].join(';');
+    banner.innerHTML = `
+        <div id="receiptPrintBannerText" style="margin-bottom:10px;"></div>
+        <button type="button" class="btn btn-sm btn-warning" id="receiptPrintBannerBtn">Print queued now</button>
+    `;
+    document.body.appendChild(banner);
+    banner.querySelector('#receiptPrintBannerBtn').addEventListener('click', () => {
+        catchUpBrowserReceipts(true);
+    });
+    return banner;
+}
+
+function updateReceiptPrintBanner(count) {
+    const banner = ensureReceiptPrintBanner();
+    const text = banner.querySelector('#receiptPrintBannerText');
+    if (!count) {
+        banner.style.display = 'none';
+        return;
+    }
+    text.textContent = `${count} receipt(s) waiting. Click Print (POS-80 must be the Windows default printer).`;
+    banner.style.display = 'block';
+}
+
+async function markBrowserReceiptPrinted(jobId) {
+    if (!jobId || browserReceiptPrinted.has(String(jobId))) return;
+    browserReceiptPrinted.add(String(jobId));
+    browserReceiptPrinting.delete(String(jobId));
+    const result = await api(`/api/receipt-jobs/${jobId}/printed`, { method: 'POST' });
+    if (result && result.success !== false) {
+        console.log('[receipt-print] marked printed', jobId);
         try { loadReceiptQueue(); } catch (_) { /* ignore */ }
-    } catch (err) {
-        console.error('[receipt-print] browser print failed:', err);
-    } finally {
-        browserReceiptPrinting.delete(jobId);
+        try { pollBrowserReceiptQueue(); } catch (_) { /* ignore */ }
+    } else {
+        browserReceiptPrinted.delete(String(jobId));
+        console.error('[receipt-print] mark printed failed', jobId, result);
     }
 }
 
-async function catchUpBrowserReceipts() {
+window.addEventListener('message', (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== 'haslim-receipt-printed') return;
+    markBrowserReceiptPrinted(event.data.jobId);
+});
+
+function printQueuedReceiptJob(jobId, saleId) {
+    return printReceiptJobInBrowser({ id: jobId, sale_id: saleId }, { fromUserClick: true });
+}
+
+function printReceiptJobInBrowser(job, { fromUserClick = false } = {}) {
+    const jobId = String(job.id || job.job_id || '');
+    const saleId = job.sale_id;
+    if (!jobId || !saleId) return false;
+    if (browserReceiptPrinted.has(jobId) || browserReceiptPrinting.has(jobId)) return false;
+    browserReceiptPrinting.add(jobId);
+    const url = `/api/sales/${saleId}/receipt?autoprint=1&job_id=${encodeURIComponent(jobId)}`;
+    const popup = window.open(url, `receipt-${jobId}`, 'width=420,height=720');
+    if (!popup) {
+        browserReceiptPrinting.delete(jobId);
+        showToast(fromUserClick
+            ? 'Allow pop-ups for haslim.co.tz, then click Print again'
+            : 'New receipt waiting — click “Print queued now” (allow pop-ups)', 'warning');
+        updateReceiptPrintBanner(1);
+        return false;
+    }
+    showToast(`Printing receipt ${job.serial_number || jobId}…`, 'info');
+    // Fallback if afterprint/postMessage never arrives
+    setTimeout(() => {
+        if (!browserReceiptPrinted.has(jobId)) {
+            markBrowserReceiptPrinted(jobId);
+        }
+    }, 8000);
+    return true;
+}
+
+async function catchUpBrowserReceipts(fromUserClick = false) {
     const result = await api('/api/receipt-jobs?status=queued');
     if (!result.success) return;
     const jobs = (result.data || []).slice().reverse();
-    if (jobs.length) {
-        console.log(`[receipt-print] browser catch-up: ${jobs.length} queued`);
-    }
+    updateReceiptPrintBanner(jobs.length);
+    if (!jobs.length) return;
+    console.log(`[receipt-print] catch-up: ${jobs.length} queued`);
     for (const job of jobs) {
-        // Sequential so the printer is not flooded
+        printReceiptJobInBrowser(job, { fromUserClick });
+        // Small gap so Windows spooler is not flooded
         // eslint-disable-next-line no-await-in-loop
-        await printReceiptJobInBrowser(job);
+        await new Promise((r) => setTimeout(r, fromUserClick ? 1200 : 600));
+    }
+}
+
+async function pollBrowserReceiptQueue() {
+    if (!currentUser || !['admin', 'owner'].includes(currentUser.role)) return;
+    const result = await api('/api/receipt-jobs?status=queued');
+    if (!result.success) return;
+    const jobs = result.data || [];
+    updateReceiptPrintBanner(jobs.length);
+    for (const job of jobs) {
+        printReceiptJobInBrowser(job);
     }
 }
 
 async function startBrowserReceiptAutoPrint() {
     if (!currentUser || !['admin', 'owner'].includes(currentUser.role)) return;
+    ensureReceiptPrintBanner();
+
+    // Always poll while admin dashboard is open (works even if WebSocket fails).
+    if (browserReceiptPollTimer) clearInterval(browserReceiptPollTimer);
+    browserReceiptPollTimer = setInterval(() => {
+        pollBrowserReceiptQueue().catch((err) => console.error('[receipt-print] poll', err));
+    }, 4000);
+    await pollBrowserReceiptQueue();
+
     if (typeof Pusher === 'undefined') {
-        console.warn('[receipt-print] Pusher library missing');
+        console.warn('[receipt-print] Pusher library missing — using poll only');
         return;
     }
     const cfg = await api('/api/realtime-config');
-    if (!cfg.success || !cfg.can_auto_print) return;
+    if (!cfg.success || !cfg.can_auto_print) {
+        console.warn('[receipt-print] realtime config unavailable', cfg);
+        return;
+    }
     const reverb = cfg.reverb || {};
     if (!reverb.key || !reverb.host) {
         console.warn('[receipt-print] Reverb is not configured on the server');
         return;
     }
-
-    await catchUpBrowserReceipts();
 
     if (browserReceiptPusher) {
         try { browserReceiptPusher.disconnect(); } catch (_) { /* ignore */ }
@@ -959,8 +1031,6 @@ async function startBrowserReceiptAutoPrint() {
         enabledTransports: ['ws', 'wss'],
         disableStats: true,
         cluster: 'mt1',
-        authEndpoint: '/api/broadcasting/auth',
-        auth: { headers: { 'X-Requested-With': 'XMLHttpRequest' } },
         authorizer: (channel) => ({
             authorize: (socketId, callback) => {
                 fetch('/api/broadcasting/auth', {
@@ -991,9 +1061,13 @@ async function startBrowserReceiptAutoPrint() {
     channel.bind('pusher:subscription_succeeded', () => {
         console.log('[receipt-print] browser subscribed', channelName);
     });
+    channel.bind('pusher:subscription_error', (status) => {
+        console.error('[receipt-print] subscribe failed', status);
+    });
     channel.bind('receipt.queued', (payload) => {
         console.log('[receipt-print] live sale → print', payload);
         printReceiptJobInBrowser(payload);
+        pollBrowserReceiptQueue();
     });
 }
 
@@ -1009,10 +1083,12 @@ async function loadReceiptQueue() {
     }
     if (note) {
         note.textContent = result.can_print
-            ? 'Keep this admin dashboard open on the office PC. Sales print to the Windows POS-80 printer. View opens a copy.'
+            ? 'Keep this admin tab open on the office PC. Set Windows default printer to POS-80. Queued receipts can Print now; live sales open the print dialog automatically (allow pop-ups).'
             : 'You can view receipts. Printing stays with admin.';
     }
     const rows = result.data || [];
+    const queuedCount = rows.filter((job) => job.status !== 'printed').length;
+    updateReceiptPrintBanner(result.can_print ? queuedCount : 0);
     if (!rows.length) {
         body.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No receipts yet.</td></tr>';
         return;
@@ -1021,6 +1097,9 @@ async function loadReceiptQueue() {
         const status = job.status === 'printed'
             ? '<span class="badge bg-success">Printed</span>'
             : '<span class="badge bg-warning text-dark">Queued</span>';
+        const printBtn = job.status !== 'printed' && result.can_print
+            ? `<button class="btn btn-sm btn-warning" onclick="printQueuedReceiptJob('${escHtml(String(job.id))}','${escHtml(String(job.sale_id))}')">Print</button>`
+            : '';
         return `
             <tr>
                 <td>${escHtml(job.serial_number || job.sale_id)}</td>
@@ -1030,8 +1109,9 @@ async function loadReceiptQueue() {
                 <td>${escHtml(job.payment_method || '')}</td>
                 <td>${formatCurrency(job.amount || 0)}</td>
                 <td>${status}</td>
-                <td>
+                <td class="d-flex gap-1">
                     <button class="btn btn-sm btn-info" onclick="printReceipt('${job.sale_id}')">View</button>
+                    ${printBtn}
                 </td>
             </tr>
         `;
