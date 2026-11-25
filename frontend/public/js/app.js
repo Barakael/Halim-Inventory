@@ -985,9 +985,8 @@ async function pollBrowserReceiptQueue() {
     if (!result.success) return;
     const jobs = result.data || [];
     updateReceiptPrintBanner(jobs.length);
-    for (const job of jobs) {
-        printReceiptJobInBrowser(job);
-    }
+    // Do not auto-open print windows here — browsers block them and only show a toast.
+    // Admin prints from Mauzo → Print, or the banner "Print queued now" button.
 }
 
 async function startBrowserReceiptAutoPrint() {
@@ -1065,8 +1064,8 @@ async function startBrowserReceiptAutoPrint() {
         console.error('[receipt-print] subscribe failed', status);
     });
     channel.bind('receipt.queued', (payload) => {
-        console.log('[receipt-print] live sale → print', payload);
-        printReceiptJobInBrowser(payload);
+        console.log('[receipt-print] live sale queued', payload);
+        showToast('Risiti mpya inasubiri — fungua Mauzo na bofya Print', 'warning');
         pollBrowserReceiptQueue();
     });
 }
@@ -2691,6 +2690,7 @@ function renderSalesTableWithData(sales) {
         }
     }
     
+    const canPrint = currentUser && ['admin', 'owner', 'super_admin'].includes(currentUser.role);
     tbody.innerHTML = sales.map(s => `
         <tr>
             <td>${s.receiptNumber || 'N/A'}</td>
@@ -2704,22 +2704,51 @@ function renderSalesTableWithData(sales) {
                     s.isCredit ? '<span class="badge bg-warning">Credit</span>' : '<span class="badge bg-success">Paid</span>'
                 )}
             </td>
-            <td>
+            <td class="text-nowrap">
                 <button class="btn btn-sm btn-info btn-icon me-1" onclick="viewSale('${s.id}')" title="Ona">
                     <i class="bi bi-eye"></i>
                 </button>
+                ${canPrint ? `
+                <button class="btn btn-sm btn-warning btn-icon" onclick="printSaleReceipt('${s.id}')" title="Chapisha risiti">
+                    <i class="bi bi-printer"></i> Print
+                </button>` : ''}
             </td>
         </tr>
     `).join('');
 }
 
 function printReceipt(saleId) {
+    return printSaleReceipt(saleId, { previewOnly: true });
+}
+
+/** Print from Mauzo — user click so the browser allows the print dialog. */
+async function printSaleReceipt(saleId, { previewOnly = false } = {}) {
     const role = currentUser && currentUser.role;
-    if (role !== 'admin' && role !== 'super_admin') {
-        showToast('Receipt is waiting for admin.', 'info');
+    if (!['admin', 'owner', 'super_admin'].includes(role)) {
+        showToast('Receipt printing is for admin.', 'info');
         return;
     }
-    window.open(`/api/sales/${saleId}/receipt`, '_blank');
+    let jobId = '';
+    if (!previewOnly) {
+        const queued = await api('/api/receipt-jobs?status=queued');
+        if (queued.success) {
+            const job = (queued.data || []).find((j) => String(j.sale_id) === String(saleId));
+            if (job) jobId = String(job.id);
+        }
+    }
+    const params = new URLSearchParams();
+    if (!previewOnly) params.set('autoprint', '1');
+    if (jobId) params.set('job_id', jobId);
+    const qs = params.toString();
+    const url = `/api/sales/${saleId}/receipt${qs ? `?${qs}` : ''}`;
+    const popup = window.open(url, `receipt-sale-${saleId}`, 'width=420,height=720');
+    if (!popup) {
+        showToast('Ruhusu pop-ups kwa haslim.co.tz, kisha jaribu Print tena', 'warning');
+        return;
+    }
+    if (!previewOnly) {
+        showToast('Inachapisha risiti… chagua POS-80 kwenye print dialog', 'success');
+    }
 }
 
 // =========================
