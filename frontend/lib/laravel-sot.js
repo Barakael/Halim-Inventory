@@ -693,7 +693,7 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
                     }
                     try {
                         const { onAdminLogin } = require('./receipt-auto-print');
-                        onAdminLogin(sessionUser);
+                        onAdminLogin(sessionUser, token);
                     } catch (printErr) {
                         console.error('[receipt-print] login catch-up error:', printErr.message);
                     }
@@ -715,6 +715,10 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
 
     app.post('/api/auth/logout', isAuthenticated, async (req, res) => {
         const token = req.session.laravelToken;
+        try {
+            const { onAdminLogout } = require('./receipt-auto-print');
+            onAdminLogout();
+        } catch (_) { /* ignore */ }
         try {
             if (token) {
                 await laravelFetch('/logout', { method: 'POST', token });

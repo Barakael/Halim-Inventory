@@ -363,31 +363,23 @@ function transportLabel() {
 }
 
 let token = null;
+let activeShopId = null;
 let pusherClient = null;
 
-async function login() {
-    const username = (process.env.RECEIPT_USERNAME || 'admin').trim();
-    const password = process.env.RECEIPT_PASSWORD || '';
-    if (!username || !password) {
-        throw new Error('Set RECEIPT_USERNAME and RECEIPT_PASSWORD');
-    }
-    const { ok, json, status } = await api('/login', {
-        method: 'POST',
-        body: { username, password },
-    });
-    if (!ok || !json?.token) {
-        throw new Error(json?.message || `Login failed (${status})`);
-    }
-    token = json.token;
+function hasAdminSession() {
+    return Boolean(token);
 }
 
 async function withToken(run) {
-    if (!token) await login();
-    let result = await run(token);
+    if (!token) {
+        throw new Error('Admin is not logged in on this computer yet');
+    }
+    const result = await run(token);
     if (result.status === 401) {
         token = null;
-        await login();
-        result = await run(token);
+        activeShopId = null;
+        stopReceiptWebSocket();
+        throw new Error('Admin session expired — log in again to resume printing');
     }
     return result;
 }
@@ -506,15 +498,15 @@ function canCatchUpRole(role) {
     return normalized === 'admin' || normalized === 'owner';
 }
 
-function onAdminLogin(user) {
-    if (!autoPrintEnabled()) return;
-    if (!canCatchUpRole(user?.role)) return;
-    console.log(`[receipt-print] admin login (${user.username || user.role}) → catch up`);
-    printQueuedOnce();
+function stopReceiptWebSocket() {
+    if (!pusherClient) return;
+    try { pusherClient.disconnect(); } catch { /* ignore */ }
+    pusherClient = null;
 }
 
-async function startReceiptWebSocket() {
+async function startReceiptWebSocket(shopId) {
     if (!autoPrintEnabled()) return;
+    if (!hasAdminSession()) return;
     const key = process.env.REVERB_APP_KEY;
     const host = process.env.REVERB_HOST;
     if (!key || !host) {
@@ -522,19 +514,20 @@ async function startReceiptWebSocket() {
         return;
     }
 
-    const me = await withToken((auth) => api('/me', { token: auth }));
-    if (!me.ok) {
-        throw new Error(me.json?.message || `Could not load shop for WebSocket (${me.status})`);
+    let resolvedShopId = shopId || activeShopId;
+    if (!resolvedShopId) {
+        const me = await withToken((auth) => api('/me', { token: auth }));
+        if (!me.ok) {
+            throw new Error(me.json?.message || `Could not load shop for WebSocket (${me.status})`);
+        }
+        resolvedShopId = me.json?.shop_id ?? me.json?.data?.shop_id;
     }
-    const shopId = me.json?.shop_id ?? me.json?.data?.shop_id;
-    if (!shopId) {
-        throw new Error('Logged-in user has no shop_id for receipt channel');
+    if (!resolvedShopId) {
+        throw new Error('Logged-in admin has no shop_id for receipt channel');
     }
+    activeShopId = resolvedShopId;
 
-    if (pusherClient) {
-        try { pusherClient.disconnect(); } catch { /* ignore */ }
-        pusherClient = null;
-    }
+    stopReceiptWebSocket();
 
     const port = Number(process.env.REVERB_PORT || (process.env.REVERB_SCHEME === 'https' ? 443 : 8080));
     const forceTLS = (process.env.REVERB_SCHEME || 'https') === 'https';
@@ -574,7 +567,7 @@ async function startReceiptWebSocket() {
         }),
     });
 
-    const channelName = `private-shop.${shopId}.receipts`;
+    const channelName = `private-shop.${resolvedShopId}.receipts`;
     const channel = pusherClient.subscribe(channelName);
     channel.bind('pusher:subscription_succeeded', () => {
         console.log(`[receipt-print] WebSocket subscribed → ${channelName}`);
@@ -592,20 +585,40 @@ async function startReceiptWebSocket() {
     console.log(`[receipt-print] WebSocket connecting ${forceTLS ? 'wss' : 'ws'}://${host}:${port}`);
 }
 
-async function startReceiptPrintAgent() {
+function onAdminLogin(user, laravelToken) {
+    if (!autoPrintEnabled()) return;
+    if (!canCatchUpRole(user?.role)) return;
+    if (!laravelToken) {
+        console.error('[receipt-print] admin login had no API token');
+        return;
+    }
+    token = laravelToken;
+    activeShopId = user?.shopId ?? user?.shop_id ?? null;
+    console.log(`[receipt-print] admin login (${user.username || user.role}) → catch up + live prints`);
+    printQueuedOnce();
+    startReceiptWebSocket(activeShopId).catch((err) => {
+        console.error(`[receipt-print] WebSocket not started: ${err.message}`);
+    });
+}
+
+function onAdminLogout() {
+    if (!autoPrintEnabled()) return;
+    console.log('[receipt-print] admin logout → pause printing until next login');
+    token = null;
+    activeShopId = null;
+    stopReceiptWebSocket();
+}
+
+function startReceiptPrintAgent() {
     if (!autoPrintEnabled()) return;
     console.log(`[receipt-print] ready → ${apiBase()} → ${transportLabel()}`);
-    await printQueuedOnce();
-    try {
-        await startReceiptWebSocket();
-    } catch (err) {
-        console.error(`[receipt-print] WebSocket not started: ${err.message}`);
-    }
+    console.log('[receipt-print] waiting for admin login on this computer (no password in .env)');
 }
 
 module.exports = {
     mountReceiptPrintHook,
     printQueuedOnce,
     onAdminLogin,
+    onAdminLogout,
     startReceiptPrintAgent,
 };

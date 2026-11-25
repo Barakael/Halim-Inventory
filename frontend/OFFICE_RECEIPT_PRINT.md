@@ -2,7 +2,8 @@
 
 Cashiers sell on the **hosted** system. The **office Windows PC** keeps a local print agent running. That agent connects **out** to Laravel Reverb over WebSocket. Each new sale is pushed once; no idle polling.
 
-When the agent starts, and again when an **admin** logs into this local dashboard, it prints every receipt still marked `queued`.
+Printing uses the **admin’s login session** on this PC — no password is stored in `.env`.
+When an admin logs into the local dashboard, the agent catches up on every `queued` receipt and stays connected for live sales. Logging out pauses printing.
 
 ## Hosted server
 
@@ -39,8 +40,6 @@ RECEIPT_API_BASE=https://api.your-domain.com/api
 RECEIPT_AUTO_PRINT=1
 RECEIPT_TRANSPORT=windows
 RECEIPT_PRINTER=POS80
-RECEIPT_USERNAME=admin
-RECEIPT_PASSWORD=your-admin-password
 REVERB_APP_KEY=same-as-hosted
 REVERB_HOST=api.your-domain.com
 REVERB_PORT=443
@@ -55,7 +54,8 @@ npm start
 
 Or use PM2 / a Windows service so it starts when the PC boots.
 
-5. Admin opens `http://127.0.0.1:40000/login` on that PC and signs in. Any unprinted receipts print immediately. New online sales print as they happen.
+5. Admin opens `http://127.0.0.1:40000/login` on that PC and signs in with their normal account.
+   Any unprinted receipts print immediately. New online sales print while that admin stays logged in.
 
 ## Checks
 
