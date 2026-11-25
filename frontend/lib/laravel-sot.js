@@ -158,34 +158,34 @@ function renderSaleReceiptHtml(sale, settings = {}) {
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 14px; background: #fff; color: #000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 18px; font-weight: 700; background: #fff; color: #000;
     width: ${paperMm}mm; margin: 0 auto; padding: 3mm 2mm 10mm 2mm;
   }
   .header { text-align: center; margin-bottom: 6px; }
-  .company-name { font-size: 17px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; }
-  .company-sub { font-size: 12px; margin-top: 3px; }
-  .div-solid { border: none; border-top: 2px solid #000; margin: 6px 0; }
-  .div-dash  { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-  .receipt-title { text-align: center; font-size: 15px; font-weight: bold; letter-spacing: 4px; padding: 3px 0; }
-  .info-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; padding: 2px 0; gap: 4px; }
-  .info-row .lbl { color: #555; white-space: nowrap; }
-  .info-row .val { font-weight: bold; text-align: right; word-break: break-word; }
-  .section-label { font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; padding: 2px 0; }
-  .item-block { margin: 5px 0; }
-  .item-name { font-size: 14px; font-weight: bold; line-height: 1.3; word-break: break-word; }
-  .item-detail { display: flex; justify-content: space-between; font-size: 13px; padding-left: 6px; margin-top: 1px; color: #333; }
-  .sum-row { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; color: #444; }
-  .credit-row { color: #c00; font-weight: bold; }
-  .total-box { border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 0 5px; margin: 6px 0; text-align: center; }
-  .total-label { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-  .total-amount { font-size: 22px; font-weight: bold; letter-spacing: 1px; margin-top: 3px; line-height: 1.1; }
-  .payment-section { text-align: center; font-size: 13px; margin: 6px 0; }
-  .payment-badge { display: inline-block; border: 2px solid #000; padding: 3px 14px; font-size: 15px; font-weight: bold; letter-spacing: 1px; margin-top: 4px; }
-  .credit-warning { font-size: 13px; font-weight: bold; color: #c00; text-align: center; margin-top: 4px; }
+  .company-name { font-size: 22px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2; }
+  .company-sub { font-size: 16px; font-weight: 700; color: #000; margin-top: 3px; }
+  .div-solid { border: none; border-top: 3px solid #000; margin: 6px 0; }
+  .div-dash  { border: none; border-top: 2px solid #000; margin: 5px 0; }
+  .receipt-title { text-align: center; font-size: 18px; font-weight: 800; letter-spacing: 2px; padding: 3px 0; }
+  .info-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; font-weight: 700; color: #000; padding: 2px 0; gap: 4px; }
+  .info-row .lbl { color: #000; white-space: nowrap; }
+  .info-row .val { font-weight: 800; text-align: right; word-break: break-word; }
+  .section-label { font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 0; }
+  .item-block { margin: 6px 0; }
+  .item-name { font-size: 18px; font-weight: 800; line-height: 1.3; word-break: break-word; }
+  .item-detail { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; padding-left: 4px; margin-top: 2px; color: #000; }
+  .sum-row { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; padding: 2px 0; color: #000; }
+  .credit-row { color: #000; font-weight: 800; }
+  .total-box { border-top: 3px solid #000; border-bottom: 3px solid #000; padding: 6px 0 5px; margin: 6px 0; text-align: center; }
+  .total-label { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .total-amount { font-size: 26px; font-weight: 800; letter-spacing: 0.5px; margin-top: 3px; line-height: 1.1; }
+  .payment-section { text-align: center; font-size: 16px; font-weight: 700; margin: 6px 0; }
+  .payment-badge { display: inline-block; border: 3px solid #000; padding: 3px 14px; font-size: 18px; font-weight: 800; letter-spacing: 0.5px; margin-top: 4px; }
+  .credit-warning { font-size: 16px; font-weight: 800; color: #000; text-align: center; margin-top: 4px; }
   .footer { text-align: center; margin-top: 8px; }
-  .thank-you { font-size: 15px; font-weight: bold; margin-bottom: 3px; }
-  .footer-sub { font-size: 12px; color: #444; line-height: 1.5; }
+  .thank-you { font-size: 18px; font-weight: 800; margin-bottom: 3px; }
+  .footer-sub { font-size: 16px; font-weight: 700; color: #000; line-height: 1.4; }
   @media print {
     body { width: ${paperMm}mm; margin: 0; padding: 2mm 2mm 8mm; }
     .no-print { display: none !important; }
@@ -226,7 +226,7 @@ ${sale.isCredit ? '<div class="credit-warning">⚠ MAUZO YA MKOPO</div>' : ''}
 <div class="footer">
   <div class="thank-you">${escapeReceiptHtml(settings.receiptFooter || 'Asante kwa kununua!')}</div>
   <div class="footer-sub">Karibu tena</div>
-  <div class="footer-sub" style="font-size:11px;color:#888;margin-top:3px;">${formatReceiptDate(new Date())}</div>
+  <div class="footer-sub" style="margin-top:3px;">${formatReceiptDate(new Date())}</div>
 </div>
 <div class="no-print" style="text-align:center;margin-top:16px;font-size:12px;color:#444;">
   Preview only. Admin prints this receipt on the Bluetooth printer.
@@ -690,6 +690,12 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
                 req.session.save((err) => {
                     if (err) {
                         return res.status(500).json({ success: false, message: 'Session error' });
+                    }
+                    try {
+                        const { onAdminLogin } = require('./receipt-auto-print');
+                        onAdminLogin(sessionUser);
+                    } catch (printErr) {
+                        console.error('[receipt-print] login catch-up error:', printErr.message);
                     }
                     res.json({
                         success: true,
@@ -1665,4 +1671,9 @@ module.exports = {
     LARAVEL_URL,
     mountLaravelSot,
     mapLaravelUserToSession,
+    laravelFetch,
+    unwrapData,
+    adaptSale,
+    adaptSettings,
+    renderSaleReceiptHtml,
 };

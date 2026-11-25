@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\ReceiptPrintRequested;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerDebt;
@@ -12,6 +13,10 @@ use App\Models\SaleItem;
 use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+use function Illuminate\Support\defer;
 
 class SaleController extends Controller
 {
@@ -119,8 +124,10 @@ class SaleController extends Controller
             }
         }
 
+        $printJob = null;
+
         try {
-            $sale = DB::transaction(function () use ($data, $user, $shopId, $clientSaleId) {
+            $sale = DB::transaction(function () use ($data, $user, $shopId, $clientSaleId, &$printJob) {
                 if ($clientSaleId) {
                     $existing = Sale::forShop($shopId)
                         ->where('client_sale_id', $clientSaleId)
@@ -300,7 +307,7 @@ class SaleController extends Controller
                     CustomerDebt::recomputeOpenBalance($customer->fresh());
                 }
 
-                ReceiptPrintJob::firstOrCreate(
+                $printJob = ReceiptPrintJob::firstOrCreate(
                     ['sale_id' => $sale->id],
                     [
                         'shop_id' => $shopId,
@@ -328,6 +335,46 @@ class SaleController extends Controller
             throw $e;
         }
 
+        if ($printJob?->wasRecentlyCreated) {
+            $this->notifyReceiptPrinter($printJob);
+        }
+
         return response()->json($sale->toApiArray(), 201);
+    }
+
+    private function notifyReceiptPrinter(ReceiptPrintJob $job): void
+    {
+        defer(function () use ($job) {
+            try {
+                broadcast(new ReceiptPrintRequested($job));
+            } catch (\Throwable $e) {
+                Log::warning('Receipt WebSocket broadcast failed; job stays queued', [
+                    'job_id' => $job->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // Optional LAN/webhook fallback (local Mac tests without Reverb).
+            $url = config('services.receipt_printer.url');
+            if (! $url) {
+                return;
+            }
+            $secret = (string) config('services.receipt_printer.secret');
+            try {
+                Http::timeout(3)->connectTimeout(2)
+                    ->withToken($secret)
+                    ->acceptJson()
+                    ->post($url, [
+                        'job_id' => $job->id,
+                        'sale_id' => $job->sale_id,
+                    ])
+                    ->throw();
+            } catch (\Throwable $e) {
+                Log::warning('Receipt printer webhook was not reached; job stays queued', [
+                    'job_id' => $job->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
     }
 }

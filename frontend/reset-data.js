@@ -101,7 +101,7 @@ function getDefaultUsers() {
         password: bcrypt.hashSync('admin123', 10),
         fullName: 'System Administrator',
         email: 'admin@haslimgroup.co.tz',
-        phone: '+255712345678',
+        phone: '+255717580918',
         role: 'admin',
         branchId: 'main',
         status: 'active',
@@ -128,8 +128,8 @@ function getDefaultBranches() {
         id: 'main',
         name: 'Tawi Kuu (Main Branch)',
         address: 'Dar es Salaam, Tanzania',
-        phone: '+255712345678',
-        email: 'main@haslimgroup.co.tz',
+        phone: '+255717580918',
+        email: 'main@dukajumla.co.tz',
         status: 'active',
         createdAt: new Date().toISOString()
     }];
@@ -139,7 +139,7 @@ function getDefaultSettings() {
     return {
         companyName: 'HASLIM GROUP LIMITED',
         companyAddress: 'Dar es Salaam, Tanzania',
-        companyPhone: '+255712345678',
+        companyPhone: '+255717580918',
         companyEmail: 'info@haslimgroup.co.tz',
         currency: 'TZS',
         lowStockThreshold: 10,

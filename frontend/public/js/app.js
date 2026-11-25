@@ -873,7 +873,7 @@ async function loadReceiptQueue() {
     }
     if (note) {
         note.textContent = result.can_print
-            ? 'Finished sales wait here. Print them on the admin phone with the Bluetooth printer. This screen is the queue.'
+            ? 'Finished sales print themselves on the shop 80mm printer. This screen is the queue. View opens a copy.'
             : 'You can view receipts. Printing stays with admin.';
     }
     const rows = result.data || [];

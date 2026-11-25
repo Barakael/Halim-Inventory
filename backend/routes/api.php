@@ -20,9 +20,12 @@ use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\SupplierStatementController;
 use App\Http\Middleware\EnsureShopActive;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
+
+Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 Route::middleware(['auth:sanctum', EnsureShopActive::class])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);

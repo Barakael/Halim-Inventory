@@ -30,8 +30,10 @@
     "moment": "^2.29.4",
     "multer": "^1.4.5-lts.1",
     "pdfkit": "^0.14.0",
+    "pusher-js": "^8.6.0",
     "qrcode": "^1.5.3",
     "session-file-store": "^1.5.0",
+    "usb": "^2.19.2",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

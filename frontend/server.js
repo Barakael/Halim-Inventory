@@ -28,6 +28,7 @@ const {
     sessionExpiryReason
 } = require('./lib/security');
 const { mountLaravelSot, enabled: laravelSotEnabled } = require('./lib/laravel-sot');
+const { mountReceiptPrintHook, startReceiptPrintAgent } = require('./lib/receipt-auto-print');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 40000;
@@ -48,6 +49,7 @@ if (process.env.TRUST_PROXY) {
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+mountReceiptPrintHook(app);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -129,7 +131,7 @@ function initializeDatabase() {
         password: bcrypt.hashSync('admin123', 10),
         fullName: 'System Administrator',
         email: 'admin@dukajumla.co.tz',
-        phone: '+255712345678',
+        phone: '+255717580918',
         role: 'admin',
         branchId: 'main',
         status: 'active',
@@ -154,7 +156,7 @@ function initializeDatabase() {
         id: 'main',
         name: 'Tawi Kuu (Main Branch)',
         address: 'Dar es Salaam, Tanzania',
-        phone: '+255712345678',
+        phone: '+255717580918',
         email: 'main@dukajumla.co.tz',
         status: 'active',
         createdAt: new Date().toISOString()
@@ -164,7 +166,7 @@ function initializeDatabase() {
     const defaultSettings = {
         companyName: 'HASLIM GROUP LIMITED',
         companyAddress: 'Dar es Salaam, Tanzania',
-        companyPhone: '+255712345678',
+        companyPhone: '+255717580918',
         companyEmail: 'info@haslimgroup.co.tz',
         currency: 'TZS',
         lowStockThreshold: 10,
@@ -3695,5 +3697,6 @@ ${lanLines}
         checkAlerts();
     }, 60 * 60 * 1000);
     alertTimer.unref();
+    startReceiptPrintAgent();
 });
 
