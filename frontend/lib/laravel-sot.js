@@ -236,7 +236,7 @@ ${sale.isCredit ? '<div class="credit-warning">⚠ MAUZO YA MKOPO</div>' : ''}
 <hr class="div-dash">
 <div class="footer">
   <div class="thank-you">${escapeReceiptHtml(settings.receiptFooter || 'Asante kwa kununua!')}</div>
-  <div class="footer-sub">Karibu tena</div>
+  <div class="footer-sub">Karibu sana Kasi mpya</div>
   <div class="footer-sub" style="margin-top:2px;">${formatReceiptDate(new Date())}</div>
 </div>
 <div class="no-print" style="text-align:center;margin-top:14px;font-size:12px;color:#444;">
