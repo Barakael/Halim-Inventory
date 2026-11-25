@@ -985,8 +985,14 @@ async function pollBrowserReceiptQueue() {
     if (!result.success) return;
     const jobs = result.data || [];
     updateReceiptPrintBanner(jobs.length);
-    // Do not auto-open print windows here — browsers block them and only show a toast.
-    // Admin prints from Mauzo → Print, or the banner "Print queued now" button.
+    // Auto-open only when the office Chrome allows pop-ups (and preferably --kiosk-printing).
+    // If the browser blocks the popup, the banner + Mauzo Print button remain as fallback.
+    if (!jobs.length) return;
+    for (const job of jobs) {
+        printReceiptJobInBrowser(job, { fromUserClick: false });
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => setTimeout(r, 800));
+    }
 }
 
 async function startBrowserReceiptAutoPrint() {
@@ -1065,8 +1071,13 @@ async function startBrowserReceiptAutoPrint() {
     });
     channel.bind('receipt.queued', (payload) => {
         console.log('[receipt-print] live sale queued', payload);
-        showToast('Risiti mpya inasubiri — fungua Mauzo na bofya Print', 'warning');
-        pollBrowserReceiptQueue();
+        showToast('Risiti mpya — inachapishwa…', 'info');
+        // Live sale: open receipt print immediately (needs pop-ups allowed; silent with --kiosk-printing).
+        if (payload && (payload.id || payload.job_id) && payload.sale_id) {
+            printReceiptJobInBrowser(payload, { fromUserClick: false });
+        } else {
+            pollBrowserReceiptQueue();
+        }
     });
 }
 

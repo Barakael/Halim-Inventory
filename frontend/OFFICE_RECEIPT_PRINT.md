@@ -2,15 +2,36 @@
 
 Cashiers sell on the **hosted** system. The **office Windows PC** does **not** need Node or any local agent.
 
-1. Set the Windows default printer to **POS-80** (exact name you registered).
-2. On that PC, open Chrome/Edge to https://haslim.co.tz and log in as **admin**.
-3. Leave the dashboard tab open during work hours.
+A normal browser tab **cannot** silent-print by itself (Chrome blocks it). For real auto-print use the setup below.
 
-The admin browser listens over WebSocket. Each new sale opens the receipt and prints to the default POS-80. When the admin opens the dashboard, any still-queued receipts print too.
+## Required office setup (auto-print)
 
-Optional silent printing (no print dialog): create a Chrome desktop shortcut with  
-`--kiosk-printing https://haslim.co.tz/login`  
-and set POS-80 as the Windows default printer.
+1. Set the Windows default printer to **POS-80**.
+2. Create a Chrome desktop shortcut (right‑click Chrome → Properties → Target) like:
+
+```text
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing --new-window https://haslim.co.tz/login
+```
+
+3. Open that shortcut, log in as **admin**, leave the tab open during work hours.
+4. When Chrome blocks a pop-up, click the address-bar icon → **Always allow pop-ups** for `haslim.co.tz`.
+
+With that, each sale opens the receipt and `--kiosk-printing` sends it straight to POS-80 (no print dialog). Queued jobs also catch up when admin is online.
+
+## Fallback (no kiosk)
+
+- Mauzo → yellow **Print** button, or the bottom-right **Print queued now** banner.
+- Still needs POS-80 as the Windows default printer (or pick it in the dialog).
+
+## Other options (if you cannot use kiosk Chrome)
+
+| Option | What it is |
+|--------|------------|
+| **QZ Tray** | Small Windows app; website talks to it for true silent POS printing |
+| **PrintNode** | Cloud print client on the office PC |
+| **Local print agent** | Custom Windows program that listens for jobs (needs install on office PC) |
+
+For Haslim, **Chrome + `--kiosk-printing` + allow pop-ups** is the simplest path with no extra software.
 
 ## Hosted server
 
