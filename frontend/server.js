@@ -48,7 +48,9 @@ reverbProxy.on('error', (err, _req, res) => {
         res.end('Reverb unavailable');
     }
 });
-app.use('/app', (req, res) => {
+// Keep the /app prefix — Express mount stripping would break Reverb's path.
+app.use((req, res, next) => {
+    if (!(req.url || '').startsWith('/app')) return next();
     reverbProxy.web(req, res);
 });
 const COOKIE_NAME = 'haslim.sid';
