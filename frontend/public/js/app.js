@@ -871,6 +871,8 @@ let browserReceiptPusher = null;
 let browserReceiptPollTimer = null;
 const browserReceiptPrinting = new Set();
 const browserReceiptPrinted = new Set();
+let receiptBannerDismissed = false;
+let receiptBannerLastCount = 0;
 
 function ensureReceiptPrintBanner() {
     let banner = document.getElementById('receiptPrintBanner');
@@ -892,12 +894,19 @@ function ensureReceiptPrintBanner() {
         'font-size:14px',
     ].join(';');
     banner.innerHTML = `
-        <div id="receiptPrintBannerText" style="margin-bottom:10px;"></div>
+        <button type="button" id="receiptPrintBannerClose" title="Funga" aria-label="Close"
+            style="position:absolute;top:6px;right:8px;background:transparent;border:0;color:#fff;font-size:18px;line-height:1;cursor:pointer;padding:2px 6px;opacity:.85;">&times;</button>
+        <div id="receiptPrintBannerText" style="margin-bottom:10px;padding-right:22px;"></div>
         <button type="button" class="btn btn-sm btn-warning" id="receiptPrintBannerBtn">Print queued now</button>
     `;
+    banner.style.position = 'fixed';
     document.body.appendChild(banner);
     banner.querySelector('#receiptPrintBannerBtn').addEventListener('click', () => {
         catchUpBrowserReceipts(true);
+    });
+    banner.querySelector('#receiptPrintBannerClose').addEventListener('click', () => {
+        receiptBannerDismissed = true;
+        banner.style.display = 'none';
     });
     return banner;
 }
@@ -905,11 +914,14 @@ function ensureReceiptPrintBanner() {
 function updateReceiptPrintBanner(count) {
     const banner = ensureReceiptPrintBanner();
     const text = banner.querySelector('#receiptPrintBannerText');
-    if (!count) {
+    const n = Number(count) || 0;
+    if (n > receiptBannerLastCount) receiptBannerDismissed = false;
+    receiptBannerLastCount = n;
+    if (!n || receiptBannerDismissed) {
         banner.style.display = 'none';
         return;
     }
-    text.textContent = `${count} receipt(s) waiting. Click Print (POS-80 must be the Windows default printer).`;
+    text.textContent = `${n} receipt(s) waiting. Click Print (POS-80 must be the Windows default printer).`;
     banner.style.display = 'block';
 }
 
@@ -948,13 +960,9 @@ function printReceiptJobInBrowser(job, { fromUserClick = false } = {}) {
     const popup = window.open(url, `receipt-${jobId}`, 'width=420,height=720');
     if (!popup) {
         browserReceiptPrinting.delete(jobId);
-        showToast(fromUserClick
-            ? 'Allow pop-ups for haslim.co.tz, then click Print again'
-            : 'New receipt waiting — click “Print queued now” (allow pop-ups)', 'warning');
-        updateReceiptPrintBanner(1);
+        updateReceiptPrintBanner(Math.max(1, receiptBannerLastCount || 1));
         return false;
     }
-    showToast(`Printing receipt ${job.serial_number || jobId}…`, 'info');
     // Fallback if afterprint/postMessage never arrives
     setTimeout(() => {
         if (!browserReceiptPrinted.has(jobId)) {
@@ -1071,9 +1079,11 @@ async function startBrowserReceiptAutoPrint() {
     });
     channel.bind('receipt.queued', (payload) => {
         console.log('[receipt-print] live sale queued', payload);
-        showToast('Risiti mpya — inachapishwa…', 'info');
         // Live sale: open receipt print immediately (needs pop-ups allowed; silent with --kiosk-printing).
+        // Black banner only — no yellow toast popups.
         if (payload && (payload.id || payload.job_id) && payload.sale_id) {
+            receiptBannerDismissed = false;
+            updateReceiptPrintBanner(Math.max(1, receiptBannerLastCount + 1));
             printReceiptJobInBrowser(payload, { fromUserClick: false });
         } else {
             pollBrowserReceiptQueue();
@@ -2721,7 +2731,7 @@ function renderSalesTableWithData(sales) {
                 </button>
                 ${canPrint ? `
                 <button class="btn btn-sm btn-warning btn-icon" onclick="printSaleReceipt('${s.id}')" title="Chapisha risiti">
-                    <i class="bi bi-printer"></i> Print
+                    <i class="bi bi-printer"></i>
                 </button>` : ''}
             </td>
         </tr>
@@ -2754,11 +2764,12 @@ async function printSaleReceipt(saleId, { previewOnly = false } = {}) {
     const url = `/api/sales/${saleId}/receipt${qs ? `?${qs}` : ''}`;
     const popup = window.open(url, `receipt-sale-${saleId}`, 'width=420,height=720');
     if (!popup) {
-        showToast('Ruhusu pop-ups kwa haslim.co.tz, kisha jaribu Print tena', 'warning');
-        return;
-    }
-    if (!previewOnly) {
-        showToast('Inachapisha risiti… chagua POS-80 kwenye print dialog', 'success');
+        receiptBannerDismissed = false;
+        updateReceiptPrintBanner(Math.max(1, receiptBannerLastCount || 1));
+        const text = document.getElementById('receiptPrintBannerText');
+        if (text) {
+            text.textContent = 'Allow pop-ups for haslim.co.tz, then print again (POS-80).';
+        }
     }
 }
 

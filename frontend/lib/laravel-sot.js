@@ -137,6 +137,7 @@ function renderSaleReceiptHtml(sale, settings = {}) {
 
     const shopPhone = String(settings.mobile || settings.phone || settings.companyPhone || '').trim()
         || '+255717580918';
+    const shopPhone2 = '+255676677747';
     const shopAddress = settings.address || settings.companyAddress || '';
 
     const items = Array.isArray(sale.items) ? sale.items : [];
@@ -170,35 +171,37 @@ function renderSaleReceiptHtml(sale, settings = {}) {
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 14px; font-weight: 700; background: #fff; color: #000;
-    width: ${paperMm}mm; margin: 0 auto; padding: 2.5mm 2mm 8mm 2mm;
+    font-size: 13px; font-weight: 700; background: #fff; color: #000;
+    width: ${paperMm}mm; max-width: 100%; margin: 0 auto;
+    padding: 2.5mm 4mm 8mm 3mm;
+    overflow-wrap: anywhere; word-break: break-word;
   }
   .header { text-align: center; margin-bottom: 5px; }
-  .company-name { font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; line-height: 1.2; }
-  .company-sub { font-size: 13px; font-weight: 700; color: #000; margin-top: 2px; }
+  .company-name { font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.2; }
+  .company-sub { font-size: 12px; font-weight: 700; color: #000; margin-top: 2px; }
   .div-solid { border: none; border-top: 2px solid #000; margin: 5px 0; }
   .div-dash  { border: none; border-top: 1.5px solid #000; margin: 4px 0; }
-  .receipt-title { text-align: center; font-size: 14px; font-weight: 800; letter-spacing: 1.5px; padding: 2px 0; }
-  .info-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; font-weight: 700; color: #000; padding: 1px 0; gap: 4px; }
-  .info-row .lbl { color: #000; white-space: nowrap; }
-  .info-row .val { font-weight: 800; text-align: right; word-break: break-word; }
-  .section-label { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; padding: 1px 0; }
+  .receipt-title { text-align: center; font-size: 13px; font-weight: 800; letter-spacing: 1px; padding: 2px 0; }
+  .info-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 700; color: #000; padding: 1px 0; gap: 6px; }
+  .info-row .lbl { color: #000; white-space: nowrap; flex-shrink: 0; }
+  .info-row .val { font-weight: 800; text-align: right; overflow-wrap: anywhere; min-width: 0; }
+  .section-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; padding: 1px 0; }
   .item-block { margin: 5px 0; }
-  .item-name { font-size: 14px; font-weight: 800; line-height: 1.25; word-break: break-word; }
-  .item-detail { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; padding-left: 3px; margin-top: 1px; color: #000; }
-  .sum-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; padding: 1px 0; color: #000; }
+  .item-name { font-size: 13px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+  .item-detail { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 700; padding-left: 2px; margin-top: 1px; color: #000; }
+  .item-detail span:last-child { text-align: right; flex-shrink: 0; }
+  .sum-row { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 700; padding: 1px 0; color: #000; }
   .credit-row { color: #000; font-weight: 800; }
   .total-box { border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 5px 0 4px; margin: 5px 0; text-align: center; }
-  .total-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
-  .total-amount { font-size: 21px; font-weight: 800; letter-spacing: 0.4px; margin-top: 2px; line-height: 1.1; }
-  .payment-section { text-align: center; font-size: 13px; font-weight: 700; margin: 5px 0; }
-  .payment-badge { display: inline-block; border: 2px solid #000; padding: 2px 11px; font-size: 14px; font-weight: 800; letter-spacing: 0.4px; margin-top: 3px; }
-  .credit-warning { font-size: 13px; font-weight: 800; color: #000; text-align: center; margin-top: 3px; }
+  .total-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .total-amount { font-size: 19px; font-weight: 800; letter-spacing: 0.2px; margin-top: 2px; line-height: 1.1; overflow-wrap: anywhere; }
+  .payment-section { text-align: center; font-size: 12px; font-weight: 700; margin: 5px 0; }
+  .payment-badge { display: inline-block; border: 2px solid #000; padding: 2px 10px; font-size: 13px; font-weight: 800; letter-spacing: 0.2px; margin-top: 3px; max-width: 100%; }
+  .credit-warning { font-size: 12px; font-weight: 800; color: #000; text-align: center; margin-top: 3px; }
   .footer { text-align: center; margin-top: 6px; }
-  .thank-you { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
-  .footer-sub { font-size: 13px; font-weight: 700; color: #000; line-height: 1.35; }
+  .footer-sub { font-size: 13px; font-weight: 800; color: #000; line-height: 1.35; }
   @media print {
-    body { width: ${paperMm}mm; margin: 0; padding: 2mm 2mm 6mm; }
+    body { width: ${paperMm}mm; max-width: 100%; margin: 0; padding: 2mm 4mm 6mm 3mm; }
     .no-print { display: none !important; }
     @page { size: ${paperMm}mm auto; margin: 0; }
   }
@@ -209,6 +212,7 @@ function renderSaleReceiptHtml(sale, settings = {}) {
   <div class="company-name">${escapeReceiptHtml(settings.companyName || 'HASLIM GROUP')}</div>
   ${shopAddress ? `<div class="company-sub">${escapeReceiptHtml(shopAddress)}</div>` : ''}
   <div class="company-sub">Tel: ${escapeReceiptHtml(shopPhone)}</div>
+  <div class="company-sub">Tel: ${escapeReceiptHtml(shopPhone2)}</div>
 </div>
 <hr class="div-solid">
 <div class="receipt-title">RISITI</div>
@@ -235,9 +239,7 @@ ${creditHtml}
 ${sale.isCredit ? '<div class="credit-warning">⚠ MAUZO YA MKOPO</div>' : ''}
 <hr class="div-dash">
 <div class="footer">
-  <div class="thank-you">${escapeReceiptHtml(settings.receiptFooter || 'Asante kwa kununua!')}</div>
   <div class="footer-sub">Karibu sana Kasi mpya</div>
-  <div class="footer-sub" style="margin-top:2px;">${formatReceiptDate(new Date())}</div>
 </div>
 <div class="no-print" style="text-align:center;margin-top:14px;font-size:12px;color:#444;">
   Preview only. Office printing uses the Windows POS-80 printer.
