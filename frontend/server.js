@@ -29,9 +29,28 @@ const {
 } = require('./lib/security');
 const { mountLaravelSot, enabled: laravelSotEnabled } = require('./lib/laravel-sot');
 const { mountReceiptPrintHook, startReceiptPrintAgent } = require('./lib/receipt-auto-print');
+const httpProxy = require('http-proxy');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 40000;
+
+// Hosted: browsers/office agents connect to wss://haslim.co.tz/app → local Reverb.
+const reverbProxy = httpProxy.createProxyServer({
+    target: process.env.REVERB_SERVER_URL || 'http://127.0.0.1:8080',
+    ws: true,
+    changeOrigin: true,
+    xfwd: true,
+});
+reverbProxy.on('error', (err, _req, res) => {
+    console.error('[reverb-proxy]', err.message);
+    if (res && !res.headersSent && typeof res.writeHead === 'function') {
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end('Reverb unavailable');
+    }
+});
+app.use('/app', (req, res) => {
+    reverbProxy.web(req, res);
+});
 const COOKIE_NAME = 'haslim.sid';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'haslim-dev-secret-change-in-production';
 
@@ -3658,7 +3677,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     const nets = os.networkInterfaces();
     const addresses = [];
     for (const name of Object.keys(nets)) {
@@ -3698,5 +3717,13 @@ ${lanLines}
     }, 60 * 60 * 1000);
     alertTimer.unref();
     startReceiptPrintAgent();
+});
+
+server.on('upgrade', (req, socket, head) => {
+    if ((req.url || '').startsWith('/app')) {
+        reverbProxy.ws(req, socket, head);
+        return;
+    }
+    socket.destroy();
 });
 
