@@ -746,6 +746,45 @@ function mountLaravelSot(app, { isAuthenticated, hasRole }) {
         return res.json({ success: true, user: req.session.user });
     });
 
+    app.get('/api/realtime-config', isAuthenticated, async (req, res) => {
+        const token = req.session.laravelToken;
+        if (!token) {
+            return res.status(503).json({ success: false, message: 'Realtime config needs Laravel login' });
+        }
+        try {
+            const { ok, json, status } = await laravelFetch('/realtime-config', { token });
+            if (!ok) {
+                return res.status(status || 502).json({ success: false, message: json?.message || 'Config failed' });
+            }
+            return res.json({ success: true, ...(json || {}) });
+        } catch (err) {
+            console.error('realtime-config proxy error:', err.message);
+            return res.status(502).json({ success: false, message: err.message });
+        }
+    });
+
+    // Browser Echo/Pusher auth (cookie session → Laravel Sanctum token)
+    app.post('/api/broadcasting/auth', isAuthenticated, async (req, res) => {
+        const token = req.session.laravelToken;
+        if (!token) {
+            return res.status(401).json({ message: 'Not authenticated with API' });
+        }
+        try {
+            const { status, json } = await laravelFetch('/broadcasting/auth', {
+                method: 'POST',
+                token,
+                body: {
+                    socket_id: req.body?.socket_id,
+                    channel_name: req.body?.channel_name,
+                },
+            });
+            return res.status(status).json(json);
+        } catch (err) {
+            console.error('broadcasting auth proxy error:', err.message);
+            return res.status(502).json({ message: err.message });
+        }
+    });
+
     // ── Reads ─────────────────────────────────────────────────────────
     app.get('/api/products', isAuthenticated, (req, res) =>
         proxyJson(req, res, { path: '/products', adapt: adaptProduct }));

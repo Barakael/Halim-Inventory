@@ -1,9 +1,16 @@
-# Office PC automatic receipts (hosted + WebSocket)
+# Office PC automatic receipts (browser + Windows POS-80)
 
-Cashiers sell on the **hosted** system. The **office Windows PC** keeps a local print agent running. That agent connects **out** to Laravel Reverb over WebSocket. Each new sale is pushed once; no idle polling.
+Cashiers sell on the **hosted** system. The **office Windows PC** does **not** need Node or any local agent.
 
-Printing uses the **admin’s login session** on this PC — no password is stored in `.env`.
-When an admin logs into the local dashboard, the agent catches up on every `queued` receipt and stays connected for live sales. Logging out pauses printing.
+1. Set the Windows default printer to **POS-80** (exact name you registered).
+2. On that PC, open Chrome/Edge to https://haslim.co.tz and log in as **admin**.
+3. Leave the dashboard tab open during work hours.
+
+The admin browser listens over WebSocket. Each new sale opens the receipt and prints to the default POS-80. When the admin opens the dashboard, any still-queued receipts print too.
+
+Optional silent printing (no print dialog): create a Chrome desktop shortcut with  
+`--kiosk-printing https://haslim.co.tz/login`  
+and set POS-80 as the Windows default printer.
 
 ## Hosted server
 
@@ -30,35 +37,13 @@ Put HTTPS/WSS in front of that port (Nginx, Caddy, or a host panel).
 
 ## Office Windows PC
 
-1. Install Node.js 18+, Google Chrome or Edge, and ImageMagick (`magick` on PATH).
-2. Install the normal Windows driver for the POS80 so it appears under Printers (name e.g. `POS80`).
-3. Copy the `frontend` app, run `npm install`, then set `.env`:
-
-```env
-LARAVEL_URL=https://api.your-domain.com
-RECEIPT_API_BASE=https://api.your-domain.com/api
-RECEIPT_AUTO_PRINT=1
-RECEIPT_TRANSPORT=windows
-RECEIPT_PRINTER=POS80
-REVERB_APP_KEY=same-as-hosted
-REVERB_HOST=api.your-domain.com
-REVERB_PORT=443
-REVERB_SCHEME=https
-```
-
-4. Start and leave running during work hours:
-
-```bat
-npm start
-```
-
-Or use PM2 / a Windows service so it starts when the PC boots.
-
-5. Admin opens `http://127.0.0.1:40000/login` on that PC and signs in with their normal account.
-   Any unprinted receipts print immediately. New online sales print while that admin stays logged in.
+1. Confirm **POS-80** prints a Windows test page.
+2. Set **POS-80** as the default printer.
+3. Open https://haslim.co.tz, log in as admin, leave the tab open.
+4. Make a cashier sale → the print dialog (or silent kiosk print) should fire on that PC.
 
 ## Checks
 
-- Agent log shows `WebSocket subscribed → private-shop.{id}.receipts`.
-- After a cashier sale: `live sale … → job …` then `printed`.
-- After admin login with queued jobs: `admin login … → catch up`.
+- Browser console shows `browser subscribed private-shop.{id}.receipts`.
+- After a cashier sale: receipt print runs on the office PC.
+- Opening the admin dashboard prints any still-queued receipts.

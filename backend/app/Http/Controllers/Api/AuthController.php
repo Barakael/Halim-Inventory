@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\ShopRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -84,6 +85,23 @@ class AuthController extends Controller
         $user = $request->user()->load('shop');
 
         return response()->json($user->toApiArray());
+    }
+
+    /** Public Reverb settings for the office browser auto-print listener. */
+    public function realtimeConfig(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'shop_id' => $user->shop_id,
+            'can_auto_print' => ShopRole::canPrintReceipts($user->role),
+            'reverb' => [
+                'key' => config('broadcasting.connections.reverb.key'),
+                'host' => config('broadcasting.connections.reverb.options.host'),
+                'port' => (int) config('broadcasting.connections.reverb.options.port', 443),
+                'scheme' => config('broadcasting.connections.reverb.options.scheme', 'https'),
+            ],
+        ]);
     }
 
     public function logout(Request $request)

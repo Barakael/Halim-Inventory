@@ -29,6 +29,7 @@ Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 Route::middleware(['auth:sanctum', EnsureShopActive::class])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/realtime-config', [AuthController::class, 'realtimeConfig']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/dashboard', [DashboardController::class, 'index']);

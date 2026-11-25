@@ -243,6 +243,9 @@ async function initApp() {
         
         // Navigate to the page based on current URL
         initPageFromUrl();
+
+        // Office PC: admin browser listens for sales and prints to Windows POS-80
+        try { startBrowserReceiptAutoPrint(); } catch (e) { console.error('receipt auto-print', e); }
         
         console.log('App initialized successfully');
     } catch (error) {
@@ -861,6 +864,139 @@ async function loadSuperAdminDashboard() {
     superRoot.innerHTML = renderSuperAdminDashboard(result.data || {});
 }
 
+// Browser-side office printing (no Node agent). Keep https://haslim.co.tz open
+// as admin on the PC that has Windows printer "POS-80" set as default.
+let browserReceiptPusher = null;
+const browserReceiptPrinting = new Set();
+
+async function printReceiptJobInBrowser(job) {
+    const jobId = String(job.id || job.job_id || '');
+    const saleId = job.sale_id;
+    if (!jobId || !saleId) return;
+    if (browserReceiptPrinting.has(jobId)) return;
+    browserReceiptPrinting.add(jobId);
+    try {
+        const htmlRes = await fetch(`/api/sales/${saleId}/receipt`, { credentials: 'same-origin' });
+        if (!htmlRes.ok) throw new Error(`Receipt HTML failed (${htmlRes.status})`);
+        const html = await htmlRes.text();
+        await new Promise((resolve, reject) => {
+            const frame = document.createElement('iframe');
+            frame.setAttribute('aria-hidden', 'true');
+            frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+            document.body.appendChild(frame);
+            const cleanup = () => {
+                try { frame.remove(); } catch (_) { /* ignore */ }
+            };
+            frame.onload = () => {
+                try {
+                    frame.contentWindow.focus();
+                    frame.contentWindow.print();
+                    resolve();
+                } catch (err) {
+                    reject(err);
+                } finally {
+                    setTimeout(cleanup, 1500);
+                }
+            };
+            frame.onerror = () => {
+                cleanup();
+                reject(new Error('Receipt frame failed'));
+            };
+            frame.srcdoc = html;
+        });
+        await api(`/api/receipt-jobs/${jobId}/printed`, { method: 'POST' });
+        console.log('[receipt-print] browser printed job', jobId);
+        try { loadReceiptQueue(); } catch (_) { /* ignore */ }
+    } catch (err) {
+        console.error('[receipt-print] browser print failed:', err);
+    } finally {
+        browserReceiptPrinting.delete(jobId);
+    }
+}
+
+async function catchUpBrowserReceipts() {
+    const result = await api('/api/receipt-jobs?status=queued');
+    if (!result.success) return;
+    const jobs = (result.data || []).slice().reverse();
+    if (jobs.length) {
+        console.log(`[receipt-print] browser catch-up: ${jobs.length} queued`);
+    }
+    for (const job of jobs) {
+        // Sequential so the printer is not flooded
+        // eslint-disable-next-line no-await-in-loop
+        await printReceiptJobInBrowser(job);
+    }
+}
+
+async function startBrowserReceiptAutoPrint() {
+    if (!currentUser || !['admin', 'owner'].includes(currentUser.role)) return;
+    if (typeof Pusher === 'undefined') {
+        console.warn('[receipt-print] Pusher library missing');
+        return;
+    }
+    const cfg = await api('/api/realtime-config');
+    if (!cfg.success || !cfg.can_auto_print) return;
+    const reverb = cfg.reverb || {};
+    if (!reverb.key || !reverb.host) {
+        console.warn('[receipt-print] Reverb is not configured on the server');
+        return;
+    }
+
+    await catchUpBrowserReceipts();
+
+    if (browserReceiptPusher) {
+        try { browserReceiptPusher.disconnect(); } catch (_) { /* ignore */ }
+        browserReceiptPusher = null;
+    }
+
+    const forceTLS = (reverb.scheme || 'https') === 'https';
+    const port = Number(reverb.port || (forceTLS ? 443 : 80));
+    browserReceiptPusher = new Pusher(reverb.key, {
+        wsHost: reverb.host,
+        wsPort: port,
+        wssPort: port,
+        forceTLS,
+        enabledTransports: ['ws', 'wss'],
+        disableStats: true,
+        cluster: 'mt1',
+        authEndpoint: '/api/broadcasting/auth',
+        auth: { headers: { 'X-Requested-With': 'XMLHttpRequest' } },
+        authorizer: (channel) => ({
+            authorize: (socketId, callback) => {
+                fetch('/api/broadcasting/auth', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        socket_id: socketId,
+                        channel_name: channel.name,
+                    }),
+                })
+                    .then(async (res) => {
+                        const body = await res.json().catch(() => ({}));
+                        if (!res.ok) throw new Error(body.message || `auth ${res.status}`);
+                        callback(null, body);
+                    })
+                    .catch((err) => callback(err, null));
+            },
+        }),
+    });
+
+    const channelName = `private-shop.${cfg.shop_id}.receipts`;
+    const channel = browserReceiptPusher.subscribe(channelName);
+    channel.bind('pusher:subscription_succeeded', () => {
+        console.log('[receipt-print] browser subscribed', channelName);
+    });
+    channel.bind('receipt.queued', (payload) => {
+        console.log('[receipt-print] live sale → print', payload);
+        printReceiptJobInBrowser(payload);
+    });
+}
+
 async function loadReceiptQueue() {
     const body = document.getElementById('receiptQueueBody');
     const note = document.getElementById('receiptQueueNote');
@@ -873,7 +1009,7 @@ async function loadReceiptQueue() {
     }
     if (note) {
         note.textContent = result.can_print
-            ? 'Finished sales print themselves on the shop 80mm printer. This screen is the queue. View opens a copy.'
+            ? 'Keep this admin dashboard open on the office PC. Sales print to the Windows POS-80 printer. View opens a copy.'
             : 'You can view receipts. Printing stays with admin.';
     }
     const rows = result.data || [];
