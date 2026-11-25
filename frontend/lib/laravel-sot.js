@@ -114,162 +114,132 @@ function formatReceiptDate(value) {
 }
 
 /**
- * Thermal receipt HTML — compact layout matching the mobile POS ticket
- * (ReceiptContent / ReceiptTicket), sized for short paper use.
+ * Thermal receipt HTML — same Swahili layout as before, scaled to ~80%
+ * (fonts, padding, borders) so the printed slip is shorter without redesign.
  */
 function renderSaleReceiptHtml(sale, settings = {}) {
     const paperMm = Number(settings.receiptPaperMm) === 80 ? 80 : 58;
     const autoPrint = !!settings.autoPrint;
     const printJobId = settings.printJobId != null ? String(settings.printJobId) : '';
     const saleIdAttr = sale.id != null ? String(sale.id) : '';
-    const fmt = (n) => Number(n || 0).toLocaleString('en-US', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    });
-    const when = sale.createdAt || sale.completedAt || new Date();
-    const whenDate = when instanceof Date ? when : new Date(when);
-    const dateStr = Number.isNaN(whenDate.getTime())
-        ? formatReceiptDate(when)
-        : `${String(whenDate.getDate()).padStart(2, '0')}/${String(whenDate.getMonth() + 1).padStart(2, '0')}/${whenDate.getFullYear()}  ${String(whenDate.getHours()).padStart(2, '0')}:${String(whenDate.getMinutes()).padStart(2, '0')}:${String(whenDate.getSeconds()).padStart(2, '0')}`;
+    const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+    const dateStr = formatReceiptDate(sale.createdAt || sale.completedAt);
+    const paymentMethodLabel = {
+        cash: 'Pesa Taslimu',
+        mpesa: 'M-Pesa',
+        airtel: 'Airtel Money',
+        tigo: 'Tigo Pesa',
+        bank: 'Bank Transfer',
+        credit: 'Mkopo',
+    }[String(sale.paymentMethod || '').toLowerCase()]
+        || String(sale.paymentMethod || '').toUpperCase()
+        || '—';
 
-    const method = String(sale.paymentMethod || '').toLowerCase().trim();
-    const isCredit = !!sale.isCredit || method === 'credit' || method.includes('deni');
-    const payLabel = ({
-        cash: 'Cash tendered',
-        card: 'Card payment',
-        mobile: 'Mobile payment',
-        mobile_money: 'Mobile payment',
-        mpesa: 'Mobile payment',
-        credit: 'Credit / debt',
-    })[method] || (method ? method : 'Amount paid');
-
-    const shopTel = String(settings.mobile || settings.phone || settings.companyPhone || '').trim()
+    const shopPhone = String(settings.mobile || settings.phone || settings.companyPhone || '').trim()
         || '+255717580918';
     const shopAddress = settings.address || settings.companyAddress || '';
-    const shopLocation = settings.location || '';
-    const receiptNo = sale.receiptNumber || sale.serial_number || sale.id;
+
+    const items = Array.isArray(sale.items) ? sale.items : [];
+    const itemsHtml = items.map((item) => `
+  <div class="item-block">
+    <div class="item-name">${escapeReceiptHtml(item.productName || item.product_name || 'Bidhaa')}</div>
+    <div class="item-detail">
+      <span>${item.quantity || 0} x ${fmt(item.price ?? item.unit_price)}</span>
+      <span>${fmt(item.total ?? item.line_total ?? ((item.quantity || 0) * (item.price ?? item.unit_price ?? 0)))}</span>
+    </div>
+  </div>`).join('');
+
+    const discountHtml = (Number(sale.discount) > 0)
+        ? `<div class="sum-row"><span>Punguzo</span><span>-${fmt(sale.discount)}</span></div>`
+        : '';
+    const creditHtml = sale.isCredit
+        ? `<div class="sum-row credit-row"><span>Mkopo Baki</span><span>${fmt((sale.totalAmount || 0) - (sale.paidAmount || 0))}</span></div>`
+        : '';
     const customerName = sale.customerName && sale.customerName !== 'Walk-in Customer'
         ? sale.customerName
         : null;
-    const customerPhone = sale.customerPhone && String(sale.customerPhone).trim()
-        ? sale.customerPhone
-        : null;
-
-    const items = Array.isArray(sale.items) ? sale.items : [];
-    const itemsHtml = items.length
-        ? items.map((item) => {
-            const qty = item.quantity || 0;
-            const unit = item.price ?? item.unit_price ?? 0;
-            const line = item.total ?? item.line_total ?? (Number(qty) * Number(unit));
-            return `
-  <div class="item">
-    <div class="item-row">
-      <span class="qty">${escapeReceiptHtml(String(qty))}x</span>
-      <span class="name">${escapeReceiptHtml(item.productName || item.product_name || 'Item')}</span>
-      <span class="amt">${fmt(line)}</span>
-    </div>
-    <div class="unit">@ ${fmt(unit)}</div>
-  </div>`;
-        }).join('')
-        : '<div class="center muted">(No line items)</div>';
-
-    const discountHtml = Number(sale.discount) > 0
-        ? `<div class="kv"><span class="lbl">Discount</span><span class="val">-${fmt(sale.discount)}</span></div>`
-        : '';
-    const received = isCredit ? 0 : Number(sale.amountTendered ?? sale.amount_tendered ?? sale.totalAmount ?? 0);
-    const change = Number(sale.change ?? sale.change_amount ?? 0);
-    const creditRemainder = isCredit
-        ? Number(sale.totalAmount || 0)
-        : Math.max(0, Number(sale.totalAmount || 0) - received);
-
-    let paymentHtml = '';
-    if (isCredit) {
-        paymentHtml = `<div class="kv"><span class="lbl">Credit / debt</span><span class="val">${fmt(sale.totalAmount)}</span></div>`;
-    } else {
-        paymentHtml = `<div class="kv"><span class="lbl">${escapeReceiptHtml(payLabel)}</span><span class="val">${fmt(received)}</span></div>`;
-        if (creditRemainder > 0.009) {
-            paymentHtml += `<div class="kv"><span class="lbl">Credit on account</span><span class="val">${fmt(creditRemainder)}</span></div>`;
-        }
-        if (change > 0.009) {
-            paymentHtml += `<div class="kv"><span class="lbl">Change</span><span class="val">${fmt(change)}</span></div>`;
-        }
-    }
+    const receiptNo = sale.receiptNumber || sale.serial_number || sale.id;
 
     return `<!DOCTYPE html>
-<html lang="en">
+<html lang="sw">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Receipt ${escapeReceiptHtml(receiptNo)}</title>
+<title>Risiti ${escapeReceiptHtml(receiptNo)}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 10px; font-weight: 400; color: #000; background: #fff;
-    width: ${paperMm}mm; margin: 0 auto; padding: 2mm 2mm 4mm;
-    line-height: 1.2;
+    font-size: 14px; font-weight: 700; background: #fff; color: #000;
+    width: ${paperMm}mm; margin: 0 auto; padding: 2.5mm 2mm 8mm 2mm;
   }
-  .center { text-align: center; }
-  .title { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
-  .shop { font-size: 13px; font-weight: 700; text-transform: uppercase; margin-top: 1px; }
-  .sub { font-size: 9px; color: #222; margin-top: 1px; }
-  .muted { color: #444; }
-  .rule { border: none; border-top: 0.5px solid #000; margin: 3px 0; }
-  .rule-heavy { border: none; border-top: 1.4px solid #000; margin: 3px 0; }
-  .kv { display: flex; justify-content: space-between; gap: 4px; padding: 0.5px 0; font-size: 9.5px; }
-  .kv .lbl { color: #333; }
-  .kv .val { font-weight: 600; text-align: right; word-break: break-word; }
-  .kv.strong .lbl, .kv.strong .val { font-weight: 700; font-size: 10.5px; }
-  .cols { display: flex; font-size: 8.5px; font-weight: 700; gap: 2px; }
-  .cols .q { width: 22px; }
-  .cols .d { flex: 1; }
-  .cols .a { text-align: right; }
-  .item { margin: 2px 0 3px; }
-  .item-row { display: flex; gap: 2px; align-items: flex-start; font-size: 9.5px; }
-  .item-row .qty { width: 22px; }
-  .item-row .name { flex: 1; word-break: break-word; }
-  .item-row .amt { font-weight: 700; text-align: right; white-space: nowrap; }
-  .unit { padding-left: 22px; font-size: 8px; color: #444; }
-  .thanks { font-size: 9px; font-weight: 700; margin-top: 2px; }
-  .welcome { font-size: 8.5px; color: #333; }
+  .header { text-align: center; margin-bottom: 5px; }
+  .company-name { font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; line-height: 1.2; }
+  .company-sub { font-size: 13px; font-weight: 700; color: #000; margin-top: 2px; }
+  .div-solid { border: none; border-top: 2px solid #000; margin: 5px 0; }
+  .div-dash  { border: none; border-top: 1.5px solid #000; margin: 4px 0; }
+  .receipt-title { text-align: center; font-size: 14px; font-weight: 800; letter-spacing: 1.5px; padding: 2px 0; }
+  .info-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; font-weight: 700; color: #000; padding: 1px 0; gap: 4px; }
+  .info-row .lbl { color: #000; white-space: nowrap; }
+  .info-row .val { font-weight: 800; text-align: right; word-break: break-word; }
+  .section-label { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; padding: 1px 0; }
+  .item-block { margin: 5px 0; }
+  .item-name { font-size: 14px; font-weight: 800; line-height: 1.25; word-break: break-word; }
+  .item-detail { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; padding-left: 3px; margin-top: 1px; color: #000; }
+  .sum-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; padding: 1px 0; color: #000; }
+  .credit-row { color: #000; font-weight: 800; }
+  .total-box { border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 5px 0 4px; margin: 5px 0; text-align: center; }
+  .total-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+  .total-amount { font-size: 21px; font-weight: 800; letter-spacing: 0.4px; margin-top: 2px; line-height: 1.1; }
+  .payment-section { text-align: center; font-size: 13px; font-weight: 700; margin: 5px 0; }
+  .payment-badge { display: inline-block; border: 2px solid #000; padding: 2px 11px; font-size: 14px; font-weight: 800; letter-spacing: 0.4px; margin-top: 3px; }
+  .credit-warning { font-size: 13px; font-weight: 800; color: #000; text-align: center; margin-top: 3px; }
+  .footer { text-align: center; margin-top: 6px; }
+  .thank-you { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+  .footer-sub { font-size: 13px; font-weight: 700; color: #000; line-height: 1.35; }
   @media print {
-    body { width: ${paperMm}mm; margin: 0; padding: 1.5mm 2mm 3mm; }
+    body { width: ${paperMm}mm; margin: 0; padding: 2mm 2mm 6mm; }
     .no-print { display: none !important; }
     @page { size: ${paperMm}mm auto; margin: 0; }
   }
 </style>
 </head>
 <body>
-<div class="center title">RECEIPT</div>
-<hr class="rule-heavy">
-<div class="center shop">${escapeReceiptHtml(settings.companyName || 'HASLIM GROUP')}</div>
-${shopAddress ? `<div class="center sub">${escapeReceiptHtml(shopAddress)}</div>` : ''}
-${shopLocation ? `<div class="center sub">${escapeReceiptHtml(shopLocation)}</div>` : ''}
-<div class="kv" style="margin-top:3px;"><span class="lbl">TEL</span><span class="val">${escapeReceiptHtml(shopTel)}</span></div>
-<hr class="rule">
-<div class="kv"><span class="lbl">RECEIPT</span><span class="val">${escapeReceiptHtml(receiptNo)}</span></div>
-<div class="kv"><span class="lbl">DATE</span><span class="val">${escapeReceiptHtml(dateStr)}</span></div>
-${customerName || customerPhone ? `
-<hr class="rule">
-<div class="center" style="font-size:9px;font-weight:700;">CUSTOMER</div>
-${customerName ? `<div class="kv"><span class="lbl">Name</span><span class="val">${escapeReceiptHtml(customerName)}</span></div>` : ''}
-${customerPhone ? `<div class="kv"><span class="lbl">Mobile</span><span class="val">${escapeReceiptHtml(customerPhone)}</span></div>` : ''}
-` : ''}
-<hr class="rule-heavy">
-<div class="cols"><span class="q">QTY</span><span class="d">DESCRIPTION</span><span class="a">AMOUNT</span></div>
-<hr class="rule">
-${itemsHtml}
-<hr class="rule">
-<div class="kv"><span class="lbl">Subtotal</span><span class="val">${fmt(sale.subtotal ?? sale.totalAmount)}</span></div>
+<div class="header">
+  <div class="company-name">${escapeReceiptHtml(settings.companyName || 'HASLIM GROUP')}</div>
+  ${shopAddress ? `<div class="company-sub">${escapeReceiptHtml(shopAddress)}</div>` : ''}
+  <div class="company-sub">Tel: ${escapeReceiptHtml(shopPhone)}</div>
+</div>
+<hr class="div-solid">
+<div class="receipt-title">RISITI</div>
+<hr class="div-solid">
+<div class="info-row"><span class="lbl">Namba:</span><span class="val">${escapeReceiptHtml(receiptNo)}</span></div>
+<div class="info-row"><span class="lbl">Tarehe:</span><span class="val">${dateStr}</span></div>
+${customerName ? `<div class="info-row"><span class="lbl">Mteja:</span><span class="val">${escapeReceiptHtml(customerName)}</span></div>` : ''}
+${sale.cashierName ? `<div class="info-row"><span class="lbl">Muuzaji:</span><span class="val">${escapeReceiptHtml(sale.cashierName)}</span></div>` : ''}
+<hr class="div-dash">
+<div class="section-label">Bidhaa Zilizonunuliwa</div>
+<hr class="div-dash">
+${itemsHtml || '<div class="item-block"><div class="item-name">Hakuna bidhaa</div></div>'}
+<hr class="div-dash">
 ${discountHtml}
-<hr class="rule-heavy">
-<div class="kv strong"><span class="lbl">TOTAL</span><span class="val">${fmt(sale.totalAmount)}</span></div>
-<hr class="rule">
-${paymentHtml}
-<hr class="rule">
-<div class="center thanks">${escapeReceiptHtml(settings.receiptFooter || 'Thank you')}</div>
-<div class="center welcome">Welcome again</div>
-<div class="no-print" style="text-align:center;margin-top:10px;font-size:11px;color:#444;">
+<div class="total-box">
+  <div class="total-label">Jumla ya Kulipa</div>
+  <div class="total-amount">TZS ${fmt(sale.totalAmount)}</div>
+</div>
+${creditHtml}
+<div class="payment-section">
+  <div>Njia ya Malipo:</div>
+  <div class="payment-badge">${escapeReceiptHtml(paymentMethodLabel)}</div>
+</div>
+${sale.isCredit ? '<div class="credit-warning">⚠ MAUZO YA MKOPO</div>' : ''}
+<hr class="div-dash">
+<div class="footer">
+  <div class="thank-you">${escapeReceiptHtml(settings.receiptFooter || 'Asante kwa kununua!')}</div>
+  <div class="footer-sub">Karibu tena</div>
+  <div class="footer-sub" style="margin-top:2px;">${formatReceiptDate(new Date())}</div>
+</div>
+<div class="no-print" style="text-align:center;margin-top:14px;font-size:12px;color:#444;">
   Preview only. Office printing uses the Windows POS-80 printer.
 </div>
 <script>
