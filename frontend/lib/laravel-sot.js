@@ -169,45 +169,61 @@ function renderSaleReceiptHtml(sale, settings = {}) {
 <title>Risiti ${escapeReceiptHtml(receiptNo)}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
   body {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 13px; font-weight: 700; background: #fff; color: #000;
     width: ${paperMm}mm; max-width: 100%; margin: 0 auto;
-    padding: 2.5mm 4mm 8mm 3mm;
+    padding: 1.5mm 4mm 2mm 3mm;
     overflow-wrap: anywhere; word-break: break-word;
+    line-height: 1.2;
   }
-  .header { text-align: center; margin-bottom: 5px; }
-  .company-name { font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.2; }
-  .company-sub { font-size: 12px; font-weight: 700; color: #000; margin-top: 2px; }
-  .div-solid { border: none; border-top: 2px solid #000; margin: 5px 0; }
-  .div-dash  { border: none; border-top: 1.5px solid #000; margin: 4px 0; }
-  .receipt-title { text-align: center; font-size: 13px; font-weight: 800; letter-spacing: 1px; padding: 2px 0; }
-  .info-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 700; color: #000; padding: 1px 0; gap: 6px; }
+  .slip { display: block; width: 100%; }
+  .header { text-align: center; margin-bottom: 2px; }
+  .company-name { font-size: 17px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2px; line-height: 1.15; }
+  .company-sub { font-size: 12px; font-weight: 700; color: #000; margin-top: 1px; }
+  .div-solid { border: none; border-top: 2px solid #000; margin: 3px 0; }
+  .div-dash  { border: none; border-top: 1.5px solid #000; margin: 2px 0; }
+  .receipt-title { text-align: center; font-size: 13px; font-weight: 800; letter-spacing: 1px; padding: 1px 0; }
+  .info-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 700; color: #000; padding: 0; gap: 6px; }
   .info-row .lbl { color: #000; white-space: nowrap; flex-shrink: 0; }
   .info-row .val { font-weight: 800; text-align: right; overflow-wrap: anywhere; min-width: 0; }
-  .section-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; padding: 1px 0; }
-  .item-block { margin: 5px 0; }
-  .item-name { font-size: 13px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
-  .item-detail { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 700; padding-left: 2px; margin-top: 1px; color: #000; }
+  .section-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; padding: 0; }
+  .item-block { margin: 3px 0; }
+  .item-name { font-size: 13px; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
+  .item-detail { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 700; padding-left: 2px; margin-top: 0; color: #000; }
   .item-detail span:last-child { text-align: right; flex-shrink: 0; }
-  .sum-row { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 700; padding: 1px 0; color: #000; }
+  .sum-row { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; font-weight: 700; padding: 0; color: #000; }
   .credit-row { color: #000; font-weight: 800; }
-  .total-box { border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 5px 0 4px; margin: 5px 0; text-align: center; }
+  .total-box { border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 3px 0; margin: 3px 0; text-align: center; }
   .total-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
-  .total-amount { font-size: 19px; font-weight: 800; letter-spacing: 0.2px; margin-top: 2px; line-height: 1.1; overflow-wrap: anywhere; }
-  .payment-section { text-align: center; font-size: 12px; font-weight: 700; margin: 5px 0; }
-  .payment-badge { display: inline-block; border: 2px solid #000; padding: 2px 10px; font-size: 13px; font-weight: 800; letter-spacing: 0.2px; margin-top: 3px; max-width: 100%; }
-  .credit-warning { font-size: 12px; font-weight: 800; color: #000; text-align: center; margin-top: 3px; }
-  .footer { text-align: center; margin-top: 6px; }
-  .footer-sub { font-size: 13px; font-weight: 800; color: #000; line-height: 1.35; }
+  .total-amount { font-size: 19px; font-weight: 800; letter-spacing: 0.2px; margin-top: 1px; line-height: 1.1; overflow-wrap: anywhere; }
+  .payment-section { text-align: center; font-size: 12px; font-weight: 700; margin: 3px 0; }
+  .payment-badge { display: inline-block; border: 2px solid #000; padding: 1px 8px; font-size: 13px; font-weight: 800; letter-spacing: 0.2px; margin-top: 2px; max-width: 100%; }
+  .credit-warning { font-size: 12px; font-weight: 800; color: #000; text-align: center; margin-top: 2px; }
+  .footer { text-align: center; margin-top: 3px; margin-bottom: 0; padding-bottom: 0; }
+  .footer-sub { font-size: 13px; font-weight: 800; color: #000; line-height: 1.2; }
   @media print {
-    body { width: ${paperMm}mm; max-width: 100%; margin: 0; padding: 2mm 4mm 6mm 3mm; }
-    .no-print { display: none !important; }
+    html, body {
+      width: ${paperMm}mm !important;
+      height: auto !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      padding: 1mm 4mm 1.5mm 3mm !important;
+      background: #fff;
+    }
+    .slip { page-break-after: avoid; page-break-inside: avoid; }
+    .no-print { display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }
     @page { size: ${paperMm}mm auto; margin: 0; }
   }
 </style>
 </head>
 <body>
+<div class="slip">
 <div class="header">
   <div class="company-name">${escapeReceiptHtml(settings.companyName || 'HASLIM GROUP')}</div>
   ${shopAddress ? `<div class="company-sub">${escapeReceiptHtml(shopAddress)}</div>` : ''}
@@ -241,7 +257,8 @@ ${sale.isCredit ? '<div class="credit-warning">⚠ MAUZO YA MKOPO</div>' : ''}
 <div class="footer">
   <div class="footer-sub">Karibu sana Kasi mpya</div>
 </div>
-<div class="no-print" style="text-align:center;margin-top:14px;font-size:12px;color:#444;">
+</div>
+<div class="no-print" style="text-align:center;margin-top:10px;font-size:12px;color:#444;">
   Preview only. Office printing uses the Windows POS-80 printer.
 </div>
 <script>
